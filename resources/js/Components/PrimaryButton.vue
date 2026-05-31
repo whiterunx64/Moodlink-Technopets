@@ -1,7 +1,13 @@
+<script setup lang="ts">
+defineProps<{
+    type?: 'button' | 'submit';
+    disabled?: boolean;
+}>();
+</script>
+
 <template>
-    <button
-        class="inline-flex items-center rounded-md border border-transparent bg-gray-800 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-white transition duration-150 ease-in-out hover:bg-gray-700 focus:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 active:bg-gray-900 dark:bg-gray-200 dark:text-gray-800 dark:hover:bg-white dark:focus:bg-white dark:focus:ring-offset-gray-800 dark:active:bg-gray-300"
-    >
+    <button :type="type ?? 'button'" :disabled="disabled"
+        class="inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-ml-btn px-4 py-3 text-sm font-bold text-white transition-colors duration-200 hover:bg-ml-btn-hover focus:ring-2 focus:ring-ml-btn focus:ring-offset-2 focus:outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 sm:py-4 sm:text-base">
         <slot />
     </button>
 </template>
