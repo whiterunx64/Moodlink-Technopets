@@ -1,3 +1,83 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme inline {
+    /* Header */
+    --color-header-bg: #ffffff;
+    --color-header-border: #e3e3e3;
+    --color-header-icon: #6b7280;
+    --color-header-icon-hover: #262626;
+
+    /* Sidebar */
+    --color-sidebar: #4a5e28;
+    --color-sidebar-hover: #5d7333;
+    --color-sidebar-overlay: #000000;
+    --color-sidebar-text: rgba(255, 255, 255, 0.8);
+    --color-sidebar-text-muted: rgba(255, 255, 255, 0.6);
+    --color-sidebar-border: rgba(255, 255, 255, 0.1);
+    --color-sidebar-active: rgba(255, 255, 255, 0.2);
+    /* GLOBAL TEXT */
+    --color-text-primary: #1a1a1a;
+    --color-text-secondary: #4b5563;
+    --color-text-muted: #9ca3af;
+
+    /* GLOBAL UI */
+    --color-border-light: #e3e3e3;
+    --color-hover-soft: #eceee6;
+
+    /* STATUS BADGES */
+    --color-status-flagged: #e25858;
+    --color-status-flagged-bg: #fdeaea;
+    --color-status-safe: #16a34a;
+    --color-status-safe-bg: #dcfce7;
+
+    /* METRICS DASHBOARD CARDS MODULES */
+    --color-card-orange: #f39a38;
+    --color-card-green: #48b07a;
+    --color-card-red: #e25858;
+    --color-card-blue: #4a8cf2;
+
+    /* MOODSPACE MODULE */
+    --color-post-card-bg: #f3f3f0;
+    --color-post-card-bg-hover: #e4e4df;
+    --color-post-card-skeleton: #ededed;
+    --color-avatar-bg: #e5d368;
+    --color-flagged-badge-bg: #fde2e2;
+    --color-flagged-badge-text: #d83c3c;
+    --color-see-more-text: #1c1c1c;
+    --color-skeleton-dark: #d6d6d6;
+    --color-skeleton-mid: #d6d6d6;
+
+    /* MOOD TRENDS MODULE */
+    --color-legend-btn-border: #d1d5db; /* legend toggle button border */
+    --color-legend-btn-border-hover: #6b7280; /* legend toggle button border hover */
+    --color-legend-panel-border: #e5e7eb; /* legend dropdown panel border */
+    --color-pill-inactive-bg: #f3f4f6; /* filter pill inactive background */
+    --color-pill-inactive-text: #6b7280; /* filter pill inactive text */
+    --color-pill-inactive-bg-hover: #e5e7eb; /* filter pill inactive hover background */
+    --color-legend-btn-border-dark: #4b5563; /* legend button border dark mode */
+    --color-legend-btn-bg-dark: #1f2937; /* legend button bg dark mode */
+    --color-legend-btn-border-hover-dark: #9ca3af; /* legend button border hover dark mode */
+    --color-legend-panel-bg-dark: #111827; /* legend panel bg dark mode */
+    --color-legend-panel-border-dark: #374151; /* legend panel border dark mode */
+
+    --color-mood-tab-bg: #f3f4f6; /* tab container background */
+    --color-mood-tab-active-bg: #ffffff; /* active tab background */
+    --color-mood-tab-active-text: #262626; /* active tab text */
+    --color-mood-tab-inactive-text: #9ca3af; /* inactive tab text */
+    --color-mood-tab-inactive-text-hover: #6b7280; /* inactive tab hover text */
+
+    /* APPOINTMENT STAT MODULE */
+    --color-stat-card-bg: #ffffff;
+    --color-stat-card-border: #f3f4f6;
+    --color-stat-icon-neutral-bg: #f3f4f6;
+    --color-stat-icon-neutral-text: #9ca3af;
+    --color-stat-icon-danger-bg: #fff1f2;
+    --color-stat-icon-danger-text: #ef4444;
+    --color-stat-skeleton-bg: #f3f4f6;
+    --color-stat-error-text: #f87171;
+    --color-stat-urgent-text: #ef4444;
+
+    --font-sans:
+        'Inter', i-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
