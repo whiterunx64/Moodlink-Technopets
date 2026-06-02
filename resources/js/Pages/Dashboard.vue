@@ -10,16 +10,30 @@ import { supabase } from '@/utils/supabase';
 import { useRealtime } from '@/composables/useRealtime';
 
 type Mood = 'happy' | 'sad' | 'anxious' | 'neutral';
+type PostStatus = 'safe' | 'flagged';
 type AppointmentStatus = 'Pending' | 'Scheduled';
 type AppointmentLabel = 'Urgent' | 'Consultation';
 
-interface MoodEntryData {
-  name: string;
-  time: string;
+interface MoodEntryRow {
+  id: string;
   mood: Mood;
-  flagged: boolean;
-  message: string;
+  content: string;
+  datetime: string;
+  status: PostStatus;
+  students: { anonymous_name: string; first_name: string; last_name: string };
 }
+
+const POST_STATUS: Record<PostStatus, { flagged: boolean }> = {
+  safe: { flagged: false },
+  flagged: { flagged: true },
+};
+
+const POST_NAME_POLICY: Record<PostStatus, (post: MoodEntryRow) => string> = {
+  flagged: (post) =>
+    `${post.students.first_name} ${post.students.last_name}`,
+  safe: (post) =>
+    post.students.anonymous_name,
+};
 
 interface AppointmentRow {
   id: string;
@@ -54,12 +68,26 @@ const statCards = computed(() =>
   STAT_CARDS.map(card => ({ ...card, value: statValues.value[card.key], change: null }))
 );
 
-const moodEntries: MoodEntryData[] = [
-  { name: 'Anonymous Tabayoyon', time: '12:00 PM', mood: 'happy', flagged: false, message: 'Group study session was productive today. Feeling more confident about the upcoming exam.' },
-  { name: 'Anonymous Mountain', time: '11:30 AM', mood: 'sad', flagged: true, message: 'Having a hard time adjusting. Feeling isolated from everyone and thinking about giving up.' },
-  { name: 'Anonymous River', time: '11:00 AM', mood: 'happy', flagged: false, message: 'Starting to enjoy my new course! The professor is very engaging and the topics are interesting.' },
-  { name: 'Anonymous Storm', time: '10:00 AM', mood: 'anxious', flagged: true, message: "I don't know how to cope anymore. Everything feels like it's falling apart and I can't focus on anything." },
-];
+/** 
+ * MoodEntry Submodule UI mapping section
+ **/
+const moodEntries = ref<MoodEntryRow[]>([]);
+
+const moodEntryList = computed(() =>
+  moodEntries.value
+    .filter(post => post.status in POST_STATUS)
+    .map(post => {
+      const isFlagged = POST_STATUS[post.status].flagged;
+      return {
+        id: post.id,
+        name: POST_NAME_POLICY[isFlagged ? 'flagged' : 'safe'](post),
+        time: formatTime(post.datetime),
+        mood: post.mood,
+        message: post.content,
+        flagged: isFlagged,
+      };
+    })
+);
 
 /** 
  * Widget Appointment Submodule UI mapping section
@@ -100,6 +128,24 @@ async function refreshStatData() {
     escalationRequests: escalations.count ?? 0,
   };
 }
+/** MoodEntry Realtime Data Handler */
+async function refreshMoodFeed() {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('id, mood, content, datetime, status, students!inner(anonymous_name, first_name, last_name)')
+    .eq('students.status', 'verified')
+    .in('status', Object.keys(POST_STATUS))
+    .gte('datetime', getTodayStartISO())
+    .order('datetime', { ascending: false })
+    .limit(20);
+
+  if (error) {
+    console.error(`(${error.message}) We couldn't load the mood feed.`);
+    return;
+  }
+
+  moodEntries.value = data as unknown as MoodEntryRow[];
+}
 
 /** Widget Realtime Data Handler */
 async function refreshWidgetData() {
@@ -123,9 +169,11 @@ async function refreshWidgetData() {
 
 /** Orchestrates initial load and realtime data updates */
 onMounted(async () => {
-  await Promise.all([refreshStatData(), refreshWidgetData()]);
+  await Promise.all([refreshStatData(), refreshWidgetData(), refreshMoodFeed()]);
 
-  subscribe('posts', () => refreshStatData());
+  subscribe('posts', async () => {
+    await Promise.all([refreshStatData(), refreshMoodFeed()]);
+  });
   subscribe('students', () => refreshStatData());
   subscribe('appointments', async () => {
     await Promise.all([refreshStatData(), refreshWidgetData()]);
@@ -157,13 +205,10 @@ onUnmounted(() => unsubscribeAll()); // Remove all realtime subscriptions
               <h3 class="text-base font-semibold text-text-primary">MoodSpace Feed</h3>
               <p class="text-xs text-text-muted mt-0.5">Today's student mood entries</p>
             </div>
-            <span class="text-xs bg-red-50 text-red-500 font-semibold px-2.5 py-1 rounded-full">
-              2 flagged
-            </span>
           </div>
 
           <div class="p-4 flex-1 flex flex-col gap-3 overflow-y-auto max-h-96">
-            <MoodEntry v-for="(entry, i) in moodEntries" :key="i" v-bind="entry" />
+            <MoodEntry v-for="entry in moodEntryList" :key="entry.id" v-bind="entry" />
           </div>
 
           <div class="px-5 py-3 border-t border-border-light">
