@@ -31,7 +31,6 @@
     },
     "dependencies": {
         "@heroicons/vue": "^2.2.0",
-        "@supabase/supabase-js": "^2.106.2",
         "vue-sonner": "^2.0.9"
     }
 }
