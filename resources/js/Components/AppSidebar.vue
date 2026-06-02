@@ -22,12 +22,12 @@ const emit = defineEmits<{
 }>();
 
 const nav_items: NavItem[] = [
-  { label: 'Dashboard',       icon: Squares2X2Icon,   href: '/dashboard' },
-  { label: 'Users',           icon: UserGroupIcon,    href: '/users' },
-  { label: 'Posts',           icon: DocumentTextIcon, href: '/posts' },
-  { label: 'Summary Reports', icon: ChartBarIcon,     href: '/summary' },
-  { label: 'Appointments',    icon: CalendarDaysIcon, href: '/appointments' },
-  { label: 'Account',         icon: UserCircleIcon,   href: '/account' },
+  { label: 'Dashboard',       icon: Squares2X2Icon,   href: route('dashboard') },
+  // { label: 'Users', icon: UserGroupIcon, href: route('users.index') }, // disable until created
+  { label: 'Post Management', icon: DocumentTextIcon, href: route('post-management.index') },
+  //{ label: 'Summary Reports', icon: ChartBarIcon,     href: route('summary.index') },
+  //{ label: 'Appointments',    icon: CalendarDaysIcon, href: route('appointments.index') },
+  //{ label: 'Account',         icon: UserCircleIcon,   href: route('profile.edit') },
 ];
 </script>
 

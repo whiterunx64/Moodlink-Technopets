@@ -12,3 +12,16 @@ export type PageProps<
         user: User;
     };
 };
+
+export type Mood = 'happy' | 'sad' | 'anxious' | 'neutral';
+export type PostFilter = 'All' | 'Flagged' | 'Safe';
+export interface Post {
+    id: number;
+    author: string;
+    section: string;
+    time: string;
+    date: string;
+    mood: Mood;
+    flagged: boolean;
+    content: string;
+}

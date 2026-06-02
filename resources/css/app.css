@@ -23,12 +23,24 @@
     /* GLOBAL UI */
     --color-border-light: #e3e3e3;
     --color-hover-soft: #eceee6;
+    --color-bg-surface: #fbfbfb;
 
     /* STATUS BADGES */
     --color-status-flagged: #e25858;
     --color-status-flagged-bg: #fdeaea;
     --color-status-safe: #16a34a;
     --color-status-safe-bg: #dcfce7;
+
+    /* Filter tab */
+    --color-filter-active-bg: #4a5e28;
+    --color-filter-active-text: #ffffff;
+    --color-filter-inactive-text: #9ca3af;
+    --color-filter-inactive-hover-text: #1a1a1a;
+    --color-filter-inactive-hover-bg: #eceee6;
+    --color-filter-badge-active-bg: rgba(255, 255, 255, 0.2);
+    --color-filter-badge-active-text: #ffffff;
+    --color-filter-badge-bg: #dcddff;
+    --color-filter-badge-text: #6b7280;
 
     /* METRICS DASHBOARD CARDS MODULES */
     --color-card-orange: #f39a38;
