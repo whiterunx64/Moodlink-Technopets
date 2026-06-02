@@ -17,11 +17,11 @@ export type Mood = 'happy' | 'sad' | 'anxious' | 'neutral';
 export type PostFilter = 'All' | 'Flagged' | 'Safe';
 export interface Post {
     id: number;
-    author: string;
+    anonymous_name: string | null;
     section: string;
     time: string;
     date: string;
-    mood: Mood;
-    flagged: boolean;
-    content: string;
+    mood: string;
+    status: 'flagged' | 'safe';
+    content: string | null;
 }

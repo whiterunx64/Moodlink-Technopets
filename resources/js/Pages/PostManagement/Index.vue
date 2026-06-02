@@ -23,8 +23,8 @@ watch(() => props.posts, newPosts => {
 
 const tabs = computed<FilterTab[]>(() => [
     { label: 'All', value: 'All', badge: localPosts.value.length },
-    { label: 'Flagged', value: 'Flagged', badge: localPosts.value.filter(p => p.flagged).length, badgeInactiveClass: 'bg-status-flagged-bg text-status-flagged' },
-    { label: 'Safe', value: 'Safe', badge: localPosts.value.filter(p => !p.flagged).length, badgeInactiveClass: 'bg-status-safe-bg text-status-safe' },
+    { label: 'Flagged', value: 'Flagged', badge: localPosts.value.filter(p => p.status === 'flagged').length, badgeInactiveClass: 'bg-status-flagged-bg text-status-flagged' },
+    { label: 'Safe', value: 'Safe', badge: localPosts.value.filter(p => p.status === 'safe').length, badgeInactiveClass: 'bg-status-safe-bg text-status-safe' },
 ]);
 
 const filtered = computed(() => {
@@ -32,10 +32,10 @@ const filtered = computed(() => {
 
     switch (activeFilter.value) {
         case 'Flagged':
-            return posts.filter(p => p.flagged === true);
+            return posts.filter(p => p.status === 'flagged');
 
         case 'Safe':
-            return posts.filter(p => p.flagged === false);
+            return posts.filter(p => p.status === 'safe');
 
         case 'All':
         default:
@@ -48,12 +48,12 @@ function toggleFlag(post: Post) {
     const target = localPosts.value.find(p => p.id === post.id);
     if (!target) return;
 
-    target.flagged = !target.flagged;
+    target.status = target.status === 'flagged' ? 'safe' : 'flagged';
 
-    router.patch(route('posts.toggle-flag', post.id), {}, {
+    router.patch(route('post-management.toggle-status', post.id), {}, {
         preserveScroll: true,
         only: ['posts'],
-        onError: () => { target.flagged = !target.flagged; },
+        onError: () => { target.status = target.status === 'flagged' ? 'safe' : 'flagged'; },
     });
 }
 

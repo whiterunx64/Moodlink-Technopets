@@ -24,7 +24,7 @@ final class AdminDashboardService
     $flaggedPosts = DB::table('posts')
       ->join('students', 'posts.student_id', '=', 'students.id')
       ->where('students.status', 'verified')
-      ->where('posts.isReported', true)
+      ->where('posts.status', 'flagged')
       ->count();
 
     $escalationRequests = DB::table('appointments')
