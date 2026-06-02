@@ -2,12 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\AdminDashboardService;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function index()
+    protected AdminDashboardService $dashboardService;
+
+    public function __construct(AdminDashboardService $dashboardService)
     {
-        return Inertia::render('Dashboard');
+        $this->dashboardService = $dashboardService;
+    }
+
+    public function index(): Response
+    {
+        return Inertia::render(
+            'Dashboard',
+            $this->dashboardService->getDashboardData()
+        );
     }
 }
