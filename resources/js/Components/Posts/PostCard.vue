@@ -9,6 +9,8 @@ const MOOD_EMOJI: Record<string, string> = {
     sad:      '😢',
     anxious:  '😰',
     neutral:  '😐',
+    drained:  '😞',
+    stressed: '😤',
 };
 </script>
 

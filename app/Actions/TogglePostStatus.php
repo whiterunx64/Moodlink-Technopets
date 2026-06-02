@@ -2,18 +2,21 @@
 
 namespace App\Actions;
 
-use App\Models\BuildPost;
 use App\Enums\PostStatus;
+use App\Models\Post;
 
 class TogglePostStatus
 {
-  public function execute(BuildPost $post): void
-  {
-    if ($post->status === PostStatus::Flagged->value) {
-      $post->update(['status' => PostStatus::Safe->value]);
-      return;
-    }
+    public function execute(Post $post): void
+    {
+        if ($post->status === PostStatus::Flagged) {
+            $newStatus = PostStatus::Safe;
+        } else {
+            $newStatus = PostStatus::Flagged;
+        }
 
-    $post->update(['status' => PostStatus::Flagged->value]);
-  }
+        $post->update([
+            'status' => $newStatus,
+        ]);
+    }
 }

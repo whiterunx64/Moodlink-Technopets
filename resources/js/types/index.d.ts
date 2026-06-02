@@ -13,8 +13,16 @@ export type PageProps<
     };
 };
 
-export type Mood = 'happy' | 'sad' | 'anxious' | 'neutral';
+export type Mood = 'happy' | 'sad' | 'anxious' | 'neutral' | 'drained' | 'stressed';
+export type PostStatus = 'flagged' | 'safe';
 export type PostFilter = 'All' | 'Flagged' | 'Safe';
+
+export interface PostFilters {
+    status:  string | null;
+    section: string | null;
+    mood:    string | null;
+}
+
 export interface Post {
     id: number;
     anonymous_name: string | null;

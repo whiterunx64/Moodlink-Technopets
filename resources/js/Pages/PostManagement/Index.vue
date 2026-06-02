@@ -1,84 +1,73 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { computed } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import FilterTabs from '@/Components/Filters/FilterTabs.vue';
 import PostCard from '@/Components/Posts/PostCard.vue';
-import type { Post, PostFilter } from '@/types';
+import type { Post, PostFilters } from '@/types';
 import type { FilterTab } from '@/Components/Filters/FilterTabs.vue';
 
 const props = defineProps<{
     posts: Post[];
+    filters: PostFilters;
 }>();
 
-const activeFilter = ref<PostFilter>('All');
-
-// Local copy for optimistic flag toggling without waiting for a round-trip
-const localPosts = ref<Post[]>(props.posts.map(p => ({ ...p })));
-
-// Keep in sync when Inertia refreshes the prop (partial reload after patch)
-watch(() => props.posts, newPosts => {
-    localPosts.value = newPosts.map(p => ({ ...p }));
+/** Server-side filtering triggered via Inertia request */
+const activeFilter = computed<string>(() => {
+    const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+    if (props.filters.status) return cap(props.filters.status);
+    if (props.filters.section) return props.filters.section;
+    if (props.filters.mood) return cap(props.filters.mood);
+    return 'All';
 });
 
-const tabs = computed<FilterTab[]>(() => [
-    { label: 'All', value: 'All', badge: localPosts.value.length },
-    { label: 'Flagged', value: 'Flagged', badge: localPosts.value.filter(p => p.status === 'flagged').length, badgeInactiveClass: 'bg-status-flagged-bg text-status-flagged' },
-    { label: 'Safe', value: 'Safe', badge: localPosts.value.filter(p => p.status === 'safe').length, badgeInactiveClass: 'bg-status-safe-bg text-status-safe' },
-]);
+const tabs: FilterTab[] = [
+    { label: 'All', value: 'All' },
+    { label: 'Flagged', value: 'Flagged', badgeInactiveClass: 'bg-status-flagged-bg text-status-flagged' },
+    { label: 'Safe', value: 'Safe', badgeInactiveClass: 'bg-status-safe-bg text-status-safe' },
+];
 
-const filtered = computed(() => {
-    const posts = localPosts.value;
-
-    switch (activeFilter.value) {
-        case 'Flagged':
-            return posts.filter(p => p.status === 'flagged');
-
-        case 'Safe':
-            return posts.filter(p => p.status === 'safe');
-
-        case 'All':
-        default:
-            return posts;
-    }
-});
-
-/** Trigger Inertia controller flag toggle */
-function toggleFlag(post: Post) {
-    const target = localPosts.value.find(p => p.id === post.id);
-    if (!target) return;
-
-    target.status = target.status === 'flagged' ? 'safe' : 'flagged';
-
-    router.patch(route('post-management.toggle-status', post.id), {}, {
-        preserveScroll: true,
-        only: ['posts'],
-        onError: () => { target.status = target.status === 'flagged' ? 'safe' : 'flagged'; },
-    });
+function setFilter(filter: string) {
+    router.get(
+        route('post-management.index'),
+        filter === 'All' ? {} : { status: filter.toLowerCase() },
+        { preserveState: true, replace: true },
+    );
 }
 
+/** Inertia PATCH request to toggle post flag state */
+function toggleFlag(post: Post) {
+    router.patch(route('post-management.toggle-status', post.id), {}, {
+        preserveScroll: true,
+        only: ['posts', 'filters'],
+    });
+}
 </script>
 
 <template>
 
     <Head title="Posts" />
 
+    <!-- Admin layout wrapper container -->
     <AdminLayout title="Posts">
         <div class="space-y-5">
 
-            <FilterTabs v-model="activeFilter" :tabs="tabs" />
+            <!-- Server-driven filter tabs UI -->
+            <FilterTabs :model-value="activeFilter" :tabs="tabs" @update:model-value="setFilter" />
 
+            <!-- Responsive grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                <PostCard v-for="post in filtered" :key="post.id" :post="post" @toggle-flag="toggleFlag(post)"
-                    @view="router.get(route('posts.show', post.id))" />
 
-                <div v-if="filtered.length === 0"
+                <!-- Render post card items -->
+                <PostCard v-for="post in posts" :key="post.id" :post="post" @toggle-flag="toggleFlag(post)" />
+
+                <!-- Empty state when no posts -->
+                <div v-if="posts.length === 0"
                     class="col-span-full py-20 flex flex-col items-center gap-3 text-text-muted">
                     <i class="fas fa-file-alt text-4xl opacity-20"></i>
                     <p class="text-sm">No posts in this category</p>
                 </div>
             </div>
-
         </div>
     </AdminLayout>
 </template>

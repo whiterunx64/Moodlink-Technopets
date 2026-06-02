@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\PostMood;
+use App\Enums\PostStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,24 +13,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * @property int $id
  * @property int $student_id
- * @property string $content
- * @property string $mood
+ * @property string|null $content
+ * @property PostMood|null $mood
  * @property \Illuminate\Support\Carbon $datetime
- * @property string $status
+ * @property PostStatus $status
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  *
- * @property-read BuildStudent|null $student
+ * @property-read Student|null $student
  *
- * @method \Illuminate\Database\Eloquent\Relations\BelongsTo<\App\Models\BuildStudent, \App\Models\BuildPost> student()
+ * @method \Illuminate\Database\Eloquent\Relations\BelongsTo<\App\Models\Student, \App\Models\Post> student()
  */
-class BuildPost extends Model
+class Post extends Model
 {
-    // Database table used by this model
     protected $table = 'posts';
 
-    const UPDATED_AT = null; 
-    const CREATED_AT = null; 
+    public const UPDATED_AT = null;
+    public const CREATED_AT = null;
 
     protected $fillable = [
         'student_id',
@@ -40,21 +41,19 @@ class BuildPost extends Model
 
     protected $casts = [
         'datetime' => 'datetime',
-        'mood' => 'string',
-        'status' => 'string',
+        'mood'     => PostMood::class,
+        'status'   => PostStatus::class,
     ];
 
-    /** @param Builder<BuildPost> $query */
+    /** @param Builder<Post> $query */
     public function scopeFromVerifiedStudents(Builder $query): Builder
     {
-        return $query->whereHas('student', fn(Builder $q) => $q->where('status', 'verified'));
+        return $query->whereHas('student', fn(Builder $q) => $q->verified());
     }
 
-    /**
-     * @return BelongsTo<BuildStudent, BuildPost>
-     */
+    /** @return BelongsTo<Student, Post> */
     public function student(): BelongsTo
     {
-        return $this->belongsTo(BuildStudent::class, 'student_id');
+        return $this->belongsTo(Student::class, 'student_id');
     }
 }

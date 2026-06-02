@@ -2,25 +2,24 @@
 
 namespace App\Models;
 
+use App\Models\Post;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @extends Model
+ * Represents a Student in the system.
  *
  * @property int $id
  * @property string $section
  * @property string $anonymous_name
  * @property string $status
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
  *
- * @property-read \Illuminate\Database\Eloquent\Collection<int, BuildPost> $posts
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Post> $posts
  *
- * @method \Illuminate\Database\Eloquent\Relations\HasMany<\App\Models\BuildPost, \App\Models\BuildStudent> posts()
+ * @method static Builder|Student verified()
  */
-class BuildStudent extends Model
+class Student extends Model
 {
     // Database table used by this model
     protected $table = 'students';
@@ -35,17 +34,16 @@ class BuildStudent extends Model
         'status' => 'string',
     ];
 
-    /** @param Builder<BuildStudent> $query */
     public function scopeVerified(Builder $query): Builder
     {
         return $query->where('status', 'verified');
     }
 
     /**
-     * @return HasMany<BuildPost, BuildStudent>
+     * @return HasMany<Post>
      */
     public function posts(): HasMany
     {
-        return $this->hasMany(BuildPost::class, 'student_id');
+        return $this->hasMany(Post::class, 'student_id');
     }
 }
