@@ -1,21 +1,16 @@
 <script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { Head } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import StatCard from '@/Components/Dashboard/StatCard.vue';
 import MoodEntry from '@/Components/Dashboard/MoodEntry.vue';
 import MoodTrends from '@/Components/Dashboard/MoodTrends.vue';
+import { getTodayLocalDate } from '@/utils/date';
+import { supabase } from '@/utils/supabase';
+import { useRealtime } from '@/composables/useRealtime';
 
 type Mood = 'happy' | 'sad' | 'anxious' | 'neutral';
 type AppointmentType = 'Urgent' | 'Consultation';
-
-interface StatCardData {
-  title: string;
-  value: number | string;
-  icon: string;
-  color: 'orange' | 'green' | 'red' | 'blue';
-  change: string | null;
-  changeUp: boolean;
-}
 
 interface MoodEntryData {
   name: string;
@@ -32,12 +27,24 @@ interface AppointmentData {
   type: AppointmentType;
 }
 
-const statCards: StatCardData[] = [
-  { title: 'Mood Logs Today', value: 24, icon: 'fas fa-heartbeat', color: 'blue', change: '8', changeUp: true },
-  { title: 'Active Students', value: 3, icon: 'fas fa-user-graduate', color: 'green', change: '1', changeUp: true },
-  { title: 'Flagged Posts', value: 2, icon: 'fas fa-exclamation-triangle', color: 'red', change: '3', changeUp: false },
-  { title: 'Escalation Requests', value: 1, icon: 'fas fa-clock', color: 'orange', change: null, changeUp: false },
-];
+// Dashboard stat cards bound to realtime-updated values
+const STAT_CARDS = [
+  { key: 'moodLogsToday', title: 'Mood Logs Today', icon: 'fas fa-heartbeat', color: 'blue' as const, changeUp: true },
+  { key: 'activeStudents', title: 'Active Students', icon: 'fas fa-user-graduate', color: 'green' as const, changeUp: true },
+  { key: 'flaggedPosts', title: 'Flagged Posts', icon: 'fas fa-exclamation-triangle', color: 'red' as const, changeUp: false },
+  { key: 'escalationRequests', title: 'Escalation Requests', icon: 'fas fa-clock', color: 'orange' as const, changeUp: false },
+] as const;
+
+type StatKey = typeof STAT_CARDS[number]['key'];
+
+// Initialize StatCard counters to zero by default
+const statValues = ref<Record<StatKey, number>>(
+  Object.fromEntries(STAT_CARDS.map(c => [c.key, 0])) as Record<StatKey, number>
+);
+
+const statCards = computed(() =>
+  STAT_CARDS.map(card => ({ ...card, value: statValues.value[card.key], change: null }))
+);
 
 const moodEntries: MoodEntryData[] = [
   { name: 'Anonymous Tabayoyon', time: '12:00 PM', mood: 'happy', flagged: false, message: 'Group study session was productive today. Feeling more confident about the upcoming exam.' },
@@ -51,6 +58,35 @@ const appointments: AppointmentData[] = [
   { name: 'Anonymous Coral', time: '3:30 PM', date: 'Today', type: 'Consultation' },
   { name: 'Anonymous Pine', time: '9:00 AM', date: 'Tomorrow', type: 'Consultation' },
 ];
+
+const { subscribe, unsubscribeAll } = useRealtime();
+
+async function fetchCounts() {
+  const today = getTodayLocalDate();
+  const [moodLogs, activeStudents, flaggedPosts, escalations] = await Promise.all([
+    supabase.from('posts').select('*', { count: 'exact', head: true }).gte('created_at', today),
+    supabase.from('students').select('*', { count: 'exact', head: true }).eq('status', 'verified'),
+    supabase.from('posts').select('*', { count: 'exact', head: true }).eq('isReported', true),
+    supabase.from('appointments').select('*', { count: 'exact', head: true }).eq('status', 'Pending'),
+  ]);
+
+  statValues.value = {
+    moodLogsToday: moodLogs.count ?? 0,
+    activeStudents: activeStudents.count ?? 0,
+    flaggedPosts: flaggedPosts.count ?? 0,
+    escalationRequests: escalations.count ?? 0,
+  };
+}
+
+onMounted(async () => {
+  await fetchCounts();
+
+  subscribe('posts', fetchCounts);
+  subscribe('students', fetchCounts);
+  subscribe('appointments', fetchCounts);
+});
+
+onUnmounted(() => unsubscribeAll());
 </script>
 
 <template>
@@ -62,7 +98,7 @@ const appointments: AppointmentData[] = [
 
       <!-- Stat Cards -->
       <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard v-for="(card, i) in statCards" :key="i" :title="card.title" :value="card.value" :icon="card.icon"
+        <StatCard v-for="card in statCards" :key="card.key" :title="card.title" :value="card.value" :icon="card.icon"
           :color="card.color" :change="card.change" :change-up="card.changeUp" />
       </div>
 
