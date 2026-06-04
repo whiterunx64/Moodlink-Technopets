@@ -1,8 +1,7 @@
 @import 'tailwindcss';
 
 @theme inline {
-    /*  Login Panel */
-
+    /* Login Panel */
     --color-auth-bg: #749650;
     --color-auth-deco-heart: #8aa57a;
     --color-auth-deco-bubble: #a3b895;

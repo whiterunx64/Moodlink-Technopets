@@ -22,7 +22,6 @@ export interface FormErrors {
     password?: string;
     [key: string]: string | undefined;
 }
-
 export interface PostFilters {
     status:  string | null;
     section: string | null;
@@ -38,4 +37,27 @@ export interface Post {
     mood: string;
     status: 'flagged' | 'safe';
     content: string | null;
+}
+
+export interface AdminProfile {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    role: string;
+    department: string;
+}
+
+export interface PasswordForm {
+    current: string;
+    newPass: string;
+    confirm: string;
+}
+
+export interface NotificationPreferences {
+    newFlags: boolean;
+    appointments: boolean;
+    escalations: boolean;
+    weeklyReports: boolean;
+    systemUpdates: boolean;
 }

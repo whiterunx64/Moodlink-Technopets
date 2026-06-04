@@ -27,7 +27,7 @@ const nav_items: NavItem[] = [
   { label: 'Post Management', icon: DocumentTextIcon, href: route('post-management.index') },
   //{ label: 'Summary Reports', icon: ChartBarIcon,     href: route('summary.index') },
   //{ label: 'Appointments',    icon: CalendarDaysIcon, href: route('appointments.index') },
-  //{ label: 'Account',         icon: UserCircleIcon,   href: route('profile.edit') },
+  { label: 'Account',         icon: UserCircleIcon,   href: route('profile.edit') },
 ];
 </script>
 
