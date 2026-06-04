@@ -7,7 +7,6 @@ namespace App\Models;
 use App\Contracts\SupabaseAuthenticatable;
 use App\Traits\HasSupabaseAuth;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -23,7 +22,7 @@ class User extends Authenticatable implements SupabaseAuthenticatable
     public $timestamps = false;
     protected $guarded = ['*'];
 
-    // Hide all token/password columns from serialization.
+    // Hide all token/password/internal columns from serialization.
     protected $hidden = [
         'encrypted_password',
         'confirmation_token',
@@ -39,6 +38,7 @@ class User extends Authenticatable implements SupabaseAuthenticatable
         'reauthentication_sent_at',
         'instance_id',
         'is_super_admin',
+        'aud',
     ];
 
     protected function casts(): array
@@ -49,6 +49,7 @@ class User extends Authenticatable implements SupabaseAuthenticatable
             'raw_app_meta_data' => 'array',
 
             // Datetime columns matching auth.users schema
+            'invited_at' => 'datetime',
             'email_confirmed_at' => 'datetime',
             'confirmation_sent_at' => 'datetime',
             'recovery_sent_at' => 'datetime',
@@ -86,12 +87,6 @@ class User extends Authenticatable implements SupabaseAuthenticatable
         }
     }
 
-    // students.id = auth.users.id (same UUID — standard Supabase 1-to-1 pattern).
-    public function student(): HasOne
-    {
-        return $this->hasOne(Student::class, 'id', 'id');
-    }
-
     /* ---- SupabaseAuthenticatable ---- */
 
     #[\Override]
@@ -114,14 +109,54 @@ class User extends Authenticatable implements SupabaseAuthenticatable
         return $this->supabaseAccessToken;
     }
 
+    // Fall back to Eloquent attributes when supabaseData is not hydrated from the API.
+    public function getSupabaseUserMetadata(): array
+    {
+        return $this->supabaseData['user_metadata'] ?? $this->raw_user_meta_data ?? [];
+    }
+
+    public function getSupabaseAppMetadata(): array
+    {
+        return $this->supabaseData['app_metadata'] ?? $this->raw_app_meta_data ?? [];
+    }
+
+    public function isEmailConfirmed(): bool
+    {
+        return !empty($this->supabaseData['email_confirmed_at']) || !empty($this->email_confirmed_at);
+    }
+
+    public function isPhoneConfirmed(): bool
+    {
+        return !empty($this->supabaseData['phone_confirmed_at']) || !empty($this->phone_confirmed_at);
+    }
+
+    public function getLastSignInAt(): ?Carbon
+    {
+        if (isset($this->supabaseData['last_sign_in_at'])) {
+            return Carbon::parse($this->supabaseData['last_sign_in_at']);
+        }
+        return $this->last_sign_in_at instanceof Carbon ? $this->last_sign_in_at : null;
+    }
+
+    public function isBanned(): bool
+    {
+        if (isset($this->supabaseData['app_metadata']['banned'])) {
+            return (bool) $this->supabaseData['app_metadata']['banned'];
+        }
+        $until = $this->getBannedUntilAttribute($this->attributes['banned_until'] ?? null);
+        return $until !== null && $until->isFuture();
+    }
+
     public function getMetadata(): array
     {
         return $this->getSupabaseUserMetadata();
     }
+
     public function getAppMetadata(): array
     {
         return $this->getSupabaseAppMetadata();
     }
+
     public function isEmailVerified(): bool
     {
         return $this->isEmailConfirmed();
@@ -132,7 +167,7 @@ class User extends Authenticatable implements SupabaseAuthenticatable
     {
         return null;
     }
-    public function setRememberToken($value): void
+    public function setRememberToken($_value): void
     {
     }
     public function getRememberTokenName(): null

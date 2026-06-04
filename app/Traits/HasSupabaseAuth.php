@@ -6,7 +6,7 @@ namespace App\Traits;
 
 use App\Contracts\SupabaseAuthInterface;
 use Carbon\Carbon;
-
+use RuntimeException;
 trait HasSupabaseAuth
 {
     protected ?string $supabaseAccessToken = null;
@@ -20,7 +20,7 @@ trait HasSupabaseAuth
     public function updateSupabaseProfile(array $data): array
     {
         if ($this->supabaseAccessToken === null) {
-            throw new \RuntimeException('No access token available for Supabase API calls.');
+            throw new RuntimeException('No access token available for Supabase API calls.');
         }
 
         $response = $this->getSupabaseAuth()->updateUser($this->supabaseAccessToken, $data);
@@ -36,7 +36,7 @@ trait HasSupabaseAuth
     public function changeSupabasePassword(string $newPassword): array
     {
         if ($this->supabaseAccessToken === null) {
-            throw new \RuntimeException('No access token available for Supabase API calls.');
+            throw new RuntimeException('No access token available for Supabase API calls.');
         }
 
         return $this->getSupabaseAuth()->updatePassword($this->supabaseAccessToken, $newPassword);

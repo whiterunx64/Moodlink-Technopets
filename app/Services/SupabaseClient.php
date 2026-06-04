@@ -10,9 +10,9 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use Symfony\Component\HttpFoundation\Response;
 use Psr\Log\LoggerInterface;
+use DateTimeImmutable;
 use Exception;
 use RuntimeException;
-
 use function sprintf;
 use function in_array;
 class SupabaseClient
@@ -262,13 +262,14 @@ class SupabaseClient
             return [
                 'status' => 'healthy',
                 'response_time_ms' => round($this->elapsedMs($startTime), 2),
-                'timestamp' => (new \DateTimeImmutable())->format(DATE_ATOM),
+                'timestamp' => (new DateTimeImmutable())->format(DATE_ATOM),
             ];
         } catch (Exception $e) {
+            $this->logger->error('Supabase health check failed', ['error' => $e->getMessage()]);
+
             return [
                 'status' => 'unhealthy',
-                'error' => $e->getMessage(),
-                'timestamp' => (new \DateTimeImmutable())->format(DATE_ATOM),
+                'timestamp' => (new DateTimeImmutable())->format(DATE_ATOM),
             ];
         }
     }
