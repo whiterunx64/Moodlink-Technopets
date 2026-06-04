@@ -33,9 +33,12 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
+
+    Route::post('login/json', [AuthenticatedSessionController::class, 'login'])
+        ->name('login.json');
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['supabase.auth', 'supabase.token'])->group(function () {
     Route::get('verify-email', EmailVerificationPromptController::class)
         ->name('verification.notice');
 
@@ -56,4 +59,10 @@ Route::middleware('auth')->group(function () {
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
+
+    Route::get('auth/user', [AuthenticatedSessionController::class, 'user'])
+        ->name('auth.user');
+
+    Route::post('auth/refresh', [AuthenticatedSessionController::class, 'refresh'])
+        ->name('auth.refresh');
 });

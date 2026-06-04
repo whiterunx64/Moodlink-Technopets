@@ -1,7 +1,5 @@
 <?php
 
-use App\Models\User;
-
 return [
 
     /*
@@ -39,7 +37,7 @@ return [
 
     'guards' => [
         'web' => [
-            'driver' => 'session',
+            'driver' => 'supabase',
             'provider' => 'users',
         ],
     ],
@@ -63,8 +61,8 @@ return [
 
     'providers' => [
         'users' => [
-            'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', User::class),
+            'driver' => 'supabase',
+            'model'  => env('SUPABASE_USER_MODEL', App\Models\User::class),
         ],
 
         // 'users' => [
