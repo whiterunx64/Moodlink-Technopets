@@ -13,8 +13,29 @@ export type PageProps<
     };
 };
 
+export type Mood = 'Drianed' | 'Stressed' | 'Content' | 'Excited';
+export type PostStatus = 'flagged' | 'safe';
+export type PostFilter = 'All' | 'Flagged' | 'Safe';
+
 export interface FormErrors {
     email?: string;
     password?: string;
     [key: string]: string | undefined;
+}
+
+export interface PostFilters {
+    status:  string | null;
+    section: string | null;
+    mood:    string | null;
+}
+
+export interface Post {
+    id: number;
+    anonymous_name: string | null;
+    section: string;
+    time: string;
+    date: string;
+    mood: string;
+    status: 'flagged' | 'safe';
+    content: string | null;
 }

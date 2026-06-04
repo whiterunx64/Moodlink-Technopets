@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PostManagementController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -14,14 +16,16 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['supabase.auth', 'supabase.token'])->name('dashboard');
-
 Route::middleware(['supabase.auth', 'supabase.token'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])
+        ->name('dashboard');
+    Route::get('/post-management', [PostManagementController::class, 'index'])
+        ->name('post-management.index');
+    Route::patch('/post-management/{post}/toggle-status', [PostManagementController::class, 'toggleFlag'])
+        ->name('post-management.toggle-status');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
