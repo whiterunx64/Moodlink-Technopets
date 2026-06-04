@@ -17,7 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        //
+        $middleware->alias([
+            'supabase.auth'  => \App\Http\Middleware\AuthenticateSupabase::class,
+            'supabase.token' => \App\Http\Middleware\EnsureTokenIsValid::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

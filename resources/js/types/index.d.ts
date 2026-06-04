@@ -12,3 +12,9 @@ export type PageProps<
         user: User;
     };
 };
+
+export interface FormErrors {
+    email?: string;
+    password?: string;
+    [key: string]: string | undefined;
+}

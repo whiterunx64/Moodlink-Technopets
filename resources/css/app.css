@@ -1,3 +1,20 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+@theme inline {
+    /* ... existing tokens ... */
+
+    --color-auth-bg: #749650;
+    --color-auth-deco-heart: #8aa57a;
+    --color-auth-deco-bubble: #a3b895;
+    --color-ml-card: #ffffff;
+    --color-auth-input-bg: #e9ebe5;
+    --color-auth-input-border: #d1d5db;
+    --color-auth-input-text: #262626;
+    --color-auth-placeholder: #a3a79b;
+    --color-auth-ring: rgba(108, 145, 64, 0.25);
+    --color-ml-btn: #6c9140;
+    --color-ml-btn-hover: #587836;
+    --color-auth-title: #ffffff;
+    --color-login-error-text: #dc2626;
+    --color-border-light: #e3e3e3;
+}

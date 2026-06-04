@@ -29,10 +29,19 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user ? [
+                    'id'                 => $user->id,
+                    'email'              => $user->email,
+                    'email_verified_at'  => $user->email_confirmed_at,
+                    'created_at'         => $user->created_at,
+                    // TEST JWT TOKEN ALGO
+                    // 'access_token' => $user->getAccessToken(),
+                ] : null,
             ],
         ];
     }
