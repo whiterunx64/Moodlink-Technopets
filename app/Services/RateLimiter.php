@@ -9,6 +9,7 @@ use App\Exceptions\AuthenticationException;
 use Illuminate\Support\Facades\Cache;
 use Override;
 
+use function is_int;
 use function max;
 
 /**
@@ -31,6 +32,7 @@ final class RateLimiter implements RateLimiterInterface
     #[Override]
     public function attempt(string $key, int $maxAttempts, int $decayMinutes = 1): bool
     {
+
         if (!config('supabase-auth.rate_limiting.enabled')) {
             return true;
         }
@@ -59,9 +61,9 @@ final class RateLimiter implements RateLimiterInterface
     #[Override]
     public function availableIn(string $key): int
     {
-        $start = Cache::get($this->timeKey($key));
+        $expiry = Cache::get($this->timeKey($key));
 
-        return $start !== null ? max(0, $start + 60 - time()) : 0;
+        return $expiry !== null ? max(0, $expiry - time()) : 0;
     }
 
     /**
@@ -93,7 +95,7 @@ final class RateLimiter implements RateLimiterInterface
         $count = $this->attempts($key);
 
         if ($count === 0) {
-            Cache::put($this->timeKey($key), time(), $ttl);
+            Cache::put($this->timeKey($key), time() + $ttl, $ttl);
         }
 
         $count++;
@@ -108,7 +110,8 @@ final class RateLimiter implements RateLimiterInterface
     #[Override]
     public function attempts(string $key): int
     {
-        return (int) Cache::get($this->countKey($key), 0);
+        $count = Cache::get($this->countKey($key), 0);
+        return is_int($count) ? $count : 0;
     }
 
     /**

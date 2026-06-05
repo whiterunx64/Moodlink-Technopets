@@ -44,8 +44,8 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         if (! Auth::guard('web')->attempt($this->only('email', 'password'), $this->boolean('remember'))) {
-            RateLimiter::hit($this->throttleKey(), config('supabase-auth.rate_limiting.login.decay_minutes'));
-            throw ValidationException::withMessages(['email' => trans('auth.failed')]);
+            RateLimiter::hit($this->throttleKey(), config('supabase-auth.rate_limiting.login.decay_minutes') * 60);
+            throw ValidationException::withMessages(['auth_error' => trans('auth.failed')]);
         }
 
         RateLimiter::clear($this->throttleKey());
@@ -72,7 +72,7 @@ class LoginRequest extends FormRequest
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
         throw ValidationException::withMessages([
-            'email' => trans('auth.throttle', ['seconds' => $seconds, 'minutes' => ceil($seconds / 60)]),
+            'auth_error' => trans('auth.throttle', ['seconds' => $seconds, 'minutes' => ceil($seconds / 60)]),
         ]);
     }
 

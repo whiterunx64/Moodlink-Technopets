@@ -43,6 +43,9 @@ class HandleInertiaRequests extends Middleware
                     // 'access_token' => $user->getAccessToken(),
                 ] : null,
             ],
+            'flash' => [
+                'error' => session('flash_error'),
+            ],
         ];
     }
 }

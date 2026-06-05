@@ -10,11 +10,13 @@ use Exception;
 use Firebase\JWT\JWK;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use RuntimeException;
 use Override;
 use Psr\Log\LoggerInterface;
 
 use function count;
 use function explode;
+use function is_int;
 use function strlen;
 
 /**
@@ -294,7 +296,11 @@ final class SupabaseAuth implements SupabaseAuthInterface
             }
 
             $algorithm = JwtAlgorithm::fromConfig();
-            JWT::$leeway = (int) config('supabase-auth.jwt.leeway');
+            $leeway = config('supabase-auth.jwt.leeway');
+            if (!is_int($leeway) || $leeway < 0) {
+                throw new RuntimeException('supabase-auth jwt.leeway config must be a non-negative integer.');
+            }
+            JWT::$leeway = $leeway;
 
             $decoded = $algorithm->isAsymmetric()
                 ? JWT::decode($token, $this->fetchPublicKeys())
@@ -378,11 +384,15 @@ final class SupabaseAuth implements SupabaseAuthInterface
     private function fetchPublicKeys(): array
     {
         $cacheKey = hash('sha256', '__supabase_jwks__');
-        $raw = $this->cache->getCachedJwtValidation($cacheKey);
+        $raw = $this->cache->getCachedJwks($cacheKey);
 
         if ($raw === null) {
             $raw = $this->client->request('GET', '/auth/v1/.well-known/jwks.json');
-            $this->cache->cacheJwtValidation($cacheKey, $raw, (int) config('supabase-auth.jwt.ttl'));
+            $ttl = config('supabase-auth.jwt.ttl');
+            if (!is_int($ttl) || $ttl <= 0) {
+                throw new RuntimeException('supabase-auth jwt.ttl config must be a positive integer.');
+            }
+            $this->cache->cacheJwks($cacheKey, $raw, $ttl);
         }
 
         return JWK::parseKeySet($raw);

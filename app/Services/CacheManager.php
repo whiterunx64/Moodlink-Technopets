@@ -6,21 +6,15 @@ namespace App\Services;
 
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
-use function base64_decode;
-use function base64_encode;
 use function config;
-use function gzcompress;
-use function gzuncompress;
-use function is_array;
-use function serialize;
-use function unserialize;
+use function is_int;
 
 final class CacheManager
 {
   private readonly string $prefix;
-  private readonly bool $compressionEnabled;
 
   public function __construct(
     private readonly CacheRepository $cache,
@@ -28,7 +22,6 @@ final class CacheManager
     private readonly array $config = [],
   ) {
     $this->prefix = $config['prefix'];
-    $this->compressionEnabled = (bool) $config['compression'];
   }
 
   /**
@@ -36,17 +29,7 @@ final class CacheManager
    */
   public function cacheUserData(string $userId, array $userData, ?int $ttl = null): void
   {
-    if (!$this->isEnabled()) {
-      return;
-    }
-
-    try {
-      $key = "{$this->prefix}:user:{$userId}";
-      $this->cache->put($key, $this->pack($userData), $ttl ?? $this->ttl('user_data'));
-      $this->log('User data cached', $key);
-    } catch (Throwable $e) {
-      $this->logger->warning('Cache write failed (cacheUserData)', ['error' => $e->getMessage()]);
-    }
+    $this->remember($this->userKey($userId), $userData, $ttl ?? $this->ttl('user_data'));
   }
 
   /**
@@ -54,25 +37,7 @@ final class CacheManager
    */
   public function getCachedUserData(string $userId): ?array
   {
-    if (!$this->isEnabled()) {
-      return null;
-    }
-
-    try {
-      $key = "{$this->prefix}:user:{$userId}";
-      $data = $this->cache->get($key);
-
-      if ($data === null) {
-        $this->log('User data cache miss', $key);
-        return null;
-      }
-
-      $this->log('User data cache hit', $key);
-      return $this->unpack($data);
-    } catch (Throwable $e) {
-      $this->logger->warning('Cache read failed (getCachedUserData)', ['error' => $e->getMessage()]);
-      return null;
-    }
+    return $this->retrieve($this->userKey($userId));
   }
 
   /**
@@ -80,17 +45,7 @@ final class CacheManager
    */
   public function cacheJwtValidation(string $tokenHash, array $result, ?int $ttl = null): void
   {
-    if (!$this->isEnabled()) {
-      return;
-    }
-
-    try {
-      $key = "{$this->prefix}:jwt:{$tokenHash}";
-      $this->cache->put($key, $this->pack($result), $ttl ?? $this->ttl('jwt_validation'));
-      $this->log('JWT validation cached', $key);
-    } catch (Throwable $e) {
-      $this->logger->warning('Cache write failed (cacheJwtValidation)', ['error' => $e->getMessage()]);
-    }
+    $this->remember($this->jwtKey($tokenHash), $result, $ttl ?? $this->ttl('jwt_validation'));
   }
 
   /**
@@ -98,25 +53,7 @@ final class CacheManager
    */
   public function getCachedJwtValidation(string $tokenHash): ?array
   {
-    if (!$this->isEnabled()) {
-      return null;
-    }
-
-    try {
-      $key = "{$this->prefix}:jwt:{$tokenHash}";
-      $data = $this->cache->get($key);
-
-      if ($data === null) {
-        $this->log('JWT validation cache miss', $key);
-        return null;
-      }
-
-      $this->log('JWT validation cache hit', $key);
-      return $this->unpack($data);
-    } catch (Throwable $e) {
-      $this->logger->warning('Cache read failed (getCachedJwtValidation)', ['error' => $e->getMessage()]);
-      return null;
-    }
+    return $this->retrieve($this->jwtKey($tokenHash));
   }
 
   /**
@@ -129,10 +66,64 @@ final class CacheManager
     }
 
     try {
-      $this->cache->forget("{$this->prefix}:user:{$userId}");
+      $this->cache->forget($this->userKey($userId));
       $this->log('User cache invalidated', $userId);
     } catch (Throwable $e) {
       $this->logger->warning('Cache invalidation failed', ['error' => $e->getMessage()]);
+    }
+  }
+
+  /**
+   * Cache the JWKS public key set.
+   */
+  public function cacheJwks(string $cacheKey, array $keys, int $ttl): void
+  {
+    $this->remember($this->jwksKey($cacheKey), $keys, $ttl);
+  }
+
+  /**
+   * Get the cached JWKS public key set.
+   */
+  public function getCachedJwks(string $cacheKey): ?array
+  {
+    return $this->retrieve($this->jwksKey($cacheKey));
+  }
+
+  /**
+   * Write an array to the cache under the given key.
+   */
+  private function remember(string $key, array $data, int $ttl): void
+  {
+    if (!$this->isEnabled()) {
+      return;
+    }
+
+    try {
+      $this->cache->put($key, $data, $ttl);
+      $this->log('Cached', $key);
+    } catch (Throwable $e) {
+      $this->logger->warning('Cache write failed', ['key' => $key, 'error' => $e->getMessage()]);
+    }
+  }
+
+  /**
+   * Read an array from the cache, or null on miss.
+   */
+  private function retrieve(string $key): ?array
+  {
+    if (!$this->isEnabled()) {
+      return null;
+    }
+
+    try {
+      $data = $this->cache->get($key);
+      $this->log($data === null ? 'Cache miss' : 'Cache hit', $key);
+
+      return $data === null ? null : (array) $data;
+    } catch (Throwable $e) {
+      $this->logger->warning('Cache read failed', ['key' => $key, 'error' => $e->getMessage()]);
+
+      return null;
     }
   }
 
@@ -141,7 +132,7 @@ final class CacheManager
    */
   private function isEnabled(): bool
   {
-    return (bool) $this->config['enabled'];
+    return $this->config['enabled'] === true;
   }
 
   /**
@@ -149,31 +140,28 @@ final class CacheManager
    */
   private function ttl(string $type): int
   {
-    return (int) $this->config['ttl'][$type];
-  }
+    $value = $this->config['ttl'][$type] ?? null;
 
-  /**
-   * Pack data for cache storage.
-   */
-  private function pack(array $data): mixed
-  {
-    if (!$this->compressionEnabled) {
-      return $data;
+    if (!is_int($value) || $value <= 0) {
+      throw new RuntimeException("Invalid cache TTL for type '{$type}'.");
     }
 
-    return ['compressed' => true, 'data' => base64_encode(gzcompress(serialize($data)))];
+    return $value;
   }
 
-  /**
-   * Unpack cached data.
-   */
-  private function unpack(mixed $data): array
+  private function userKey(string $userId): string
   {
-    if (!is_array($data) || !($data['compressed'] ?? false)) {
-      return (array) $data;
-    }
+    return "{$this->prefix}:user:{$userId}";
+  }
 
-    return unserialize(gzuncompress(base64_decode($data['data'])));
+  private function jwtKey(string $hash): string
+  {
+    return "{$this->prefix}:jwt:{$hash}";
+  }
+
+  private function jwksKey(string $hash): string
+  {
+    return "{$this->prefix}:jwks:{$hash}";
   }
 
   /**

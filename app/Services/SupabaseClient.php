@@ -116,6 +116,11 @@ class SupabaseClient
             try {
                 $body = $this->httpClient->request($method, $endpoint, $options)->getBody()->getContents();
 
+                if ($body === '') {
+                    $this->logRequest($method, $endpoint, $requestId, $this->elapsedMs($startTime), true);
+                    return [];
+                }
+
                 if (!json_validate($body)) {
                     throw new RuntimeException('Invalid JSON response from Supabase API');
                 }

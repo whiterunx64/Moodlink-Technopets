@@ -28,9 +28,9 @@ return [
   'jwt' => [
     'secret' => env('SUPABASE_JWT_SECRET'),
     'algorithm' => env('SUPABASE_JWT_ALGORITHM', 'HS256'),
-    'leeway' => env('SUPABASE_JWT_LEEWAY', 60), // seconds
-    'ttl' => env('SUPABASE_JWT_TTL', 3600), // seconds
-    'refresh_ttl' => env('SUPABASE_JWT_REFRESH_TTL', 604800), // 7 days
+    'leeway' => filter_var(env('SUPABASE_JWT_LEEWAY', 60), FILTER_VALIDATE_INT), // seconds
+    'ttl' => filter_var(env('SUPABASE_JWT_TTL', 3600), FILTER_VALIDATE_INT), // seconds
+    'refresh_ttl' => filter_var(env('SUPABASE_JWT_REFRESH_TTL', 604800), FILTER_VALIDATE_INT), // 7 days
   ],
 
   /*
@@ -46,9 +46,9 @@ return [
     'redirect_url' => env('SUPABASE_AUTH_REDIRECT_URL', config('app.url') . '/auth/callback'),
     'provider_redirect' => env('SUPABASE_AUTH_PROVIDER_REDIRECT', '/dashboard'),
     'logout_redirect' => env('SUPABASE_AUTH_LOGOUT_REDIRECT', '/'),
-    'session_timeout' => env('SUPABASE_AUTH_SESSION_TIMEOUT', 3600), // seconds
+    'session_timeout' => filter_var(env('SUPABASE_AUTH_SESSION_TIMEOUT', 3600), FILTER_VALIDATE_INT), // seconds
     'auto_refresh' => env('SUPABASE_AUTH_AUTO_REFRESH', true),
-    'remember_duration' => env('SUPABASE_AUTH_REMEMBER_DURATION', 2419200), // 28 days
+    'remember_duration' => filter_var(env('SUPABASE_AUTH_REMEMBER_DURATION', 2419200), FILTER_VALIDATE_INT), // 28 days
   ],
 
   /*
@@ -62,7 +62,7 @@ return [
 
   'security' => [
     'password_policy' => [
-      'min_length' => env('SUPABASE_PASSWORD_MIN_LENGTH', 8),
+      'min_length' => filter_var(env('SUPABASE_PASSWORD_MIN_LENGTH', 8), FILTER_VALIDATE_INT),
       'require_uppercase' => env('SUPABASE_PASSWORD_REQUIRE_UPPERCASE', false),
       'require_lowercase' => env('SUPABASE_PASSWORD_REQUIRE_LOWERCASE', false),
       'require_numbers' => env('SUPABASE_PASSWORD_REQUIRE_NUMBERS', false),
@@ -70,7 +70,7 @@ return [
     ],
     'encryption' => [
       'algorithm' => env('SUPABASE_ENCRYPTION_ALGORITHM', 'AES-256-GCM'),
-      'key_rotation_days' => env('SUPABASE_KEY_ROTATION_DAYS', 90),
+      'key_rotation_days' => filter_var(env('SUPABASE_KEY_ROTATION_DAYS', 90), FILTER_VALIDATE_INT),
     ],
     'csrf_protection' => env('SUPABASE_CSRF_PROTECTION', true),
     'secure_cookies' => env('SUPABASE_SECURE_COOKIES', true),
@@ -89,16 +89,16 @@ return [
   'rate_limiting' => [
     'enabled' => env('SUPABASE_RATE_LIMITING_ENABLED', true),
     'login' => [
-      'max_attempts' => env('SUPABASE_LOGIN_MAX_ATTEMPTS', 5),
-      'decay_minutes' => env('SUPABASE_LOGIN_DECAY_MINUTES', 15),
+      'max_attempts' => filter_var(env('SUPABASE_LOGIN_MAX_ATTEMPTS', 5), FILTER_VALIDATE_INT),
+      'decay_minutes' => filter_var(env('SUPABASE_LOGIN_DECAY_MINUTES', 15), FILTER_VALIDATE_INT),
     ],
     'register' => [
-      'max_attempts' => env('SUPABASE_REGISTER_MAX_ATTEMPTS', 3),
-      'decay_minutes' => env('SUPABASE_REGISTER_DECAY_MINUTES', 60),
+      'max_attempts' => filter_var(env('SUPABASE_REGISTER_MAX_ATTEMPTS', 3), FILTER_VALIDATE_INT),
+      'decay_minutes' => filter_var(env('SUPABASE_REGISTER_DECAY_MINUTES', 60), FILTER_VALIDATE_INT),
     ],
     'password_reset' => [
-      'max_attempts' => env('SUPABASE_PASSWORD_RESET_MAX_ATTEMPTS', 3),
-      'decay_minutes' => env('SUPABASE_PASSWORD_RESET_DECAY_MINUTES', 30),
+      'max_attempts' => filter_var(env('SUPABASE_PASSWORD_RESET_MAX_ATTEMPTS', 3), FILTER_VALIDATE_INT),
+      'decay_minutes' => filter_var(env('SUPABASE_PASSWORD_RESET_DECAY_MINUTES', 30), FILTER_VALIDATE_INT),
     ],
   ],
 
@@ -113,8 +113,8 @@ return [
 
   'circuit_breaker' => [
     'enabled' => env('SUPABASE_CIRCUIT_BREAKER_ENABLED', true),
-    'failure_threshold' => env('SUPABASE_CB_FAILURE_THRESHOLD', 5),
-    'recovery_timeout' => env('SUPABASE_CB_RECOVERY_TIMEOUT', 60), // seconds
+    'failure_threshold' => filter_var(env('SUPABASE_CB_FAILURE_THRESHOLD', 5), FILTER_VALIDATE_INT),
+    'recovery_timeout' => filter_var(env('SUPABASE_CB_RECOVERY_TIMEOUT', 60), FILTER_VALIDATE_INT), // seconds
     'expected_exception_types' => [
       \GuzzleHttp\Exception\ConnectException::class,
       \GuzzleHttp\Exception\RequestException::class,
@@ -134,11 +134,10 @@ return [
     'enabled' => env('SUPABASE_CACHE_ENABLED', true),
     'store' => env('SUPABASE_CACHE_STORE', 'redis'),
     'ttl' => [
-      'user_data' => env('SUPABASE_CACHE_USER_TTL', 300), // 5 minutes
-      'jwt_validation' => env('SUPABASE_CACHE_JWT_TTL', 60), // 1 minute
+      'user_data' => filter_var(env('SUPABASE_CACHE_USER_TTL', 300), FILTER_VALIDATE_INT), // 5 minutes
+      'jwt_validation' => filter_var(env('SUPABASE_CACHE_JWT_TTL', 60), FILTER_VALIDATE_INT), // 1 minute
     ],
     'prefix' => env('SUPABASE_CACHE_PREFIX', 'supabase_auth'),
-    'compression' => env('SUPABASE_CACHE_COMPRESSION', true),
   ],
 
   /*
@@ -151,13 +150,13 @@ return [
   */
 
   'client' => [
-    'timeout' => env('SUPABASE_HTTP_TIMEOUT', 10.0), // seconds
-    'connect_timeout' => env('SUPABASE_HTTP_CONNECT_TIMEOUT', 5.0), // seconds
-    'retry_attempts' => env('SUPABASE_HTTP_RETRY_ATTEMPTS', 3),
-    'retry_delay' => env('SUPABASE_HTTP_RETRY_DELAY', 1000), // milliseconds
+    'timeout' => filter_var(env('SUPABASE_HTTP_TIMEOUT', 10.0), FILTER_VALIDATE_FLOAT), // seconds
+    'connect_timeout' => filter_var(env('SUPABASE_HTTP_CONNECT_TIMEOUT', 5.0), FILTER_VALIDATE_FLOAT), // seconds
+    'retry_attempts' => filter_var(env('SUPABASE_HTTP_RETRY_ATTEMPTS', 3), FILTER_VALIDATE_INT),
+    'retry_delay' => filter_var(env('SUPABASE_HTTP_RETRY_DELAY', 1000), FILTER_VALIDATE_INT), // milliseconds
     'verify_ssl' => env('SUPABASE_HTTP_VERIFY_SSL', true),
     'user_agent' => env('SUPABASE_HTTP_USER_AGENT', 'Supabase-Laravel-Auth/1.0'),
-    'pool_size' => env('SUPABASE_HTTP_POOL_SIZE', 10),
+    'pool_size' => filter_var(env('SUPABASE_HTTP_POOL_SIZE', 10), FILTER_VALIDATE_INT),
   ],
 
   /*
@@ -184,7 +183,7 @@ return [
     'health_checks' => [
       'enabled' => env('SUPABASE_HEALTH_CHECKS_ENABLED', true),
       'endpoint' => env('SUPABASE_HEALTH_ENDPOINT', '/health/supabase'),
-      'interval' => env('SUPABASE_HEALTH_INTERVAL', 30), // seconds
+      'interval' => filter_var(env('SUPABASE_HEALTH_INTERVAL', 30), FILTER_VALIDATE_INT), // seconds
     ],
   ],
 
@@ -227,8 +226,8 @@ return [
 
   'password_reset' => [
     'redirect_url' => env('SUPABASE_PASSWORD_RESET_URL', config('app.url') . '/password/reset'),
-    'token_ttl' => env('SUPABASE_PASSWORD_RESET_TTL', 3600), // 1 hour
-    'throttle_minutes' => env('SUPABASE_PASSWORD_RESET_THROTTLE', 60),
+    'token_ttl' => filter_var(env('SUPABASE_PASSWORD_RESET_TTL', 3600), FILTER_VALIDATE_INT), // 1 hour
+    'throttle_minutes' => filter_var(env('SUPABASE_PASSWORD_RESET_THROTTLE', 60), FILTER_VALIDATE_INT),
   ],
 
   /*
@@ -243,7 +242,7 @@ return [
   'email_verification' => [
     'enabled' => env('SUPABASE_EMAIL_VERIFICATION_ENABLED', true),
     'redirect_url' => env('SUPABASE_EMAIL_VERIFICATION_URL', config('app.url') . '/email/verify'),
-    'token_ttl' => env('SUPABASE_EMAIL_VERIFICATION_TTL', 86400), // 24 hours
+    'token_ttl' => filter_var(env('SUPABASE_EMAIL_VERIFICATION_TTL', 86400), FILTER_VALIDATE_INT), // 24 hours
     'auto_verify' => env('SUPABASE_EMAIL_AUTO_VERIFY', false),
   ],
 

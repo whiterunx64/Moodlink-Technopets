@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DeleteAccountController;
 use App\Http\Controllers\PostManagementController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -15,6 +16,26 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
     ]);
 });
+//Route::get('/debug-session', function () {
+//    abort_unless(app()->environment('local'), 403);
+//    return session()->all();
+//});
+
+//Route::get('/debug-cache', function (\App\Services\CacheManager $cache) {
+//
+//    $userId = 'test-id';
+//
+//    $start = microtime(true);
+//
+//    $cache->cacheUserData($userId, ['name' => 'test']);
+//    $cache->getCachedUserData($userId);
+//
+//    $duration = microtime(true) - $start;
+//
+//    return [
+//        'time_seconds' => $duration,
+//    ];
+//});
 
 Route::middleware(['supabase.auth', 'supabase.token'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
@@ -25,7 +46,7 @@ Route::middleware(['supabase.auth', 'supabase.token'])->group(function () {
         ->name('post-management.toggle-status');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::delete('/profile', [DeleteAccountController::class, 'delete'])->name('profile.delete');
 });
 
 require __DIR__ . '/auth.php';

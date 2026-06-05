@@ -9,6 +9,7 @@ use App\Contracts\RateLimiterInterface;
 use App\Contracts\SupabaseAuthInterface;
 use App\Exceptions\ConfigurationException;
 use App\Guards\SupabaseGuard;
+use App\Services\SupabasePersistentStorage;
 use App\Providers\SupabaseUserProvider;
 use App\Services\CacheManager;
 use App\Services\CircuitBreaker;
@@ -62,7 +63,7 @@ class AppServiceProvider extends ServiceProvider
             $guard = new SupabaseGuard(
                 $name,
                 Auth::createUserProvider($config['provider']),
-                $app['session.store'],
+                new SupabasePersistentStorage($app['session.store']),
                 $app->make(SupabaseAuthInterface::class),
             );
 

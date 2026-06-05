@@ -161,17 +161,4 @@ class User extends Authenticatable implements SupabaseAuthenticatable
     {
         return $this->isEmailConfirmed();
     }
-
-    /* ---- auth.users has no remember_token column ---- */
-    public function getRememberToken(): null
-    {
-        return null;
-    }
-    public function setRememberToken($_value): void
-    {
-    }
-    public function getRememberTokenName(): null
-    {
-        return null;
-    }
 }

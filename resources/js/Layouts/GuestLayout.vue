@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import { Toaster } from 'vue-sonner';
 </script>
 
 <template>
     <div class="bg-auth-bg relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-12 sm:px-8">
-        <Toaster position="top-center" rich-colors />
 
         <!-- Background Effects -->
         <div class="heart-wrapper">

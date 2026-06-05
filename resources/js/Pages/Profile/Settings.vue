@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { router } from '@inertiajs/vue3';
+import { router, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ProfileCard from '@/Components/Profile/ProfileCard.vue';
 import ProfileInfoForm from '@/Components/Profile/ProfileInfoForm.vue';
 import ChangePasswordForm from '@/Components/Profile/ChangePasswordForm.vue';
 import NotificationPrefs from '@/Components/Profile/NotificationPrefs.vue';
 import DangerZone from '@/Components/Profile/DangerZone.vue';
+import DeleteAdminModal from '@/Pages/Profile/Modal/DeleteAdminModal.vue';
 import type { AdminProfile, NotificationPreferences, PasswordForm } from '@/types';
 
 const profile = ref<AdminProfile>({
@@ -40,8 +41,27 @@ function onLogout() {
     router.post(route('logout'));
 }
 
+// --- Delete account ---
+const showDeleteModal = ref(false);
+const deleteForm = useForm({ password: '' });
+
 function onDeleteAccount() {
-    // router.delete(route('profile.destroy'));
+    showDeleteModal.value = true;
+}
+
+function closeDeleteModal() {
+    showDeleteModal.value = false;
+    deleteForm.reset();
+    deleteForm.clearErrors();
+}
+
+function submitDeleteAccount(password: string) {
+    deleteForm.password = password;
+    deleteForm.delete(route('profile.delete'), {
+        preserveScroll: true,
+        onError: () => { },
+        onFinish: () => deleteForm.reset(),
+    });
 }
 </script>
 
@@ -59,5 +79,8 @@ function onDeleteAccount() {
 
             <DangerZone @logout="onLogout" @delete-account="onDeleteAccount" />
         </div>
+
+        <DeleteAdminModal :show="showDeleteModal" :processing="deleteForm.processing"
+            :password-error="deleteForm.errors.password" @close="closeDeleteModal" @submit="submitDeleteAccount" />
     </AdminLayout>
 </template>

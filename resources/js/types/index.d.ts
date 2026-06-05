@@ -11,6 +11,9 @@ export type PageProps<
     auth: {
         user: User;
     };
+    flash: {
+        error?: string;
+    };
 };
 
 export type Mood = 'Drianed' | 'Stressed' | 'Content' | 'Excited';

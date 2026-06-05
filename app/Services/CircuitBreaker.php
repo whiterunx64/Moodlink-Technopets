@@ -7,9 +7,12 @@ namespace App\Services;
 use App\Contracts\CircuitBreakerInterface;
 use App\Exceptions\CircuitBreakerException;
 use Closure;
+use RuntimeException;
 use Illuminate\Support\Facades\Cache;
 use Override;
 use Throwable;
+
+use function is_int;
 
 /**
  * Circuit breaker implementation for protecting external service calls.
@@ -22,8 +25,16 @@ final class CircuitBreaker implements CircuitBreakerInterface
 
     public function __construct()
     {
-        $this->failureThreshold = (int) config('supabase-auth.circuit_breaker.failure_threshold');
-        $this->recoveryTimeout = (int) config('supabase-auth.circuit_breaker.recovery_timeout');
+        $failureThreshold = config('supabase-auth.circuit_breaker.failure_threshold');
+        $recoveryTimeout  = config('supabase-auth.circuit_breaker.recovery_timeout');
+
+        if (!is_int($failureThreshold) || $failureThreshold <= 0 ||
+            !is_int($recoveryTimeout) || $recoveryTimeout <= 0) {
+            throw new RuntimeException('supabase-auth circuit_breaker config must have positive integer values.');
+        }
+
+        $this->failureThreshold = $failureThreshold;
+        $this->recoveryTimeout  = $recoveryTimeout;
         $this->prefix = config('supabase-auth.cache.prefix') . ':cb';
     }
 
@@ -124,7 +135,8 @@ final class CircuitBreaker implements CircuitBreakerInterface
     #[Override]
     public function getFailureCount(string $service = 'default'): int
     {
-        return (int) Cache::get($this->key($service, 'failures'), 0);
+        $count = Cache::get($this->key($service, 'failures'), 0);
+        return is_int($count) ? $count : 0;
     }
 
     /**

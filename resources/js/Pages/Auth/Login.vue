@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import Checkbox from '@/Components/Checkbox.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import { useToast } from '@/composables/useToast';
-import { useForm } from '@inertiajs/vue3';
+import { usePage, useForm } from '@inertiajs/vue3';
 import { onMounted } from 'vue';
 
 const props = defineProps<{
@@ -14,26 +13,26 @@ const props = defineProps<{
 }>();
 
 const { add } = useToast();
+const page = usePage();
 
 const form = useForm({
     email: '',
     password: '',
-    remember: false,
 });
 
 onMounted(() => {
     if (props.status) {
-        add({
-            type: 'success',
-            message: props.status,
-        });
+        add({ type: 'success', message: props.status });
     }
 });
 
 const submit = () => {
     form.post(route('login'), {
-        // clear password after request
-        onFinish: () => form.reset('password'),
+        onFinish: () => {
+            form.reset('password');
+            const error = page.props.flash?.error;
+            if (error) add({ type: 'error', message: error });
+        },
     });
 };
 
@@ -78,14 +77,6 @@ const submit = () => {
                             {{ form.errors.password }}
                         </p>
                     </div>
-
-                    <!-- remember me checkbox section -->
-                    <div class="fade-up fade-up-4 flex items-center gap-2">
-                        <Checkbox id="remember" v-model:checked="form.remember" />
-
-                        <InputLabel for="remember" value="Remember me" class="cursor-pointer" />
-                    </div>
-
                     <!-- submit button loading state -->
                     <PrimaryButton type="submit" :disabled="form.processing" class="fade-up fade-up-5 mt-2 w-full">
                         {{ form.processing ? 'Signing in…' : 'Sign In' }}

@@ -8,6 +8,8 @@ use App\Contracts\SupabaseAuthenticatable;
 use App\Contracts\SupabaseAuthInterface;
 use App\Contracts\SupabaseGuardInterface;
 use App\Contracts\SupabaseUserProviderInterface;
+use App\Models\Admin;
+use App\Services\SupabasePersistentStorage;
 use Exception;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -16,16 +18,11 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Contracts\Session\Session;
 use Illuminate\Cookie\CookieJar;
 use Illuminate\Http\Request;
 use Override;
 
-use function count;
-
 /**
- * Supabase authentication guard.
- *
  * Laravel guard that authenticates users using Supabase JWTs stored in the session.
  * Tokens are verified with Supabase on each request, with automatic refresh on expiry.
  *
@@ -35,58 +32,48 @@ class SupabaseGuard implements Guard, SupabaseGuardInterface
 {
     use GuardHelpers;
 
+    private const string FIELD_EMAIL = 'email';
+    private const string FIELD_PASSWORD = 'password';
+    private const string FIELD_ACCESS_TOKEN = 'access_token';
+    private const string FIELD_REFRESH_TOKEN = 'refresh_token';
+    private const string FIELD_USER = 'user';
+
     protected bool $loggedOut = false;
     protected ?Dispatcher $events = null;
     protected CookieJar $cookie;
-
-    /**
-     * Refreshed on every request by AppServiceProvider. 
-     */
     protected Request $request;
 
     /**
-     * @param string                $name     Guard name as registered in config/auth.php (e.g. "web").
-     * @param UserProvider          $provider User provider responsible for loading the local User model.
-     * @param Session               $session  Laravel session store.
-     * @param SupabaseAuthInterface $supabase Supabase auth service for API calls.
+     * @param string                    $name           Guard name as registered in config/auth.php.
+     * @param UserProvider              $provider       Loads the local User model.
+     * @param SupabasePersistentStorage    $storage Owns all session read/write operations.
+     * @param SupabaseAuthInterface     $supabase       Supabase auth service for API calls.
      */
+
     public function __construct(
         protected readonly string $name,
         UserProvider $provider,
-        protected readonly Session $session,
+        protected readonly SupabasePersistentStorage $storage,
         protected readonly SupabaseAuthInterface $supabase,
     ) {
         $this->provider = $provider;
     }
 
     /**
-     * Returns the authenticated user from the session without making any Supabase API calls.
-     *
-     * Token validation is handled separately by the EnsureTokenIsValid middleware on protected routes,
-     * so this method is safe to run on every request (including public ones) as it must remain fast.
+     * Returns session user without Supabase calls.
+     * Token validation is handled by middleware.
      */
     #[Override]
     public function user(): ?Authenticatable
     {
-        if ($this->loggedOut) {
-            return null;
-        }
-
-        // Already resolved for this request — skip DB lookup.
-        if ($this->user !== null) {
+        if ($this->loggedOut || $this->user !== null) {
             return $this->user;
         }
 
-        $accessToken = $this->getAccessToken();
+        $accessToken = $this->storage->getAccessToken();
+        $id = $this->storage->getUserId($this->getName());
 
-        if ($accessToken === null) {
-            return null;
-        }
-
-        // User ID was stored in the session by updateSession() during login.
-        $id = $this->session->get($this->getName());
-
-        if ($id === null) {
+        if ($accessToken === null || $id === null) {
             return null;
         }
 
@@ -95,101 +82,84 @@ class SupabaseGuard implements Guard, SupabaseGuardInterface
         if ($user instanceof SupabaseAuthenticatable) {
             $user->setAccessToken($accessToken);
 
-            // Attach cached Supabase user data stored during login/refresh.
-            $supabaseData = $this->session->get('supabase_user');
-            if ($supabaseData !== null) {
-                $user->setSupabaseData($supabaseData);
+            if (($data = $this->storage->getUserData()) !== null) {
+                $user->setSupabaseData($data);
             }
         }
 
-        $this->user = $user;
-
-        return $this->user;
+        return $this->user = $user;
     }
 
     /**
-     * Check credentials without creating a session (stateless probe).
-     * Verifies Supabase authentication without establishing a session.
+     * Stateless credential probe.
      *
      * @param array{email?: string, password?: string} $credentials
      */
     #[Override]
     public function validate(array $credentials = []): bool
     {
-        if (empty($credentials['email']) || empty($credentials['password'])) {
+        if (!$this->hasRequiredCredentials($credentials)) {
             return false;
         }
 
-        try {
-            $response = $this->supabase->signIn($credentials['email'], $credentials['password']);
-            return isset($response['access_token']);
-        } catch (Exception) {
-            return false;
-        }
+        return $this->attemptSupabaseSignIn(
+            $credentials[self::FIELD_EMAIL],
+            $credentials[self::FIELD_PASSWORD]
+        );
     }
 
     /**
-     * Attempts authentication using Supabase email/password login.
-     *
-     * Resolves a local user from the Supabase user ID, optionally creating
-     * it if it does not exist, then stores Supabase tokens and initializes
-     * the Laravel session.
+     * Authenticate a user via Supabase and establish a Laravel session.
      *
      * @param array{email?: string, password?: string} $credentials
-     * @param bool $remember Not used; session lifetime is controlled by Supabase refresh tokens.
      */
-    public function attempt(array $credentials = [], bool $remember = false): bool
+    public function attempt(array $credentials = []): bool
     {
-        if (empty($credentials['email']) || empty($credentials['password'])) {
+        if (!$this->hasRequiredCredentials($credentials)) {
             return false;
         }
+
+        $admin = Admin::findByEmail($credentials[self::FIELD_EMAIL]);
+        $admin?->abortIfLocked();
 
         try {
-            $response = $this->supabase->signIn($credentials['email'], $credentials['password']);
+            $response = $this->supabase->signIn($credentials[self::FIELD_EMAIL], $credentials[self::FIELD_PASSWORD]);
         } catch (Exception) {
+            $admin?->recordFailedAttempt();
             return false;
         }
 
-        if (!isset($response['access_token'], $response['user'])) {
+        if (!isset($response[self::FIELD_ACCESS_TOKEN], $response[self::FIELD_USER])) {
+            $admin?->recordFailedAttempt();
             return false;
         }
 
-        // Try to find an existing local user row matching the Supabase UUID.
-        $user = $this->provider->retrieveById($response['user']['id']);
-
-        // First login — auto-create the local row from Supabase user data.
-        if ($user === null && $this->provider instanceof SupabaseUserProviderInterface) {
-            $user = $this->provider->createFromSupabase($response['user']);
-        }
+        $user = $this->resolveUser($response[self::FIELD_USER]);
 
         if (!($user instanceof SupabaseAuthenticatable)) {
             return false;
         }
 
-        $user->setSupabaseData($response['user']);
-        $user->setAccessToken($response['access_token']);
+        $user->setSupabaseData($response[self::FIELD_USER]);
+        $user->setAccessToken($response[self::FIELD_ACCESS_TOKEN]);
 
-        $this->login($user, $remember);
+        Admin::findByUserId($response[self::FIELD_USER]['id'])?->activateAfterLogin($this->request->ip());
 
-        if (isset($response['refresh_token'])) {
-            $this->storeRefreshToken($response['refresh_token']);
-        }
-
-        $this->persistSupabaseSession($response['user'], $response['access_token']);
+        $this->login($user);
+        $this->persistSession($response);
 
         return true;
     }
 
-    /**
-     * Register an authenticated user into the session.
-     * Used after login or when a valid user is already available.
+    /** 
+     * Registers an authenticated user into the session and fires the Login event. 
      */
     public function login(Authenticatable $user, bool $remember = false): void
     {
-        $this->updateSession($user->getAuthIdentifier());
+        $this->storage->storeUserId($this->getName(), $user->getAuthIdentifier());
 
         if ($user instanceof SupabaseAuthenticatable && $user->getAccessToken() !== null) {
-            $this->storeAccessToken($user->getAccessToken());
+            $this->storage->storeAccessToken($user->getAccessToken());
         }
 
         $this->events?->dispatch(new Login($this->name, $user, $remember));
@@ -197,11 +167,7 @@ class SupabaseGuard implements Guard, SupabaseGuardInterface
     }
 
     /**
-     * Sign the user out of both Supabase and the local session.
-     *
-     * The Supabase signOut call is best-effort — if it fails (e.g. token already
-     * expired or network error) the local session is still destroyed so the user
-     * cannot remain authenticated on this application.
+     * Sign the user out of Supabase and clear the local session.
      */
     public function logout(): void
     {
@@ -211,27 +177,22 @@ class SupabaseGuard implements Guard, SupabaseGuardInterface
             try {
                 $this->supabase->signOut($user->getAccessToken());
             } catch (Exception) {
-                // best-effort: always clear local session even if Supabase call fails
             }
         }
 
-        $this->clearUserDataFromStorage();
+        $this->storage->flush($this->getName());
         $this->events?->dispatch(new Logout($this->name, $user));
 
         $this->user = null;
         $this->loggedOut = true;
     }
 
-    /**
-     * Silently exchange a stored refresh token for a new access token
-     *
-     * Called automatically by user when the current access token is rejected
-     * by Supabase Returns true and updates the session on success false on
-     * any failure missing refresh token network error Supabase rejection
+    /** 
+     * Exchange the refresh token for a new access token and update the session. 
      */
     public function refreshAccessToken(): bool
     {
-        $refreshToken = $this->getRefreshToken();
+        $refreshToken = $this->storage->getRefreshToken();
 
         if ($refreshToken === null) {
             return false;
@@ -239,129 +200,73 @@ class SupabaseGuard implements Guard, SupabaseGuardInterface
 
         try {
             $response = $this->supabase->refreshToken($refreshToken);
-
-            if (isset($response['access_token'])) {
-                $this->storeAccessToken($response['access_token']);
-
-                if (isset($response['refresh_token'])) {
-                    $this->storeRefreshToken($response['refresh_token']);
-                }
-
-                $this->persistSupabaseSession($response['user'] ?? null, $response['access_token']);
-
-                // Reset cache so user() re-resolves with the new token.
-                $this->user = null;
-
-                return true;
-            }
         } catch (Exception) {
-            // Refresh token is invalid or revoked — wipe local session entirely.
-            $this->clearUserDataFromStorage();
+            $this->storage->flush($this->getName()); // Remove session data after refresh token is revoked
+            return false;
         }
 
-        return false;
+        if (!isset($response[self::FIELD_ACCESS_TOKEN])) {
+            return false;
+        }
+
+        $this->storage->storeAccessToken($response[self::FIELD_ACCESS_TOKEN]);
+        $this->persistSession($response);
+
+        $this->user = null; // Clear cached user.
+
+        return true;
     }
 
-    // -------------------------------------------------------------------------
-    // Session helpers
-    // -------------------------------------------------------------------------
-
-    /** 
-     * Write the user's primary key to the session and rotate the session ID. 
-     */
-    protected function updateSession(mixed $id): void
-    {
-        $this->session->put($this->getName(), $id);
-        $this->session->migrate(true);
-    }
-
-    /** 
-     * Unique session key for this guard instance, scoped by class name. 
-     */
+    /** Unique session key for this guard instance, scoped by class name. */
     protected function getName(): string
     {
         return 'login_supabase_' . sha1(static::class);
     }
 
-    /** 
-     * Read the Supabase access token (JWT) from the session. 
-     */
-    protected function getAccessToken(): ?string
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+    private function hasRequiredCredentials(array $credentials): bool
     {
-        return $this->session->get('supabase_access_token');
+        return !empty($credentials[self::FIELD_EMAIL]) && !empty($credentials[self::FIELD_PASSWORD]);
     }
 
-    /** 
-     * Persist the Supabase access token to the session. 
-     */
-    protected function storeAccessToken(string $token): void
+    private function resolveUser(array $supabaseUser): ?SupabaseAuthenticatable
     {
-        $this->session->put('supabase_access_token', $token);
-    }
+        $user = $this->provider->retrieveById($supabaseUser['id']);
 
-    /** 
-     * Read the Supabase refresh token from the session. 
-     */
-    protected function getRefreshToken(): ?string
-    {
-        return $this->session->get('supabase_refresh_token');
-    }
-
-    /** 
-     * Persist the Supabase refresh token to the session. 
-     */
-    protected function storeRefreshToken(string $token): void
-    {
-        $this->session->put('supabase_refresh_token', $token);
-    }
-
-    /**
-     * Store raw Supabase user data and the token expiry timestamp in the session
-     * The expiry is decoded from the JWT exp claim so token validity can be
-     * checked without an extra API call included in EnsureTokenIsValid middleware
-     */
-    protected function persistSupabaseSession(?array $userData, ?string $accessToken): void
-    {
-        if ($userData !== null) {
-            $this->session->put('supabase_user', $userData);
+        if (!$user && $this->provider instanceof SupabaseUserProviderInterface) {
+            $user = $this->provider->createFromSupabase($supabaseUser);
         }
 
-        if ($accessToken !== null) {
-            $this->session->put('supabase_session_expires_at', $this->expiryFromToken($accessToken));
-        }
-    }
-
-    /**
-     * Decode the `exp` claim from a JWT without verifying the signature.
-     * Falls back to now + 1 hour if the token is malformed.
-     */
-    protected function expiryFromToken(string $jwt): int
-    {
-        $parts = explode('.', $jwt);
-
-        if (count($parts) === 3) {
-            $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/'), strict: false) ?: '', true);
-
-            if (isset($payload['exp'])) {
-                return (int) $payload['exp'];
-            }
+        if (!$user instanceof SupabaseAuthenticatable) {
+            return null;
         }
 
-        return time() + 3600;
+        return $user;
     }
 
-    /** 
-     * Remove all Supabase-related keys from the session. 
-     */
-    protected function clearUserDataFromStorage(): void
+    private function persistSession(array $response): void
     {
-        $this->session->remove($this->getName());
-        $this->session->forget([
-            'supabase_access_token',
-            'supabase_refresh_token',
-            'supabase_user',
-            'supabase_session_expires_at',
-        ]);
+        if (isset($response[self::FIELD_REFRESH_TOKEN])) {
+            $this->storage->storeRefreshToken($response[self::FIELD_REFRESH_TOKEN]);
+        }
+
+        $this->storage->persist(
+            $response[self::FIELD_USER] ?? null,
+            isset($response['expires_at']) ? (int) $response['expires_at'] : null,
+        );
+    }
+
+    private function attemptSupabaseSignIn(string $email, string $password): bool
+    {
+        try {
+            $response = $this->supabase->signIn($email, $password);
+
+            return isset($response[self::FIELD_ACCESS_TOKEN]);
+        } catch (Exception) {
+            return false;
+        }
     }
 
     // -------------------------------------------------------------------------

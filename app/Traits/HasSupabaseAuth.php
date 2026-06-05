@@ -93,12 +93,14 @@ trait HasSupabaseAuth
 
     public function isActive(): bool
     {
-        return (bool) ($this->getSupabaseAppMetadata()['active'] ?? true);
+        $active = $this->getSupabaseAppMetadata()['active'] ?? true;
+        return is_bool($active) ? $active : true;
     }
 
     public function isBanned(): bool
     {
-        return (bool) ($this->getSupabaseAppMetadata()['banned'] ?? false);
+        $banned = $this->getSupabaseAppMetadata()['banned'] ?? false;
+        return is_bool($banned) ? $banned : false;
     }
 
     public function getPreference(string $key, mixed $default = null): mixed
