@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeleteAccountController;
 use App\Http\Controllers\PostManagementController;
@@ -46,7 +47,8 @@ Route::middleware(['supabase.auth', 'supabase.token'])->group(function () {
         ->name('post-management.toggle-status');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [DeleteAccountController::class, 'delete'])->name('profile.delete');
+    Route::put('/profile/change-password', [PasswordController::class, 'update'])->name('profile.password.update');
+    Route::delete('/profile/account', [DeleteAccountController::class, 'delete'])->name('profile.account.delete');
 });
 
 require __DIR__ . '/auth.php';
