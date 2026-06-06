@@ -64,3 +64,17 @@ export interface NotificationPreferences {
     weeklyReports: boolean;
     systemUpdates: boolean;
 }
+
+export type VerificationStatus = 'pending' | 'verified' | 'unverified';
+export type AccountStatus = 'active' | 'suspended';
+export type StudentTab = 'All' | 'Pending' | 'Verified' | 'Suspended';
+
+export interface Student {
+    id: number;
+    student_id: string;
+    name: string;
+    year_level: string;
+    section: string;
+    verification_status: VerificationStatus;
+    account_status: AccountStatus;
+}

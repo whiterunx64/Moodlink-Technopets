@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PostManagementController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\UserAccountController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -39,12 +40,14 @@ Route::get('/', function () {
 Route::middleware(['supabase.auth', 'supabase.token'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
+    Route::get('/user-accounts', [UserAccountController::class, 'index'])
+        ->name('user-accounts.index');
     Route::get('/post-management', [PostManagementController::class, 'index'])
         ->name('post-management.index');
     Route::patch('/post-management/{post}/toggle-status', [PostManagementController::class, 'toggleFlag'])
         ->name('post-management.toggle-status');
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile/change-metadata', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/change-password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::delete('/profile/account', [ProfileController::class, 'destroy'])->name('profile.account.delete');
 });
