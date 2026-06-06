@@ -9,18 +9,30 @@ import NotificationPrefs from '@/Components/Profile/NotificationPrefs.vue';
 import DangerZone from '@/Components/Profile/DangerZone.vue';
 import DeleteAdminModal from '@/Pages/Profile/Modal/DeleteAdminModal.vue';
 import ConfirmPasswordChangeModal from '@/Pages/Profile/Modal/ConfirmPasswordChangeModal.vue';
+import ConfirmProfileUpdateModal from '@/Pages/Profile/Modal/ConfirmProfileUpdateModal.vue';
 import { useToast } from '@/composables/useToast';
 import type { AdminProfile, NotificationPreferences, PasswordForm } from '@/types';
+
+const props = defineProps<{
+    admin: {
+        firstName: string;
+        lastName: string;
+        email: string;
+        phone: string | null;
+        role: string;
+        status: string;
+    } | null;
+}>();
 
 const { add } = useToast();
 
 const profile = ref<AdminProfile>({
-    firstName: 'Admin',
-    lastName: 'User',
-    email: 'admin@moodlink.edu',
-    phone: '+63 912 345 6789',
-    role: 'Guidance Counselor',
-    department: 'Student Affairs',
+    firstName: props.admin?.firstName ?? '',
+    lastName: props.admin?.lastName ?? '',
+    email: props.admin?.email ?? '',
+    phone: props.admin?.phone ?? '',
+    role: props.admin?.role ?? '',
+    department: '',
 });
 
 const notifications = ref<NotificationPreferences>({
@@ -31,9 +43,41 @@ const notifications = ref<NotificationPreferences>({
     systemUpdates: false,
 });
 
+const showProfileModal = ref(false);
+const profileForm = useForm({
+    firstName: profile.value.firstName,
+    lastName: profile.value.lastName,
+    email: profile.value.email,
+    phone: profile.value.phone,
+});
+
+// Stash the entered values and ask the user to confirm before submitting.
 function onSaveProfile(updated: AdminProfile) {
     profile.value = updated;
-    // router.patch(route('profile.update'), updated);
+
+    profileForm.firstName = updated.firstName;
+    profileForm.lastName = updated.lastName;
+    profileForm.email = updated.email;
+    profileForm.phone = updated.phone;
+
+    showProfileModal.value = true;
+}
+
+function closeProfileModal() {
+    showProfileModal.value = false;
+}
+
+function confirmProfileUpdate() {
+    profileForm.patch(route('profile.update'), {
+        preserveScroll: true,
+        onSuccess: () => add({ type: 'success', message: 'Profile updated successfully.' }),
+        onError: (errors) => {
+            const message = errors.firstName ?? errors.lastName ?? errors.email ?? errors.phone
+                ?? 'Unable to update profile. Please try again.';
+            add({ type: 'error', message });
+        },
+        onFinish: () => closeProfileModal(),
+    });
 }
 
 // --- Change password ---
@@ -123,9 +167,10 @@ function submitDeleteAccount(password: string) {
     <AdminLayout title="Settings">
         <div class="max-w-4xl space-y-6">
             <ProfileCard :first-name="profile.firstName" :last-name="profile.lastName" :role="profile.role"
-                :department="profile.department" />
+                :status="admin?.status ?? 'inactive'" />
 
-            <ProfileInfoForm :profile="profile" @save="onSaveProfile" />
+            <ProfileInfoForm :profile="profile" :processing="profileForm.processing" :errors="profileForm.errors"
+                @save="onSaveProfile" />
 
             <ChangePasswordForm ref="changePasswordForm" :processing="passwordForm.processing" :errors="passwordErrors"
                 @submit="onChangePassword" />
@@ -134,6 +179,9 @@ function submitDeleteAccount(password: string) {
 
             <DangerZone @logout="onLogout" @delete-account="onDeleteAccount" />
         </div>
+
+        <ConfirmProfileUpdateModal :show="showProfileModal" :processing="profileForm.processing"
+            @close="closeProfileModal" @confirm="confirmProfileUpdate" />
 
         <ConfirmPasswordChangeModal :show="showPasswordModal" :processing="passwordForm.processing"
             @close="closePasswordModal" @confirm="confirmPasswordChange" />

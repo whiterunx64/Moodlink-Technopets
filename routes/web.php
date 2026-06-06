@@ -1,8 +1,6 @@
 <?php
 
-use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\DeleteAccountController;
 use App\Http\Controllers\PostManagementController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
@@ -45,10 +43,10 @@ Route::middleware(['supabase.auth', 'supabase.token'])->group(function () {
         ->name('post-management.index');
     Route::patch('/post-management/{post}/toggle-status', [PostManagementController::class, 'toggleFlag'])
         ->name('post-management.toggle-status');
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::put('/profile/change-password', [PasswordController::class, 'update'])->name('profile.password.update');
-    Route::delete('/profile/account', [DeleteAccountController::class, 'delete'])->name('profile.account.delete');
+    Route::put('/profile/change-password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
+    Route::delete('/profile/account', [ProfileController::class, 'destroy'])->name('profile.account.delete');
 });
 
 require __DIR__ . '/auth.php';

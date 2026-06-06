@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Validation\ValidationException;
 
+use function is_int;
 /**
  * @property string      $user_id
  * @property string      $role
@@ -17,6 +18,7 @@ use Illuminate\Validation\ValidationException;
  * @property string      $last_name
  * @property string      $username
  * @property string|null $avatar
+ * @property string|null $phone
  * @property string      $status
  * @property int         $failed_login_attempts
  * @property \Illuminate\Support\Carbon|null $locked_until
@@ -38,6 +40,7 @@ class Admin extends Model
         'last_name',
         'username',
         'avatar',
+        'phone',
         'status',
         'failed_login_attempts',
         'locked_until',
@@ -83,6 +86,29 @@ class Admin extends Model
         return Attribute::make(
             get: fn() => trim("{$this->first_name} {$this->last_name}"),
         );
+    }
+
+    /**
+     * Presenters
+     *
+     * @method array profileSummary()
+     * Read-only view of the admin (plus the related user's email) for the profile
+     * settings page — shared by the ProfileCard and the personal-details form.
+     * Name/phone are admin columns; email lives on the Supabase-managed user.
+     * Writes are handled separately in ProfileController.
+     *
+     * @return array{firstName: string, lastName: string, email: string|null, phone: string|null, role: string, status: string}
+     */
+    public function profileSummary(): array
+    {
+        return [
+            'firstName' => $this->first_name,
+            'lastName' => $this->last_name,
+            'email' => $this->user?->email,
+            'phone' => $this->phone,
+            'role' => $this->role,
+            'status' => $this->status,
+        ];
     }
 
     /**
