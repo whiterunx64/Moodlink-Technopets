@@ -42,6 +42,8 @@ Route::middleware(['supabase.auth', 'supabase.token'])->group(function () {
         ->name('dashboard');
     Route::get('/user-accounts', [UserAccountController::class, 'index'])
         ->name('user-accounts.index');
+    Route::patch('/user-accounts/{student}/status', [UserAccountController::class, 'updateStatus'])
+        ->name('user-accounts.update-status');
     Route::get('/post-management', [PostManagementController::class, 'index'])
         ->name('post-management.index');
     Route::patch('/post-management/{post}/toggle-status', [PostManagementController::class, 'toggleFlag'])

@@ -78,3 +78,24 @@ export interface Student {
     verification_status: VerificationStatus;
     account_status: AccountStatus;
 }
+
+/** Server-side filter state echoed back by the controller. */
+export interface StudentAccountFilters {
+    search: string | null;
+    year_level: number | null;
+    tab: string;
+}
+
+/**
+ * Laravel's default length-aware paginator (flat shape, as serialized by
+ * Inertia when returning `->paginate()` directly — no API Resource wrapper).
+ */
+export interface Paginated<T> {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    from: number | null;
+    to: number | null;
+    total: number;
+    per_page: number;
+}

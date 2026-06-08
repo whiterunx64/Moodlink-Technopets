@@ -4,6 +4,15 @@ import type { Student, StudentTab } from '@/types';
 export const STUDENT_TABS: StudentTab[] = ['All', 'Pending', 'Verified', 'Suspended'];
 export const YEAR_LEVELS = ['All', '1st Year', '2nd Year', '3rd Year', '4th Year'];
 
+/** Year-level select options for server-side filtering (value = DB integer). */
+export const YEAR_LEVEL_OPTIONS: { value: string; label: string }[] = [
+    { value: 'All', label: 'All Year Levels' },
+    { value: '1', label: '1st Year' },
+    { value: '2', label: '2nd Year' },
+    { value: '3', label: '3rd Year' },
+    { value: '4', label: '4th Year' },
+];
+
 function matchesTab(student: Student, tab: StudentTab): boolean {
     switch (tab) {
         case 'Pending':
