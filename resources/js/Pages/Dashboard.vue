@@ -4,7 +4,7 @@ import { Head, router } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import StatCard from '@/Components/Dashboard/StatCard.vue';
 import MoodEntry from '@/Components/Dashboard/MoodEntry.vue';
-import MoodTrends from '@/Components/Dashboard/MoodTrends.vue';
+import MoodTrends, { type MoodTrendsData } from '@/Components/Dashboard/MoodTrends.vue';
 
 
 const props = defineProps<{
@@ -37,6 +37,10 @@ const props = defineProps<{
     label: 'Urgent' | 'Consultation';
     style: string;
   }>;
+  /**
+  * MoodTrends aggregate from Laravel controller via Inertia
+  */
+  moodTrends: MoodTrendsData;
 }>();
 
 /** 
@@ -111,7 +115,7 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer); });
 
         <!-- Mood Trends -->
         <div class="flex flex-col">
-          <MoodTrends class="flex-1" />
+          <MoodTrends class="flex-1" :data="moodTrends" />
         </div>
       </div>
 

@@ -2,11 +2,26 @@
 
 namespace App\Services;
 
+use App\Enums\PostMood;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+
+use function round;
+use function in_array;
+use function array_sum;
 
 final class AdminDashboardService
 {
+  private const MOOD_COLORS = [
+    PostMood::Excited->value  => 'bg-green-400',
+    PostMood::Content->value  => 'bg-blue-400',
+    PostMood::Stressed->value => 'bg-yellow-400',
+    PostMood::Drained->value  => 'bg-red-400',
+  ];
+
+  private const TREND_PERIODS = ['Today', 'Weekly', 'Monthly'];
+
   public function getDashboardData(): array
   {
     $todayStart = Carbon::today('Asia/Manila')->utc();
@@ -111,5 +126,85 @@ final class AdminDashboardService
       'moodEntries' => $moodEntries,
       'appointments' => $appointments,
     ];
+  }
+
+  /**
+   * Mood-distribution aggregate for the Mood Trends widget.
+   * 
+   * @return array{
+   *   period: string,
+   *   section: string,
+   *   sections: list<string>,
+   *   total: int,
+   *   distribution: list<array{label: string, pct: int, color: string}>
+   * }
+   */
+  public function getMoodTrends(?string $period = null, ?string $section = null): array
+  {
+    $period = \in_array($period, self::TREND_PERIODS, true) ? $period : 'Today';
+
+    // The verified-section list rarely changes
+    $sections = Cache::remember('dashboard.trend_sections', now()->addMinutes(5), fn () =>
+      DB::table('students')
+        ->where('status', 'verified')
+        ->whereNotNull('section')
+        ->distinct()
+        ->orderBy('section')
+        ->pluck('section')
+        ->all()
+    );
+
+    $section = ($section !== null && in_array($section, $sections, true)) ? $section : 'All';
+
+    $query = DB::table('posts')
+      ->join('students', 'posts.student_id', '=', 'students.id')
+      ->where('students.status', 'verified')
+      ->whereIn('posts.status', ['safe', 'flagged'])
+      ->where('posts.datetime', '>=', $this->periodStart($period));
+
+    if ($section !== 'All') {
+      $query->where('students.section', $section);
+    }
+
+    /** @var array<string, int> $counts mood value => log count */
+    $counts = $query
+      ->select('posts.mood', DB::raw('COUNT(*) as aggregate'))
+      ->groupBy('posts.mood')
+      ->pluck('aggregate', 'posts.mood')
+      ->all();
+
+    $total = array_sum($counts);
+
+    $distribution = [];
+    foreach (self::MOOD_COLORS as $mood => $color) {
+      $count = (int) ($counts[$mood] ?? 0);
+
+      $distribution[] = [
+        'label' => $mood,
+        'pct'   => $total > 0 ? (int) round($count / $total * 100) : 0,
+        'color' => $color,
+      ];
+    }
+
+    return [
+      'period'       => $period,
+      'section'      => $section,
+      'sections'     => ['All', ...$sections],
+      'total'        => $total,
+      'distribution' => $distribution,
+    ];
+  }
+
+  private function periodStart(string $period): Carbon
+  {
+    $now = Carbon::now('Asia/Manila');
+
+    $start = match ($period) {
+      'Weekly'  => $now->copy()->subDays(6)->startOfDay(),
+      'Monthly' => $now->copy()->subDays(29)->startOfDay(),
+      default   => $now->copy()->startOfDay(),
+    };
+
+    return $start->utc();
   }
 }
