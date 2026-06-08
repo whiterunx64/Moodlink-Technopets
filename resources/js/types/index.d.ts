@@ -64,3 +64,38 @@ export interface NotificationPreferences {
     weeklyReports: boolean;
     systemUpdates: boolean;
 }
+
+export type VerificationStatus = 'pending' | 'verified' | 'unverified';
+export type AccountStatus = 'active' | 'suspended';
+export type StudentTab = 'All' | 'Pending' | 'Verified' | 'Suspended';
+
+export interface Student {
+    id: number;
+    student_id: string;
+    name: string;
+    year_level: string;
+    section: string;
+    verification_status: VerificationStatus;
+    account_status: AccountStatus;
+}
+
+/** Server-side filter state echoed back by the controller. */
+export interface StudentAccountFilters {
+    search: string | null;
+    year_level: number | null;
+    tab: string;
+}
+
+/**
+ * Laravel's default length-aware paginator (flat shape, as serialized by
+ * Inertia when returning `->paginate()` directly — no API Resource wrapper).
+ */
+export interface Paginated<T> {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    from: number | null;
+    to: number | null;
+    total: number;
+    per_page: number;
+}
