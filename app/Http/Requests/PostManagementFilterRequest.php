@@ -18,9 +18,10 @@ class PostManagementFilterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['sometimes', 'nullable', Rule::in(PostStatus::values())],
+            'status'  => ['sometimes', 'nullable', Rule::in(PostStatus::values())],
             'section' => ['sometimes', 'nullable', 'string', 'max:100', 'regex:/^[\w\s\-]+$/', Rule::exists('students', 'section')],
-            'mood' => ['sometimes', 'nullable', Rule::in(PostMood::values())],
+            'mood'    => ['sometimes', 'nullable', Rule::in(PostMood::values())],
+            'sort'    => ['sometimes', 'nullable', Rule::in(['latest', 'oldest'])],
         ];
     }
     public function withValidator(Validator $validator): void

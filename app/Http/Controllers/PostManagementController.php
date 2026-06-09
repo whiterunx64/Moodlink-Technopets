@@ -25,19 +25,22 @@ class PostManagementController extends Controller
         // Validation Restriction
         $validated = $request->validated();
 
+        $sort = $validated['sort'] ?? 'latest';
+
         $posts = match (true) {
-            isset($validated['status']) => $this->query->listByStatus($validated['status']),
-            isset($validated['section']) => $this->query->listBySection($validated['section']),
-            isset($validated['mood']) => $this->query->listByMood($validated['mood']),
-            default => $this->query->listLatest(),
+            isset($validated['status']) => $this->query->listByStatus($validated['status'], $sort),
+            isset($validated['section']) => $this->query->listBySection($validated['section'], $sort),
+            isset($validated['mood']) => $this->query->listByMood($validated['mood'], $sort),
+            default => $this->query->listLatest($sort),
         };
 
         return Inertia::render('PostManagement/Index', [
-            'posts' => $this->mapper->toDTOCollection($posts),
+            'posts' => $this->mapper->toDTOPaginated($posts),
             'filters' => [
-                'status' => $validated['status'] ?? null,
+                'status'  => $validated['status'] ?? null,
                 'section' => $validated['section'] ?? null,
-                'mood' => $validated['mood'] ?? null,
+                'mood'    => $validated['mood'] ?? null,
+                'sort'    => $validated['sort'] ?? null,
             ],
         ]);
     }

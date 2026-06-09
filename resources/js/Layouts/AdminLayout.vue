@@ -29,7 +29,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex min-h-screen bg-layout-bg">
+  <div class="min-h-screen bg-layout-bg">
+
+    <!-- Keeps backdrop-filter GPU layer warm; prevents first-open blur delay on modals -->
+    <div class="fixed w-0 h-0 backdrop-blur-sm pointer-events-none" aria-hidden="true" />
 
     <!-- Mobile Overlay -->
     <Transition
@@ -49,10 +52,10 @@ onUnmounted(() => {
 
     <AppSidebar :open="sidebar_open" @close="sidebar_open = false" />
 
-    <main class="flex flex-1 flex-col overflow-hidden min-w-0">
+    <main class="flex flex-col min-h-screen lg:pl-64">
       <AppHeader :title="title ?? 'MoodLink'" @toggle-sidebar="sidebar_open = !sidebar_open" />
 
-      <div class="flex-1 overflow-y-auto p-4 sm:p-6">
+      <div class="flex-1 p-4 sm:p-6">
         <slot />
       </div>
     </main>
