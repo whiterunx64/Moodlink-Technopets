@@ -2,10 +2,10 @@
 import { computed, onMounted, onUnmounted, ref, type Component } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import {
-    AcademicCapIcon,
-    ClockIcon,
-    ExclamationTriangleIcon,
-    HeartIcon,
+  AcademicCapIcon,
+  ClockIcon,
+  ExclamationTriangleIcon,
+  HeartIcon,
 } from '@heroicons/vue/24/outline';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import StatCard from '@/Components/Dashboard/StatCard.vue';
@@ -56,10 +56,10 @@ const props = defineProps<{
 type StatKey = 'moodLogsToday' | 'activeStudents' | 'flaggedPosts' | 'escalationRequests';
 
 const STAT_CARDS: Array<{ key: StatKey; title: string; icon: Component; color: 'blue' | 'green' | 'red' | 'orange'; changeUp: boolean }> = [
-  { key: 'moodLogsToday',       title: 'Mood Logs Today',       icon: HeartIcon,               color: 'blue',   changeUp: true },
-  { key: 'activeStudents',      title: 'Active Students',       icon: AcademicCapIcon,          color: 'green',  changeUp: true },
-  { key: 'flaggedPosts',        title: 'Flagged Posts',         icon: ExclamationTriangleIcon,  color: 'red',    changeUp: false },
-  { key: 'escalationRequests',  title: 'Escalation Requests',   icon: ClockIcon,                color: 'orange', changeUp: false },
+  { key: 'moodLogsToday', title: 'Mood Logs Today', icon: HeartIcon, color: 'blue', changeUp: true },
+  { key: 'activeStudents', title: 'Active Students', icon: AcademicCapIcon, color: 'green', changeUp: true },
+  { key: 'flaggedPosts', title: 'Flagged Posts', icon: ExclamationTriangleIcon, color: 'red', changeUp: false },
+  { key: 'escalationRequests', title: 'Escalation Requests', icon: ClockIcon, color: 'orange', changeUp: false },
 ];
 
 const statCards = computed(() =>
@@ -94,13 +94,8 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer); });
   <Head title="Dashboard" />
 
   <AdminLayout title="Dashboard">
-    <Transition
-      enter-active-class="transition-opacity duration-300"
-      enter-from-class="opacity-0"
-      leave-active-class="transition-opacity duration-200"
-      leave-to-class="opacity-0"
-      mode="out-in"
-    >
+    <Transition enter-active-class="transition-opacity duration-300" enter-from-class="opacity-0"
+      leave-active-class="transition-opacity duration-200" leave-to-class="opacity-0" mode="out-in">
       <!-- Skeleton -->
       <DashboardSkeleton v-if="loading" />
 
@@ -131,15 +126,15 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer); });
             </div>
 
             <div class="px-5 py-3 border-t border-border-light">
-              <a href="/posts" class="text-xs text-sidebar font-medium hover:underline">
+              <a :href="route('post-management.index')" class="text-xs text-sidebar font-medium hover:underline">
                 View all posts →
               </a>
             </div>
           </div>
 
           <!-- Mood Trends -->
-          <div class="flex flex-col">
-            <MoodTrends class="flex-1" :data="moodTrends" />
+          <div>
+            <MoodTrends :data="moodTrends" />
           </div>
         </div>
 
@@ -147,15 +142,16 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer); });
         <div class="bg-white rounded-2xl border border-border-light shadow-sm">
           <div class="px-5 pt-5 pb-4 border-b border-border-light flex items-center justify-between">
             <h3 class="text-base font-semibold text-text-primary">Upcoming Appointments</h3>
-            <a href="/appointments" class="text-xs text-sidebar font-medium hover:underline">View all →</a>
+            <a :href="route('appointments.index')" class="text-xs text-sidebar font-medium hover:underline">View all
+              →</a>
           </div>
-          <div class="divide-y divide-border-light">
+          <div class="divide-y divide-border-light overflow-y-auto max-h-96">
             <div v-for="apt in appointments" :key="apt.id"
               class="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors">
               <div class="flex items-center gap-3">
                 <div
                   class="w-8 h-8 rounded-full bg-avatar-bg flex items-center justify-center text-xs font-bold text-text-primary shrink-0">
-                  {{ apt.name.charAt(0) }}
+                  {{ apt.name?.charAt(0) ?? '?' }}
                 </div>
                 <div>
                   <p class="text-sm font-medium text-text-primary">{{ apt.name }}</p>

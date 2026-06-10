@@ -14,10 +14,10 @@ use function array_sum;
 final class AdminDashboardService
 {
   private const MOOD_COLORS = [
-    PostMood::Excited->value  => 'bg-green-400',
-    PostMood::Content->value  => 'bg-blue-400',
+    PostMood::Excited->value => 'bg-green-400',
+    PostMood::Content->value => 'bg-blue-400',
     PostMood::Stressed->value => 'bg-yellow-400',
-    PostMood::Drained->value  => 'bg-red-400',
+    PostMood::Drained->value => 'bg-red-400',
   ];
 
   private const TREND_PERIODS = ['Today', 'Weekly', 'Monthly'];
@@ -75,7 +75,7 @@ final class AdminDashboardService
           'mood' => $row->mood,
           'message' => $row->content,
           'time' => $time->format('g:i A'),
-          'status' => $row->status,
+          'flagged' => $row->status === 'flagged',
           'name' => $row->status === 'flagged'
             ? trim("{$row->first_name} {$row->last_name}")
             : ($row->anonymous_name ?: 'Anonymous (not set)'),
@@ -93,25 +93,27 @@ final class AdminDashboardService
         'appointments.id',
         'appointments.status',
         'appointments.datetime',
-        'students.anonymous_name'
+        'students.anonymous_name',
+        'students.first_name',
+        'students.last_name'
       )
       ->get()
       ->map(function ($row) {
         $date = Carbon::parse($row->datetime)
           ->setTimezone('Asia/Manila');
 
+        // Always ensure name is not null
+        $name = $row->anonymous_name ?: trim(($row->first_name ?? '') . ' ' . ($row->last_name ?? ''));
+        $name = $name ?: 'Anonymous';
+
         return [
           'id' => $row->id,
-          'name' => $row->anonymous_name,
+          'name' => $name,
           'time' => $date->format('g:i A'),
           'date' => $date->isToday()
             ? 'Today'
-            : ($date->isTomorrow()
-              ? 'Tomorrow'
-              : $date->format('M j')),
-          'label' => $row->status === 'Pending'
-            ? 'Urgent'
-            : 'Consultation',
+            : ($date->isTomorrow() ? 'Tomorrow' : $date->format('M j')),
+          'label' => $row->status === 'Pending' ? 'Urgent' : 'Consultation',
           'style' => $row->status === 'Pending'
             ? 'bg-red-50 text-red-500'
             : 'bg-blue-50 text-blue-500',
@@ -128,23 +130,14 @@ final class AdminDashboardService
     ];
   }
 
-  /**
-   * Mood-distribution aggregate for the Mood Trends widget.
-   * 
-   * @return array{
-   *   period: string,
-   *   section: string,
-   *   sections: list<string>,
-   *   total: int,
-   *   distribution: list<array{label: string, pct: int, color: string}>
-   * }
-   */
   public function getMoodTrends(?string $period = null, ?string $section = null): array
   {
-    $period = \in_array($period, self::TREND_PERIODS, true) ? $period : 'Today';
+    $period = in_array($period, self::TREND_PERIODS, true) ? $period : 'Today';
 
-    // The verified-section list rarely changes
-    $sections = Cache::remember('dashboard.trend_sections', now()->addMinutes(5), fn () =>
+    $sections = Cache::remember(
+      'dashboard.trend_sections',
+      now()->addMinutes(5),
+      fn() =>
       DB::table('students')
         ->where('status', 'verified')
         ->whereNotNull('section')
@@ -166,7 +159,6 @@ final class AdminDashboardService
       $query->where('students.section', $section);
     }
 
-    /** @var array<string, int> $counts mood value => log count */
     $counts = $query
       ->select('posts.mood', DB::raw('COUNT(*) as aggregate'))
       ->groupBy('posts.mood')
@@ -181,16 +173,16 @@ final class AdminDashboardService
 
       $distribution[] = [
         'label' => $mood,
-        'pct'   => $total > 0 ? (int) round($count / $total * 100) : 0,
+        'pct' => $total > 0 ? (int) round($count / $total * 100) : 0,
         'color' => $color,
       ];
     }
 
     return [
-      'period'       => $period,
-      'section'      => $section,
-      'sections'     => ['All', ...$sections],
-      'total'        => $total,
+      'period' => $period,
+      'section' => $section,
+      'sections' => ['All', ...$sections],
+      'total' => $total,
       'distribution' => $distribution,
     ];
   }
@@ -200,9 +192,9 @@ final class AdminDashboardService
     $now = Carbon::now('Asia/Manila');
 
     $start = match ($period) {
-      'Weekly'  => $now->copy()->subDays(6)->startOfDay(),
+      'Weekly' => $now->copy()->subDays(6)->startOfDay(),
       'Monthly' => $now->copy()->subDays(29)->startOfDay(),
-      default   => $now->copy()->startOfDay(),
+      default => $now->copy()->startOfDay(),
     };
 
     return $start->utc();
