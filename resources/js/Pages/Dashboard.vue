@@ -2,10 +2,10 @@
 import { computed, onMounted, onUnmounted, ref, type Component } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
 import {
-  AcademicCapIcon,
-  ClockIcon,
-  ExclamationTriangleIcon,
-  HeartIcon,
+    AcademicCapIcon,
+    ClockIcon,
+    ExclamationTriangleIcon,
+    HeartIcon,
 } from '@heroicons/vue/24/outline';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import StatCard from '@/Components/Dashboard/StatCard.vue';
@@ -56,10 +56,10 @@ const props = defineProps<{
 type StatKey = 'moodLogsToday' | 'activeStudents' | 'flaggedPosts' | 'escalationRequests';
 
 const STAT_CARDS: Array<{ key: StatKey; title: string; icon: Component; color: 'blue' | 'green' | 'red' | 'orange'; changeUp: boolean }> = [
-  { key: 'moodLogsToday', title: 'Mood Logs Today', icon: HeartIcon, color: 'blue', changeUp: true },
-  { key: 'activeStudents', title: 'Active Students', icon: AcademicCapIcon, color: 'green', changeUp: true },
-  { key: 'flaggedPosts', title: 'Flagged Posts', icon: ExclamationTriangleIcon, color: 'red', changeUp: false },
-  { key: 'escalationRequests', title: 'Escalation Requests', icon: ClockIcon, color: 'orange', changeUp: false },
+  { key: 'moodLogsToday',       title: 'Mood Logs Today',       icon: HeartIcon,               color: 'blue',   changeUp: true },
+  { key: 'activeStudents',      title: 'Active Students',       icon: AcademicCapIcon,          color: 'green',  changeUp: true },
+  { key: 'flaggedPosts',        title: 'Flagged Posts',         icon: ExclamationTriangleIcon,  color: 'red',    changeUp: false },
+  { key: 'escalationRequests',  title: 'Escalation Requests',   icon: ClockIcon,                color: 'orange', changeUp: false },
 ];
 
 const statCards = computed(() =>
@@ -94,8 +94,13 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer); });
   <Head title="Dashboard" />
 
   <AdminLayout title="Dashboard">
-    <Transition enter-active-class="transition-opacity duration-300" enter-from-class="opacity-0"
-      leave-active-class="transition-opacity duration-200" leave-to-class="opacity-0" mode="out-in">
+    <Transition
+      enter-active-class="transition-opacity duration-300"
+      enter-from-class="opacity-0"
+      leave-active-class="transition-opacity duration-200"
+      leave-to-class="opacity-0"
+      mode="out-in"
+    >
       <!-- Skeleton -->
       <DashboardSkeleton v-if="loading" />
 
@@ -142,8 +147,7 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer); });
         <div class="bg-white rounded-2xl border border-border-light shadow-sm">
           <div class="px-5 pt-5 pb-4 border-b border-border-light flex items-center justify-between">
             <h3 class="text-base font-semibold text-text-primary">Upcoming Appointments</h3>
-            <a :href="route('appointments.index')" class="text-xs text-sidebar font-medium hover:underline">View all
-              →</a>
+            <a :href="route('appointments.index')" class="text-xs text-sidebar font-medium hover:underline">View all →</a>
           </div>
           <div class="divide-y divide-border-light overflow-y-auto max-h-96">
             <div v-for="apt in appointments" :key="apt.id"

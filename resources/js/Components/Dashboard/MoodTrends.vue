@@ -58,7 +58,7 @@ function applyFilter(period: string, section: string) {
 </script>
 
 <template>
-  <div class="bg-white rounded-2xl border border-border-light shadow-sm flex flex-col h-full">
+  <div class="bg-white rounded-2xl border border-border-light shadow-sm flex flex-col h-full min-h-120 overflow-hidden">
     <!-- Header -->
     <div class="px-5 pt-5 pb-4 border-b border-border-light flex items-center justify-between">
       <div>

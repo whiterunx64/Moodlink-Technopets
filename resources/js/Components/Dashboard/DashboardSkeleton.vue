@@ -34,8 +34,7 @@
             </div>
 
             <!-- Mood Trends skeleton -->
-            <div
-                class="bg-white rounded-2xl border border-border-light shadow-sm flex flex-col h-full min-h-120 overflow-hidden">
+            <div class="bg-white rounded-2xl border border-border-light shadow-sm flex flex-col h-full min-h-120 overflow-hidden">
                 <div class="px-5 pt-5 pb-4 border-b border-border-light shrink-0">
                     <div class="h-4 bg-gray-200 rounded w-28 mb-1.5" />
                     <div class="h-3 bg-gray-100 rounded w-44" />
@@ -57,8 +56,7 @@
                                 <div class="h-3 bg-gray-100 rounded w-8" />
                             </div>
                             <div class="h-2 bg-gray-100 rounded-full w-full">
-                                <div class="h-2 bg-gray-200 rounded-full"
-                                    :style="{ width: `${[65, 42, 28, 15][i - 1]}%` }" />
+                                <div class="h-2 bg-gray-200 rounded-full" :style="{ width: `${[65, 42, 28, 15][i - 1]}%` }" />
                             </div>
                         </div>
                     </div>
