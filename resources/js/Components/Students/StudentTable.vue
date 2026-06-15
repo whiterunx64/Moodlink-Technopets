@@ -1,17 +1,10 @@
 <script setup lang="ts">
 import { UserMinusIcon } from '@heroicons/vue/24/outline';
 import StudentRow from './StudentRow.vue';
-import Pagination from '@/Components/UI/Pagination.vue';
 import type { Student } from '@/types';
 
 defineProps<{
     rows: Student[];
-    total: number;
-    currentPage: number;
-    totalPages: number;
-    pageNumbers: (number | '…')[];
-    rangeStart: number;
-    rangeEnd: number;
 }>();
 
 const emit = defineEmits<{
@@ -19,14 +12,11 @@ const emit = defineEmits<{
     reject: [student: Student];
     suspend: [student: Student];
     reactivate: [student: Student];
-    'update:currentPage': [page: number];
-    prev: [];
-    next: [];
 }>();
 </script>
 
 <template>
-    <div class="bg-white rounded-2xl border border-border-light shadow-sm overflow-hidden flex flex-col min-h-130">
+    <div class="bg-white rounded-2xl border border-border-light shadow-sm overflow-hidden flex flex-col">
         <div class="flex-1 min-h-0 overflow-x-auto">
             <table class="w-full">
                 <colgroup>
@@ -59,7 +49,7 @@ const emit = defineEmits<{
                     />
 
                     <!-- Empty state -->
-                    <tr v-if="total === 0">
+                    <tr v-if="rows.length === 0">
                         <td colspan="6" class="py-16 text-center">
                             <div class="flex flex-col items-center gap-2 text-gray-300">
                                 <UserMinusIcon class="w-8 h-8" />
@@ -70,18 +60,5 @@ const emit = defineEmits<{
                 </tbody>
             </table>
         </div>
-
-        <Pagination
-            v-if="total > 0"
-            :current-page="currentPage"
-            :total-pages="totalPages"
-            :page-numbers="pageNumbers"
-            :range-start="rangeStart"
-            :range-end="rangeEnd"
-            :total="total"
-            @update:current-page="emit('update:currentPage', $event)"
-            @prev="emit('prev')"
-            @next="emit('next')"
-        />
     </div>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 
 interface DistributionItem {
@@ -23,54 +23,52 @@ const props = defineProps<{
 
 const tabs = ['Today', 'Weekly', 'Monthly'] as const;
 
-/** Loading flag for the in-flight reload. */
 const loading = ref(false);
-
-/**
- * Optimistic selection: the clicked tab/pill highlights immediately so the
- * widget feels instant, while Laravel re-aggregates server-side. Once the
- * fresh `moodTrends` prop lands these fall back to the server's values.
- */
 const pendingPeriod = ref<string | null>(null);
 const pendingSection = ref<string | null>(null);
 
-const activePeriod = () => pendingPeriod.value ?? props.data.period;
-const activeSection = () => pendingSection.value ?? props.data.section;
+const activePeriod = computed(() => pendingPeriod.value ?? props.data.period);
+const activeSection = computed(() => pendingSection.value ?? props.data.section);
 
-/**
- * Server-side rendering: tab/section changes are sent back to Laravel, which
- * re-aggregates and ships a fresh `moodTrends` prop. No client-side filtering.
- */
+let inflightController: AbortController | null = null;
+
 function applyFilter(period: string, section: string) {
-  // Ignore no-op clicks so re-selecting the active filter doesn't hit the DB.
-  if (period === activePeriod() && section === activeSection()) return;
+  if (period === activePeriod.value && section === activeSection.value) return;
+
+  // Cancel any in-flight request before firing a new one
+  inflightController?.abort();
+  inflightController = new AbortController();
 
   pendingPeriod.value = period;
   pendingSection.value = section;
+  loading.value = true;
 
   router.reload({
     only: ['moodTrends'],
     data: { trendPeriod: period, trendSection: section },
     preserveUrl: true,
-    onStart: () => { loading.value = true; },
     onFinish: () => {
       loading.value = false;
       pendingPeriod.value = null;
       pendingSection.value = null;
+      inflightController = null;
     },
   });
 }
 </script>
 
 <template>
-  <div class="bg-white rounded-2xl border border-border-light shadow-sm flex flex-col h-full">
+  <div class="bg-white rounded-2xl border border-border-light shadow-sm flex flex-col h-full min-h-120 overflow-hidden">
     <!-- Header -->
     <div class="px-5 pt-5 pb-4 border-b border-border-light flex items-center justify-between">
       <div>
         <h3 class="text-base font-semibold text-text-primary">Mood Trends</h3>
         <p class="text-xs text-text-muted mt-0.5">Emotional distribution overview</p>
       </div>
-      <i v-if="loading" class="fas fa-circle-notch fa-spin text-sm text-text-muted" />
+      <svg v-if="loading" class="w-4 h-4 animate-spin text-text-muted" viewBox="0 0 24 24" fill="none">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+      </svg>
     </div>
 
     <div class="p-5 flex flex-col flex-1 gap-4">
@@ -78,10 +76,10 @@ function applyFilter(period: string, section: string) {
       <div class="flex bg-gray-100 rounded-lg p-1 gap-1">
         <button v-for="tab in tabs" :key="tab" type="button" :disabled="loading" :class="[
           'flex-1 py-1.5 text-xs font-medium rounded-md transition-all duration-150 disabled:cursor-not-allowed',
-          activePeriod() === tab
+          activePeriod === tab
             ? 'bg-white text-text-primary shadow-sm'
             : 'text-text-muted hover:text-text-secondary',
-        ]" @click="applyFilter(tab, activeSection())">
+        ]" @click="applyFilter(tab, activeSection)">
           {{ tab }}
         </button>
       </div>
@@ -90,10 +88,10 @@ function applyFilter(period: string, section: string) {
       <div class="flex flex-wrap gap-1.5">
         <button v-for="s in props.data.sections" :key="s" type="button" :disabled="loading" :class="[
           'px-3 py-1 text-xs rounded-full font-medium transition-all duration-150 disabled:cursor-not-allowed',
-          activeSection() === s
+          activeSection === s
             ? 'bg-sidebar text-white'
             : 'bg-pill-inactive-bg text-pill-inactive-text hover:bg-pill-inactive-bg-hover',
-        ]" @click="applyFilter(activePeriod(), s)">
+        ]" @click="applyFilter(activePeriod, s)">
           {{ s }}
         </button>
       </div>

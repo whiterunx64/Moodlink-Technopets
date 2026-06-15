@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, toRef, watch } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
-import { PlusIcon } from '@heroicons/vue/24/outline';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import SearchInput from '@/Components/UI/SearchInput.vue';
 import StudentTabs from '@/Components/Students/StudentTabs.vue';
 import StudentTable from '@/Components/Students/StudentTable.vue';
+import Pagination from '@/Components/UI/Pagination.vue';
 import { YEAR_LEVEL_OPTIONS } from '@/composables/useStudentFilters';
 import { usePaginatorNav } from '@/composables/usePaginatorNav';
 import type { Paginated, Student, StudentAccountFilters, StudentTab } from '@/types';
@@ -72,7 +72,7 @@ const reactivate = (student: Student) => changeStatus(student, 'verified');
     <Head title="User Accounts" />
 
     <AdminLayout title="User Accounts">
-        <div class="space-y-4">
+        <div class="space-y-4 pb-20">
             <p class="text-sm text-text-muted -mt-2">
                 Manage student account verification and access control.
             </p>
@@ -88,24 +88,28 @@ const reactivate = (student: Student) => changeStatus(student, 'verified');
                         {{ y.label }}
                     </option>
                 </select>
-
-                <button
-                    class="ml-auto inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-lg bg-sidebar text-white hover:bg-sidebar/90 transition-colors">
-                    <PlusIcon class="w-3 h-3" />
-                    Add Student
-                </button>
             </div>
 
             <!-- Tab pills -->
             <StudentTabs v-model="activeTab" :counts="tabCounts" />
 
-            <!-- Table + pagination -->
-            <StudentTable :rows="students.data" :total="paginator.total.value"
-                :current-page="paginator.currentPage.value" :total-pages="paginator.totalPages.value"
-                :page-numbers="paginator.pageNumbers.value" :range-start="paginator.rangeStart.value"
-                :range-end="paginator.rangeEnd.value" @verify="verify" @reject="reject" @suspend="suspend"
-                @reactivate="reactivate" @update:current-page="goToPage"
-                @prev="goToPage(paginator.currentPage.value - 1)" @next="goToPage(paginator.currentPage.value + 1)" />
+            <!-- Table -->
+            <StudentTable :rows="students.data" @verify="verify" @reject="reject" @suspend="suspend"
+                @reactivate="reactivate" />
         </div>
+
+        <!-- Fixed pagination bar -->
+        <Pagination
+            :fixed="true"
+            :current-page="paginator.currentPage.value"
+            :total-pages="paginator.totalPages.value"
+            :page-numbers="paginator.pageNumbers.value"
+            :range-start="paginator.rangeStart.value"
+            :range-end="paginator.rangeEnd.value"
+            :total="paginator.total.value"
+            @update:current-page="goToPage"
+            @prev="goToPage(paginator.currentPage.value - 1)"
+            @next="goToPage(paginator.currentPage.value + 1)"
+        />
     </AdminLayout>
 </template>

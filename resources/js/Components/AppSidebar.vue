@@ -24,9 +24,9 @@ const emit = defineEmits<{
 const nav_items: NavItem[] = [
   { label: 'Dashboard',       icon: Squares2X2Icon,   href: route('dashboard') },
   { label: 'Users', icon: UserGroupIcon, href: route('user-accounts.index') }, 
-  { label: 'Post Management', icon: DocumentTextIcon, href: route('post-management.index') },
-  //{ label: 'Summary Reports', icon: ChartBarIcon,     href: route('summary.index') },
-  //{ label: 'Appointments',    icon: CalendarDaysIcon, href: route('appointments.index') },
+  { label: 'Post Management',  icon: DocumentTextIcon, href: route('post-management.index') },
+  { label: 'Summary Reports', icon: ChartBarIcon,     href: route('summary-reports.index') },
+  { label: 'Appointments',    icon: CalendarDaysIcon, href: route('appointments.index') },
   { label: 'Account',         icon: UserCircleIcon,   href: route('profile.show') },
 ];
 </script>
@@ -35,7 +35,7 @@ const nav_items: NavItem[] = [
   <aside
     :class="[
       'fixed inset-y-0 left-0 z-30 flex w-64 shrink-0 flex-col bg-sidebar',
-      'transition-transform duration-300 ease-in-out lg:static',
+      'transition-transform duration-300 ease-in-out',
       open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
     ]"
   >

@@ -29,6 +29,7 @@ export interface PostFilters {
     status:  string | null;
     section: string | null;
     mood:    string | null;
+    sort:    string | null;
 }
 
 export interface Post {
@@ -98,4 +99,154 @@ export interface Paginated<T> {
     to: number | null;
     total: number;
     per_page: number;
+}
+
+// ── Summary Reports ───────────────────────────────────────────────────────────
+
+export type SummaryPeriod = 'this_week' | 'this_month' | 'all_time';
+
+export interface SummaryFilters {
+    period: SummaryPeriod;
+    tab: string;
+}
+
+export interface MoodDistributionItem {
+    label: string;
+    count: number;
+    pct: number;
+}
+
+export interface SummaryOverview {
+    totalMoodLogs: number;
+    avgDailyLogs: number;
+    atRiskStudents: number;
+    appointmentsSet: number;
+    distribution: MoodDistributionItem[];
+}
+
+export interface SectionSummary {
+    section: string;
+    total: number;
+    excited: number;
+    content: number;
+    stressed: number;
+    drained: number;
+    atRisk: number;
+}
+
+export interface AtRiskStudent {
+    id: number;
+    name: string;
+    studentNumber: string;
+    section: string;
+    moods: string[];
+    daysFlagged: number;
+    lastLog: string;
+    hasConsultation: boolean;
+}
+
+export interface SectionStudentRow {
+    id: number;
+    name: string;
+    initials: string;
+    studentNumber: string;
+    yearLevel: string;
+    trend: 'Declining' | 'Stable' | 'Improving';
+}
+
+export interface SectionDetail {
+    section: string;
+    total: number;
+    excited: number;
+    content: number;
+    stressed: number;
+    drained: number;
+    atRisk: number;
+    students: SectionStudentRow[];
+}
+
+export interface MoodTrendPoint {
+    label: string;
+    score: number | null;
+}
+
+export interface RecentMoodLog {
+    id: number;
+    mood: string;
+    content: string | null;
+    date: string;
+}
+
+// ── Appointments ─────────────────────────────────────────────────────────────
+
+export type AppointmentTab    = 'requests' | 'scheduled' | 'history' | 'rejected';
+export type AppointmentStatus = 'Pending' | 'Scheduled' | 'Completed' | 'Rejected';
+
+export interface Appointment {
+    id: number;
+    studentName: string;
+    context: string;
+    note: string | null;
+    date: string;
+    time: string;
+    status: AppointmentStatus;
+    studentProfile: AppointmentStudentProfile;
+}
+
+export interface AvailableSlot {
+    id: number;
+    date: string;
+    startTime: string;
+}
+
+export interface AppointmentStudentProfile {
+    initials: string;
+    section: string;
+    course: string;
+    yearLevel: string;
+    email: string;
+    studentId: string;
+    totalAppointments: number;
+    history: Array<{
+        context: string;
+        date: string;
+        time: string;
+        note: string | null;
+        status: AppointmentStatus;
+    }>;
+}
+
+export interface AppointmentTabCounts {
+    requests: number;
+    scheduled: number;
+    history: number;
+    rejected: number;
+}
+
+export interface AppointmentFilters {
+    tab: AppointmentTab;
+}
+
+export interface StudentMoodReport {
+    id: number;
+    name: string;
+    anonymousName: string;
+    studentNumber: string;
+    yearLevel: string;
+    section: string;
+    initials: string;
+    moodSummary: {
+        excited: number;
+        content: number;
+        stressed: number;
+        drained: number;
+    };
+    summaryStats: {
+        totalMoodLogs: number;
+        totalPosts: number;
+        flaggedPosts: number;
+    };
+    trend: 'Declining' | 'Stable' | 'Improving';
+    trendData: MoodTrendPoint[];
+    recentLogs: RecentMoodLog[];
 }

@@ -4,7 +4,7 @@ namespace App\Mappers;
 
 use App\DTOs\PostWithStudentDTO;
 use App\Models\Post;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 
 class BuildPostMapper
@@ -31,8 +31,8 @@ class BuildPostMapper
         );
     }
 
-    public function toDTOCollection(Collection $posts): array
+    public function toDTOPaginated(LengthAwarePaginator $posts): LengthAwarePaginator
     {
-        return $posts->map(fn(Post $post) => $this->toDTO($post))->values()->all();
+        return $posts->through(fn(Post $post) => $this->toDTO($post));
     }
 }
