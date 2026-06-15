@@ -40,6 +40,7 @@ final class AdminDashboardService
       ->join('students', 'posts.student_id', '=', 'students.id')
       ->where('students.status', 'verified')
       ->where('posts.status', 'flagged')
+      ->where('posts.datetime', '>=', $todayStart)
       ->count();
 
     $escalationRequests = DB::table('appointments')
