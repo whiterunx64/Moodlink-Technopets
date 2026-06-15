@@ -6,7 +6,7 @@ use App\Models\Post;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class BuildPostQuery
+final class BuildPostQuery
 {
     private const PER_PAGE = 15;
 

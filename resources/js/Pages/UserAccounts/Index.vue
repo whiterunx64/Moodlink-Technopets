@@ -6,6 +6,7 @@ import SearchInput from '@/Components/UI/SearchInput.vue';
 import StudentTabs from '@/Components/Students/StudentTabs.vue';
 import StudentTable from '@/Components/Students/StudentTable.vue';
 import Pagination from '@/Components/UI/Pagination.vue';
+import VerifyStudentModal from '@/Pages/UserAccounts/Modal/VerifyStudentModal.vue';
 import { YEAR_LEVEL_OPTIONS } from '@/composables/useStudentFilters';
 import { usePaginatorNav } from '@/composables/usePaginatorNav';
 import type { Paginated, Student, StudentAccountFilters, StudentTab } from '@/types';
@@ -22,6 +23,24 @@ const yearFilter = ref(props.filters.year_level ? String(props.filters.year_leve
 const activeTab = ref<StudentTab>((props.filters.tab as StudentTab) ?? 'All');
 
 const paginator = usePaginatorNav(toRef(props, 'students'));
+
+const modalOpen = ref(false);
+const selectedStudent = ref<Student | null>(null);
+
+function openRegisterModal(student: Student) {
+    selectedStudent.value = student;
+    modalOpen.value = true;
+}
+
+function closeModal() {
+    modalOpen.value = false;
+    selectedStudent.value = null;
+}
+
+function onVerified() {
+    router.reload({ only: ['students', 'tabCounts'] });
+}
+
 
 /** Push the current filter state to the server (one source of truth). */
 function reload(overrides: Record<string, unknown> = {}) {
@@ -61,6 +80,7 @@ function changeStatus(student: Student, status: string) {
     );
 }
 
+const register = (student: Student) => openRegisterModal(student);
 const verify = (student: Student) => changeStatus(student, 'verified');
 const reject = (student: Student) => changeStatus(student, 'unverified');
 const suspend = (student: Student) => changeStatus(student, 'suspended');
@@ -94,22 +114,15 @@ const reactivate = (student: Student) => changeStatus(student, 'verified');
             <StudentTabs v-model="activeTab" :counts="tabCounts" />
 
             <!-- Table -->
-            <StudentTable :rows="students.data" @verify="verify" @reject="reject" @suspend="suspend"
-                @reactivate="reactivate" />
+            <StudentTable :rows="students.data" @register="register" @verify="verify" @reject="reject"
+                @suspend="suspend" @reactivate="reactivate" />
         </div>
 
         <!-- Fixed pagination bar -->
-        <Pagination
-            :fixed="true"
-            :current-page="paginator.currentPage.value"
-            :total-pages="paginator.totalPages.value"
-            :page-numbers="paginator.pageNumbers.value"
-            :range-start="paginator.rangeStart.value"
-            :range-end="paginator.rangeEnd.value"
-            :total="paginator.total.value"
-            @update:current-page="goToPage"
-            @prev="goToPage(paginator.currentPage.value - 1)"
-            @next="goToPage(paginator.currentPage.value + 1)"
-        />
+        <Pagination :fixed="true" :current-page="paginator.currentPage.value" :total-pages="paginator.totalPages.value"
+            :page-numbers="paginator.pageNumbers.value" :range-start="paginator.rangeStart.value"
+            :range-end="paginator.rangeEnd.value" :total="paginator.total.value" @update:current-page="goToPage"
+            @prev="goToPage(paginator.currentPage.value - 1)" @next="goToPage(paginator.currentPage.value + 1)" />
     </AdminLayout>
+    <VerifyStudentModal :show="modalOpen" :student="selectedStudent" @close="closeModal" @verified="onVerified" />
 </template>

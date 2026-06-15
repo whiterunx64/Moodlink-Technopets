@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\StudentStatus;
 use App\Models\Post;
+use App\Enums\YearLevel;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -52,7 +53,7 @@ class Student extends Model
     ];
 
     protected $casts = [
-        'status'     => StudentStatus::class,
+        'status' => StudentStatus::class,
         'year_level' => 'integer',
     ];
 
@@ -60,7 +61,7 @@ class Student extends Model
     protected function name(): Attribute
     {
         return Attribute::make(
-            get: fn (): string => trim("{$this->first_name} {$this->last_name}"),
+            get: fn(): string => trim("{$this->first_name} {$this->last_name}"),
         );
     }
 
@@ -87,4 +88,26 @@ class Student extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
+
+    public function toAdminRow(): array
+    {
+        return [
+            'id' => $this->id,
+            'student_id' => $this->student_number,
+            'name' => $this->name,
+            'year_level' => YearLevel::tryFrom($this->year_level)?->label() ?? 'Not Set',
+            'section' => $this->section,
+            'verification_status' => $this->resolveVerificationStatus($this->status),
+            'account_status' => $this->status->isActive() ? 'active' : 'suspended',
+        ];
+    }
+
+    private function resolveVerificationStatus(StudentStatus $status): string
+    {
+        return match ($status) {
+            StudentStatus::Suspended => StudentStatus::Verified->value,
+            default => $status->value,
+        };
+    }
+
 }

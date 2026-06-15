@@ -78,7 +78,7 @@ final class AdminDashboardService
           'time' => $time->format('g:i A'),
           'flagged' => $row->status === 'flagged',
           'name' => $row->status === 'flagged'
-            ? trim("{$row->first_name} {$row->last_name}")
+            ? trim(" ({$row->anonymous_name}) {$row->first_name} {$row->last_name}")
             : ($row->anonymous_name ?: 'Anonymous (not set)'),
         ];
       });

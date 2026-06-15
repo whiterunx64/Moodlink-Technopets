@@ -8,6 +8,7 @@ import type { Student } from '@/types';
 defineProps<{ student: Student }>();
 
 defineEmits<{
+    register: [];
     verify: [];
     reject: [];
     suspend: [];
@@ -60,6 +61,7 @@ defineEmits<{
         <td class="px-4 py-3">
             <StudentActions
                 :student="student"
+                @register="$emit('register')"
                 @verify="$emit('verify')"
                 @reject="$emit('reject')"
                 @suspend="$emit('suspend')"

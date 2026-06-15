@@ -147,7 +147,7 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer); });
         <div class="bg-white rounded-2xl border border-border-light shadow-sm">
           <div class="px-5 pt-5 pb-4 border-b border-border-light flex items-center justify-between">
             <h3 class="text-base font-semibold text-text-primary">Upcoming Appointments</h3>
-            <a :href="route('appointments.index')" class="text-xs text-sidebar font-medium hover:underline">View all →</a>
+            <!-- <a :href="route('appointments.index')" class="text-xs text-sidebar font-medium hover:underline">View all →</a> -->
           </div>
           <div class="divide-y divide-border-light overflow-y-auto max-h-96">
             <div v-for="apt in appointments" :key="apt.id"

@@ -26,7 +26,7 @@ const nav_items: NavItem[] = [
   { label: 'Users', icon: UserGroupIcon, href: route('user-accounts.index') }, 
   { label: 'Post Management',  icon: DocumentTextIcon, href: route('post-management.index') },
   { label: 'Summary Reports', icon: ChartBarIcon,     href: route('summary-reports.index') },
-  { label: 'Appointments',    icon: CalendarDaysIcon, href: route('appointments.index') },
+  //{ label: 'Appointments',    icon: CalendarDaysIcon, href: route('appointments.index') },
   { label: 'Account',         icon: UserCircleIcon,   href: route('profile.show') },
 ];
 </script>

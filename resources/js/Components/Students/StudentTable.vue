@@ -8,6 +8,7 @@ defineProps<{
 }>();
 
 const emit = defineEmits<{
+    register: [student: Student];
     verify: [student: Student];
     reject: [student: Student];
     suspend: [student: Student];
@@ -42,6 +43,7 @@ const emit = defineEmits<{
                         v-for="student in rows"
                         :key="student.id"
                         :student="student"
+                        @register="emit('register', student)" 
                         @verify="emit('verify', student)"
                         @reject="emit('reject', student)"
                         @suspend="emit('suspend', student)"
