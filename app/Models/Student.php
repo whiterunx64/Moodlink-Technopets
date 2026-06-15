@@ -3,20 +3,20 @@
 namespace App\Models;
 
 use App\Enums\StudentStatus;
-use App\Models\Post;
 use App\Enums\YearLevel;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use function intval;
+
 /**
- * Represents a Student in the system.
+ * Student model representing enrolled users in the system.
  *
  * @property int $id
- * @property string|null $user_id Supabase auth user id (set on verification).
+ * @property string|null $user_id
  * @property string $student_number
  * @property string $first_name
  * @property string $last_name
@@ -30,15 +30,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read User|null $user
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Post> $posts
  *
- * @method static Builder|Student verified()
- * @method static Builder|Student withStatus(StudentStatus $status)
+ * @method static Builder verified()
+ * @method static Builder withStatus(StudentStatus $status)
+ * @method static Builder matchingSearch(string $search)
+ * @method static Builder byYearLevel(int $yearLevel)
+ * @method static Builder byTab(string $tab)
  */
 class Student extends Model
 {
     protected $table = 'students';
 
-    // The students table has no created_at / updated_at columns.
     public $timestamps = false;
+
+    public const int ADMIN_PAGE_SIZE = 7;
 
     protected $fillable = [
         'user_id',
@@ -57,7 +61,17 @@ class Student extends Model
         'year_level' => 'integer',
     ];
 
-    /** Full name composed from first and last name. */
+    /** @return HasMany<Post> */
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class, 'student_id');
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id', 'id');
+    }
+
     protected function name(): Attribute
     {
         return Attribute::make(
@@ -65,49 +79,101 @@ class Student extends Model
         );
     }
 
-    /** @param Builder<Student> $query */
     public function scopeVerified(Builder $query): Builder
     {
         return $query->where('status', StudentStatus::Verified->value);
     }
 
-    /** @param Builder<Student> $query */
     public function scopeWithStatus(Builder $query, StudentStatus $status): Builder
     {
         return $query->where('status', $status->value);
     }
 
-    /** @return HasMany<Post> */
-    public function posts(): HasMany
+    public function scopeMatchingSearch(Builder $query, string $search): Builder
     {
-        return $this->hasMany(Post::class, 'student_id');
+        $pattern = "%{$search}%";
+
+        return $query->where(function (Builder $q) use ($pattern): void {
+            $q->where('student_number', 'ilike', $pattern)
+                ->orWhere('first_name', 'ilike', $pattern)
+                ->orWhere('last_name', 'ilike', $pattern);
+        });
     }
 
-    /** The Supabase auth user linked to this student (set on verification). */
-    public function user(): BelongsTo
+    public function scopeByYearLevel(Builder $query, int $yearLevel): Builder
     {
-        return $this->belongsTo(User::class, 'user_id', 'id');
+        return $query->where('year_level', $yearLevel);
     }
 
-    public function toAdminRow(): array
+    public function scopeByTab(Builder $query, string $tab): Builder
     {
+        $status = match ($tab) {
+            'Pending' => StudentStatus::Pending,
+            'Verified' => StudentStatus::Verified,
+            'Suspended' => StudentStatus::Suspended,
+            default => null,
+        };
+
+        return $status !== null ? $query->withStatus($status) : $query;
+    }
+
+    public static function queryWithFilters(array $filters): Builder
+    {
+        $search = trim((string) ($filters['search'] ?? ''));
+        $yearLevel = (int) ($filters['year_level'] ?? 0);
+
+        return static::query()
+            ->when($search !== '', fn(Builder $q) => $q->matchingSearch($search))
+            ->when($yearLevel !== 0, fn(Builder $q) => $q->byYearLevel($yearLevel));
+    }
+
+    public static function queryWithFiltersAndTab(array $filters): Builder
+    {
+        $tab = $filters['tab'] ?? 'All';
+
+        return static::queryWithFilters($filters)->byTab($tab);
+    }
+
+    public static function countsByTab(array $filters): array
+    {
+        $base = static::queryWithFilters($filters);
+
+        $countsPerStatus = (clone $base)
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        return [
+            'All'       => (clone $base)->count(),
+            'Pending'   => intval($countsPerStatus->get(StudentStatus::Pending->value,   0)),
+            'Verified'  => intval($countsPerStatus->get(StudentStatus::Verified->value,  0)),
+            'Suspended' => intval($countsPerStatus->get(StudentStatus::Suspended->value, 0)),
+        ];
+    }
+
+    public function toListRow(): array
+    {
+        $yearLabel = YearLevel::tryFrom($this->year_level)?->label() ?? 'Not Set';
+        $verificationStatus = $this->displayVerificationStatus($this->status);
+        $accountStatus = $this->status->isActive() ? 'active' : 'suspended';
+
         return [
             'id' => $this->id,
             'student_id' => $this->student_number,
             'name' => $this->name,
-            'year_level' => YearLevel::tryFrom($this->year_level)?->label() ?? 'Not Set',
+            'year_level' => $yearLabel,
             'section' => $this->section,
-            'verification_status' => $this->resolveVerificationStatus($this->status),
-            'account_status' => $this->status->isActive() ? 'active' : 'suspended',
+            'verification_status' => $verificationStatus,
+            'account_status' => $accountStatus,
         ];
     }
 
-    private function resolveVerificationStatus(StudentStatus $status): string
+    private function displayVerificationStatus(StudentStatus $status): string
     {
-        return match ($status) {
-            StudentStatus::Suspended => StudentStatus::Verified->value,
-            default => $status->value,
-        };
-    }
+        if ($status === StudentStatus::Suspended) {
+            return StudentStatus::Verified->value;
+        }
 
+        return $status->value;
+    }
 }
