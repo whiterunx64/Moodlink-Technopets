@@ -15,24 +15,49 @@ final class StudentAccountService
     }
 
     /**
-     * Transition a student to a new status, enforcing allowed transitions.
-     *
-     * @throws DomainException when the transition is not allowed.
+     * @throws DomainException when the student is not Pending or Unverified.
      */
-    public function changeStudentStatus(Student $student, StudentStatus $targetStatus): Student
+    public function verifyStudent(Student $student): void
     {
-        $this->ensureStatusChangeIsAllowed($student, $targetStatus);
+        $this->ensureStudentCanBeVerified($student);
 
-        $student->update(['status' => $targetStatus]);
-
-        return $student;
+        $student->update(['status' => StudentStatus::Verified->value]);
     }
 
+    /**
+     * @throws DomainException when the student is not Pending.
+     */
+    public function unverifyStudent(Student $student): void
+    {
+        $this->ensureStudentCanBeUnverified($student);
+
+        $student->update(['status' => StudentStatus::Unverified->value]);
+    }
 
     /**
-     * Create Supabase account and mark student as verified.
-     * 
-     * @throws DomainException when the student is not pending.
+     * @throws DomainException when the student is not Verified.
+     */
+    public function suspendStudent(Student $student): void
+    {
+        $this->ensureStudentCanBeSuspended($student);
+
+        $student->update(['status' => StudentStatus::Suspended->value]);
+    }
+
+    /**
+     * @throws DomainException when the student is not Suspended.
+     */
+    public function reactivateStudent(Student $student): void
+    {
+        $this->ensureStudentCanBeReactivated($student);
+
+        $student->update(['status' => StudentStatus::Verified->value]);
+    }
+
+    /**
+     * Account Registration.
+     *
+     * @throws DomainException when the student is not Pending.
      * @throws \Exception when Supabase signup fails.
      */
     public function createSupabaseAccountForStudent(Student $student, string $email, string $password): void
@@ -50,17 +75,39 @@ final class StudentAccountService
             data: $supabaseMetadata,
         );
 
-        $this->changeStudentStatus($student, StudentStatus::Verified);
+        $this->verifyStudent($student);
     }
 
     // ── Private Guards ────────────────────────────────────────────────────────
 
-    private function ensureStatusChangeIsAllowed(Student $student, StudentStatus $targetStatus): void
+    private function ensureStudentCanBeVerified(Student $student): void
     {
-        if (!$student->status->canTransitionTo($targetStatus)) {
-            throw new DomainException(
-                "Cannot change student status from {$student->status->value} to {$targetStatus->value}."
-            );
+        $isEligible = $student->status === StudentStatus::Pending
+            || $student->status === StudentStatus::Unverified;
+
+        if (!$isEligible) {
+            throw new DomainException('Only pending or unverified students can be verified.');
+        }
+    }
+
+    private function ensureStudentCanBeUnverified(Student $student): void
+    {
+        if ($student->status !== StudentStatus::Pending) {
+            throw new DomainException('Only pending students can be set to unverified.');
+        }
+    }
+
+    private function ensureStudentCanBeSuspended(Student $student): void
+    {
+        if ($student->status !== StudentStatus::Verified) {
+            throw new DomainException('Only verified students can be suspended.');
+        }
+    }
+
+    private function ensureStudentCanBeReactivated(Student $student): void
+    {
+        if ($student->status !== StudentStatus::Suspended) {
+            throw new DomainException('Only suspended students can be reactivate.');
         }
     }
 

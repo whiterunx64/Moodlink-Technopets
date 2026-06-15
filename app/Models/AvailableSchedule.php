@@ -54,6 +54,17 @@ class AvailableSchedule extends Model
     }
 
     /**
+     * Fetch all available slots and shape them for UI display.
+     */
+    public static function getAvailableSlotsList(): \Illuminate\Support\Collection
+    {
+        return static::query()
+            ->available()
+            ->get()
+            ->map(fn(AvailableSchedule $schedule) => $schedule->toSlotData());
+    }
+
+    /**
      * Data structure for UI slot display.
      */
     public function toSlotData(): array

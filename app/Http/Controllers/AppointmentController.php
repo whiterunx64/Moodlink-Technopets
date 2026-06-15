@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Appointment;
 use App\Models\AvailableSchedule;
 use App\Services\AppointmentService;
+use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -17,51 +17,54 @@ class AppointmentController extends Controller
         private readonly AppointmentService $service,
     ) {
     }
-    
+
     public function index(Request $request): Response
     {
         $tab = $request->string('tab')->toString() ?: 'requests';
-
-        $appointments = $this->loadAppointmentsForTab($tab);
-
-        $tabCounts = Appointment::getCountsPerStatusTab();
-
-        $availableSlots = $this->loadAvailableSlots();
+        $appointments   = Appointment::getListForTab($tab);
+        $tabCounts      = Appointment::getCountsPerStatusTab();
+        $availableSlots = AvailableSchedule::getAvailableSlotsList();
 
         return Inertia::render('Appointments/Index', [
-            'appointments' => $appointments,
-            'tabCounts' => $tabCounts,
+            'appointments'   => $appointments,
+            'tabCounts'      => $tabCounts,
             'availableSlots' => $availableSlots,
-            'filters' => [
-                'tab' => $tab,
-            ],
+            'filters'        => ['tab' => $tab],
         ]);
     }
 
     public function approve(Appointment $appointment): RedirectResponse
     {
-        $this->service->approve($appointment);
+        try {
+            $this->service->approve($appointment);
+        } catch (DomainException $exception) {
+            return back()->with('flash_error', $exception->getMessage());
+        }
 
-        return back();
+        return back()->with('flash_success', 'Appointment approved.');
     }
 
     public function deny(Appointment $appointment): RedirectResponse
     {
-        $this->service->deny($appointment);
+        try {
+            $this->service->deny($appointment);
+        } catch (DomainException $exception) {
+            return back()->with('flash_error', $exception->getMessage());
+        }
 
-        return back();
+        return back()->with('flash_success', 'Appointment denied.');
     }
 
-    /**
-     * Mark an appointment as completed.
-     */
     public function complete(Appointment $appointment): RedirectResponse
     {
-        $this->service->complete($appointment);
+        try {
+            $this->service->complete($appointment);
+        } catch (DomainException $exception) {
+            return back()->with('flash_error', $exception->getMessage());
+        }
 
-        return back();
+        return back()->with('flash_success', 'Appointment marked as completed.');
     }
-
 
     /**
      * Store a new available schedule slot.
@@ -71,45 +74,32 @@ class AppointmentController extends Controller
     public function storeSchedule(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'date' => ['required', 'date'],
+            'date'       => ['required', 'date'],
             'start_time' => ['required', 'date_format:H:i'],
         ]);
 
         $scheduledAt = "{$validated['date']} {$validated['start_time']}:00";
 
-        $this->service->addSlot($scheduledAt);
+        try {
+            $this->service->addSlot($scheduledAt);
+        } catch (DomainException $exception) {
+            return back()->with('flash_error', $exception->getMessage());
+        }
 
-        return back();
+        return back()->with('flash_success', 'Schedule slot added.');
     }
 
+    /**
+     * Delete an available schedule slot.
+     */
     public function destroySchedule(AvailableSchedule $schedule): RedirectResponse
     {
-        $this->service->deleteSlot($schedule);
+        try {
+            $this->service->deleteSlot($schedule);
+        } catch (DomainException $exception) {
+            return back()->with('flash_error', $exception->getMessage());
+        }
 
-        return back();
-    }
-
-    /**
-     * Query and shape appointments for the given tab, ordered by datetime.
-     */
-    private function loadAppointmentsForTab(string $tab): Collection
-    {
-        return Appointment::query()
-            ->with('student')
-            ->forTab($tab)
-            ->orderBy('datetime')
-            ->get()
-            ->map(fn(Appointment $appointment) => $appointment->toListRow());
-    }
-
-    /**
-     * Query all untaken schedule slots, ordered by datetime.
-     */
-    private function loadAvailableSlots(): Collection
-    {
-        return AvailableSchedule::query()
-            ->available()
-            ->get()
-            ->map(fn(AvailableSchedule $schedule) => $schedule->toSlotData());
+        return back()->with('flash_success', 'Schedule slot removed.');
     }
 }

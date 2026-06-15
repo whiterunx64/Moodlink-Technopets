@@ -40,13 +40,21 @@ Route::middleware(['supabase.auth', 'supabase.token'])->group(function () {
         ->name('user-accounts.index');
     Route::post('/user-accounts/{student}/register', [UserAccountController::class, 'register'])
         ->name('user-accounts.register');
-    Route::patch('/user-accounts/{student}/status', [UserAccountController::class, 'updateStatus'])
-        ->name('user-accounts.update-status');
+    Route::patch('/user-accounts/{student}/verify', [UserAccountController::class, 'verify'])
+        ->name('user-accounts.verify');
+    Route::patch('/user-accounts/{student}/unverify', [UserAccountController::class, 'unverify'])
+        ->name('user-accounts.unverify');
+    Route::patch('/user-accounts/{student}/suspend', [UserAccountController::class, 'suspend'])
+        ->name('user-accounts.suspend');
+    Route::patch('/user-accounts/{student}/reactivate', [UserAccountController::class, 'reactivate'])
+        ->name('user-accounts.reactivate');
 
     Route::get('/post-management', [PostManagementController::class, 'index'])
         ->name('post-management.index');
-    Route::patch('/post-management/{post}/toggle-status', [PostManagementController::class, 'toggleFlag'])
-        ->name('post-management.toggle-status');
+    Route::patch('/post-management/{post}/flagPost', [PostManagementController::class, 'flagPost'])
+        ->name('post-management.flagPost');
+    Route::patch('/post-management/{post}/unflagPost', [PostManagementController::class, 'unflagPost'])
+        ->name('post-management.unflagPost');
 
     Route::get('/summary-reports', [SummaryReportController::class, 'index'])->name('summary-reports.index');
     Route::get('/summary-reports/section/{section}', [SummaryReportController::class, 'showSection'])->name('summary-reports.section');

@@ -1,13 +1,33 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 import AppSidebar from '@/Components/AppSidebar.vue';
 import AppHeader from '@/Components/AppHeader.vue';
+import { useToast } from '@/composables/useToast';
 
 defineProps<{
   title?: string;
 }>();
 
 const sidebar_open = ref(false);
+const page = usePage();
+const { add: addToast } = useToast();
+
+const flash = () => page.props.flash as { error?: string; success?: string };
+
+watch(
+  () => flash()?.error,
+  (error) => {
+    if (error) addToast({ type: 'error', message: error });
+  },
+);
+
+watch(
+  () => flash()?.success,
+  (success) => {
+    if (success) addToast({ type: 'success', message: success });
+  },
+);
 
 function handleResize() {
   if (window.innerWidth >= 1024) sidebar_open.value = false;

@@ -71,20 +71,13 @@ function goToPage(page: number) {
 }
 
 // ── Status actions ────────────────────────────────────────────────────────────
-// Each action PATCHes the target status; the enum guards the transition server-side.
-function changeStatus(student: Student, status: string) {
-    router.patch(
-        route('user-accounts.update-status', student.id),
-        { status },
-        { preserveScroll: true, preserveState: true, only: ['students', 'tabCounts'] },
-    );
-}
+const patchOptions = { preserveScroll: true, preserveState: true, only: ['students', 'tabCounts', 'flash'] };
 
-const register = (student: Student) => openRegisterModal(student);
-const verify = (student: Student) => changeStatus(student, 'verified');
-const reject = (student: Student) => changeStatus(student, 'unverified');
-const suspend = (student: Student) => changeStatus(student, 'suspended');
-const reactivate = (student: Student) => changeStatus(student, 'verified');
+const register   = (student: Student) => openRegisterModal(student);
+const verify     = (student: Student) => router.patch(route('user-accounts.verify',     student.id), {}, patchOptions);
+const reject     = (student: Student) => router.patch(route('user-accounts.unverify',   student.id), {}, patchOptions);
+const suspend    = (student: Student) => router.patch(route('user-accounts.suspend',    student.id), {}, patchOptions);
+const reactivate = (student: Student) => router.patch(route('user-accounts.reactivate', student.id), {}, patchOptions);
 </script>
 
 <template>

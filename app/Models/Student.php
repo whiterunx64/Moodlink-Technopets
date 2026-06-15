@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 use function intval;
 
@@ -125,6 +126,20 @@ class Student extends Model
         return static::query()
             ->when($search !== '', fn(Builder $q) => $q->matchingSearch($search))
             ->when($yearLevel !== 0, fn(Builder $q) => $q->byYearLevel($yearLevel));
+    }
+    
+    public static function paginatedListWithFilters(array $filters): LengthAwarePaginator
+    {
+        $paginator = static::queryWithFiltersAndTab($filters)
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->paginate(static::ADMIN_PAGE_SIZE);
+
+        $paginator->withQueryString();
+
+        $paginator->through(fn(Student $student) => $student->toListRow());
+
+        return $paginator;
     }
 
     public static function queryWithFiltersAndTab(array $filters): Builder

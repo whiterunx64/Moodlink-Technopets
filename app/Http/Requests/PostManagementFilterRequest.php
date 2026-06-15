@@ -24,6 +24,19 @@ class PostManagementFilterRequest extends FormRequest
             'sort'    => ['sometimes', 'nullable', Rule::in(['latest', 'oldest'])],
         ];
     }
+    /**
+     * Return the validated filter values as a typed array with defaults.
+     */
+    public function filters(): array
+    {
+        return [
+            'status'  => $this->validated('status'),
+            'section' => $this->validated('section'),
+            'mood'    => $this->validated('mood'),
+            'sort'    => $this->validated('sort') ?? 'latest',
+        ];
+    }
+
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {

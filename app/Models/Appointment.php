@@ -99,6 +99,15 @@ class Appointment extends Model
         return $query->where('student_id', $studentId);
     }
 
+    public static function getListForTab(string $tab): \Illuminate\Support\Collection
+    {
+        return static::query()
+            ->with('student')
+            ->forTab($tab)
+            ->orderBy('datetime')
+            ->get()
+            ->map(fn(Appointment $appointment) => $appointment->toListRow());
+    }
 
     /**
      * Return appointment counts grouped by UI tab name.
@@ -133,7 +142,7 @@ class Appointment extends Model
             'status' => $this->status->label(),
             'date' => $this->datetime->format('M d, Y'),
             'time' => $this->datetime->format('h:i A'),
-            'studentName' => $student?->name ?? 'Unknown',
+            'studentName' => $student?->name ?? 'Null',
             'section' => $student?->section ?? '',
             'studentProfile' => $this->buildStudentProfile($student),
         ];

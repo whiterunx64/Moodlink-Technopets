@@ -83,16 +83,22 @@ function goToPage(page: number) {
     });
 }
 
-// ── Toggle flag ───────────────────────────────────────────────────────────────
+// ── Flag / unflag ─────────────────────────────────────────────────────────────
 function toggleFlag(post: Post) {
-    router.patch(route('post-management.toggle-status', post.id), {}, {
+    const routeName = post.status === 'flagged'
+        ? 'post-management.unflagPost'
+        : 'post-management.flagPost';
+
+    const nextStatus = post.status === 'flagged' ? 'safe' : 'flagged';
+
+    router.patch(route(routeName, post.id), {}, {
         preserveScroll: true,
-        only: ['posts', 'filters'],
+        only: ['posts', 'filters', 'flash'],
         onSuccess: () => {
             if (selectedPost.value && selectedPost.value.id === post.id) {
                 selectedPost.value = {
                     ...selectedPost.value,
-                    status: selectedPost.value.status === 'flagged' ? 'safe' : 'flagged',
+                    status: nextStatus,
                 };
             }
         },

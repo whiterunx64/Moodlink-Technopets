@@ -3,13 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\RegisterStudentRequest;
-use App\Http\Requests\UpdateStudentStatusRequest;
 use App\Http\Requests\UserAccountFilterRequest;
 use App\Models\Student;
 use App\Services\StudentAccountService;
 use DomainException;
 use Exception;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,14 +19,11 @@ class UserAccountController extends Controller
     ) {
     }
 
-    /**
-     * Display paginated user accounts with filters and tab counts.
-     */
     public function index(UserAccountFilterRequest $request): Response
     {
         $filters = $request->filters();
 
-        $students = $this->paginateStudentAccounts($filters);
+        $students = Student::paginatedListWithFilters($filters);
 
         $tabCounts = Student::countsByTab($filters);
 
@@ -39,24 +34,72 @@ class UserAccountController extends Controller
         ]);
     }
 
-    public function updateStatus(
-        UpdateStudentStatusRequest $request,
-        Student $student,
-    ): RedirectResponse {
-        $targetStatus = $request->targetStatus();
-
+    /**
+     * Verify an unverified student.
+     */
+    public function verify(Student $student): RedirectResponse
+    {
         try {
-            $this->service->changeStudentStatus(
-                student: $student,
-                targetStatus: $targetStatus,
-            );
+            $this->service->verifyStudent($student);
         } catch (DomainException $exception) {
-            return back()->withErrors([
-                'status' => $exception->getMessage(),
-            ]);
+            return back()->with('flash_error', $exception->getMessage());
         }
 
-        return back();
+        return back()->with(
+            'flash_success',
+            'Student has been verified and marked as active.'
+        );
+    }
+
+    /**
+     * Set a pending student's status to Unverified.
+     */
+    public function unverify(Student $student): RedirectResponse
+    {
+        try {
+            $this->service->unverifyStudent($student);
+        } catch (DomainException $exception) {
+            return back()->with('flash_error', $exception->getMessage());
+        }
+
+        return back()->with(
+            'flash_success',
+            'Student has been set to unverified status and removed from verified listings.'
+        );
+    }
+
+    /**
+     * Suspend a verified student's account.
+     */
+    public function suspend(Student $student): RedirectResponse
+    {
+        try {
+            $this->service->suspendStudent($student);
+        } catch (DomainException $exception) {
+            return back()->with('flash_error', $exception->getMessage());
+        }
+
+        return back()->with(
+            'flash_success',
+            'Student account has been suspended and access has been restricted.'
+        );
+    }
+
+    /**
+     * Reactivate a suspended student's account.
+     */
+    public function reactivate(Student $student): RedirectResponse
+    {
+        try {
+            $this->service->reactivateStudent($student);
+        } catch (DomainException $exception) {
+            return back()->with('flash_error', $exception->getMessage());
+        }
+
+        return back()->with(
+            'flash_success',
+            'Student account has been reactivated and restored to active status.'
+        );
     }
 
     /**
@@ -69,10 +112,8 @@ class UserAccountController extends Controller
         RegisterStudentRequest $request,
         Student $student,
     ): RedirectResponse {
-        $validated = $request->validated();
-
-        $email = $validated['email'];
-        $password = $validated['password'];
+        $email = $request->validated('email');
+        $password = $request->validated('password');
 
         try {
             $this->service->createSupabaseAccountForStudent(
@@ -81,35 +122,11 @@ class UserAccountController extends Controller
                 password: $password,
             );
         } catch (DomainException $exception) {
-            return back()->withErrors([
-                'status' => $exception->getMessage(),
-            ]);
+            return back()->with('flash_error', $exception->getMessage());
         } catch (Exception $exception) {
-            return back()->withErrors([
-                'email' => 'Supabase registration failed: ' . $exception->getMessage(),
-            ]);
+            return back()->with('flash_error', 'Supabase registration failed: ' . $exception->getMessage());
         }
 
-        return back();
-    }
-
-    /**
-     * Paginate filtered student accounts for admin listing.
-     */
-    private function paginateStudentAccounts(array $filters): LengthAwarePaginator
-    {
-        $query = Student::queryWithFiltersAndTab($filters)
-            ->orderBy('last_name')
-            ->orderBy('first_name');
-
-        $paginator = $query->paginate(Student::ADMIN_PAGE_SIZE);
-
-        $paginator->withQueryString();
-
-        $paginator->through(
-            fn(Student $student) => $student->toListRow()
-        );
-
-        return $paginator;
+        return back()->with('flash_success', 'Supabase account created and student verified.');
     }
 }
