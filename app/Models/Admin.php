@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\HasLoginTracking;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Validation\ValidationException;
-
-use function is_int;
 /**
  * @property string      $user_id
  * @property string      $role
@@ -31,7 +29,7 @@ use function is_int;
  */
 class Admin extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasLoginTracking;
 
     protected $fillable = [
         'user_id',
@@ -116,18 +114,10 @@ class Admin extends Model
      *
      * @method bool isActive()
      * Checks if the admin status is active.
-     *
-     * @method bool isLocked()
-     * Checks if the admin account is currently locked.
      */
     public function isActive(): bool
     {
         return $this->status === 'active';
-    }
-
-    public function isLocked(): bool
-    {
-        return $this->locked_until?->isFuture() ?? false;
     }
 
     /**
@@ -149,61 +139,4 @@ class Admin extends Model
         return static::withTrashed()->where('user_id', $userId)->first();
     }
 
-    /**
-     * Authentication lifecycle
-     *
-     * @method void abortIfLocked()
-     * Prevents login if the account is currently locked.
-     *
-     * @method void recordFailedAttempt()
-     * Increments failed login attempts and locks account if threshold is reached.
-     *
-     * @method void activateAfterLogin(string $ip)
-     * Restores account if needed and resets login state after successful login.
-     */
-    public function abortIfLocked(): void
-    {
-        if ($this->isLocked()) {
-            throw ValidationException::withMessages([
-                'auth_error' => [
-                    'Your account is locked until ' . $this->locked_until->diffForHumans() . '.'
-                ],
-            ]);
-        }
-    }
-
-    public function recordFailedAttempt(): void
-    {
-        $maxAttempts  = config('supabase-auth.rate_limiting.login.max_attempts');
-        $decayMinutes = config('supabase-auth.rate_limiting.login.decay_minutes');
-
-        if (!is_int($maxAttempts) || $maxAttempts <= 0 ||
-            !is_int($decayMinutes) || $decayMinutes <= 0) {
-            throw new \RuntimeException('supabase-auth rate limiting config must have positive integer values.');
-        }
-
-        $attempts = $this->failed_login_attempts + 1;
-        $updates  = ['failed_login_attempts' => $attempts];
-
-        if ($attempts >= $maxAttempts) {
-            $updates['locked_until'] = now()->addMinutes($decayMinutes);
-        }
-
-        $this->update($updates);
-    }
-
-    public function activateAfterLogin(string $ip): void
-    {
-        if ($this->trashed()) {
-            $this->restore();
-        }
-
-        $this->update([
-            'status' => 'active',
-            'failed_login_attempts' => 0,
-            'locked_until' => null,
-            'last_login_at' => now(),
-            'last_login_ip' => $ip,
-        ]);
-    }
 }

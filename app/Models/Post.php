@@ -4,10 +4,10 @@ namespace App\Models;
 
 use App\Enums\PostMood;
 use App\Enums\PostStatus;
+use App\Traits\HasPaginatedList;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
  * @property int                        $id
@@ -27,6 +27,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
  */
 class Post extends Model
 {
+    use HasPaginatedList;
     protected $table = 'posts';
 
     public const UPDATED_AT = null;
@@ -117,16 +118,9 @@ class Post extends Model
             ->sortedByDateDirection($direction);
     }
 
-    public static function paginatedListWithFilters(array $filters): LengthAwarePaginator
+    protected static function filteredQuery(array $filters): Builder
     {
-        $paginator = static::queryVerifiedPostsWithFilters($filters)
-            ->paginate(static::ADMIN_PAGE_SIZE);
-
-        $paginator->withQueryString();
-
-        $paginator->through(fn(Post $post) => $post->toListRow());
-
-        return $paginator;
+        return static::queryVerifiedPostsWithFilters($filters);
     }
 
     public function toListRow(): array

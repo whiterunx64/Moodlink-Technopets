@@ -4,12 +4,12 @@ namespace App\Models;
 
 use App\Enums\StudentStatus;
 use App\Enums\YearLevel;
+use App\Traits\HasPaginatedList;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 use function intval;
 
@@ -39,6 +39,8 @@ use function intval;
  */
 class Student extends Model
 {
+    use HasPaginatedList;
+
     protected $table = 'students';
 
     public $timestamps = false;
@@ -128,18 +130,11 @@ class Student extends Model
             ->when($yearLevel !== 0, fn(Builder $q) => $q->byYearLevel($yearLevel));
     }
     
-    public static function paginatedListWithFilters(array $filters): LengthAwarePaginator
+    protected static function filteredQuery(array $filters): Builder
     {
-        $paginator = static::queryWithFiltersAndTab($filters)
+        return static::queryWithFiltersAndTab($filters)
             ->orderBy('last_name')
-            ->orderBy('first_name')
-            ->paginate(static::ADMIN_PAGE_SIZE);
-
-        $paginator->withQueryString();
-
-        $paginator->through(fn(Student $student) => $student->toListRow());
-
-        return $paginator;
+            ->orderBy('first_name');
     }
 
     public static function queryWithFiltersAndTab(array $filters): Builder

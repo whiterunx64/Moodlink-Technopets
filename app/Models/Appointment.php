@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\AppointmentStatus;
 use App\Enums\YearLevel;
+use App\Traits\HasInitials;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Appointment extends Model
 {
+    use HasInitials;
     protected $table = 'appointments';
 
     public $timestamps = false;
@@ -182,14 +184,4 @@ class Appointment extends Model
             ->toArray();
     }
 
-    /**
-     * Extract up to two initials from a full name string.
-     */
-    private function getInitialsFromName(string $name): string
-    {
-        $words = explode(' ', trim($name));
-        $initials = collect($words)->map(fn(string $word) => $word[0] ?? '')->take(2)->implode('');
-
-        return strtoupper($initials);
-    }
 }
