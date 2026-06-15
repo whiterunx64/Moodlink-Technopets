@@ -3,10 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Query\Expression;
-use Illuminate\Support\Facades\DB;
 
+/**
+ * @property int                        $id
+ * @property bool                       $isTaken
+ * @property \Illuminate\Support\Carbon $datetime
+ *
+ * @method static Builder|AvailableSchedule whereIsTaken(bool $value)
+ * @method static Builder|AvailableSchedule available()
+ */
 class AvailableSchedule extends Model
 {
     protected $table = 'available_schedules';
@@ -20,39 +27,41 @@ class AvailableSchedule extends Model
 
     protected $casts = [
         'datetime' => 'datetime',
-        // Note: 'isTaken' is NOT cast as 'boolean' here —
-        // it's handled manually below to play nicely with Postgres.
     ];
 
-    /**
-     * Accessor: always return a real PHP bool, regardless of
-     * whether the underlying value came from the DB (true/false)
-     * or is still an unsaved Expression on this instance.
-     */
-    public function getIsTakenAttribute($value): bool
+    protected function isTaken(): Attribute
     {
-        if ($value instanceof Expression) {
-            return $value->getValue(DB::connection()->getQueryGrammar()) === 'true';
-        }
-
-        return (bool) $value;
+        return Attribute::make(
+            get: fn($value) => filter_var($value, FILTER_VALIDATE_BOOLEAN),
+            set: fn(bool $value) => ['isTaken' => $value ? 'true' : 'false'],
+        );
     }
 
     /**
-     * Mutator: convert PHP bool -> raw SQL literal so it's sent
-     * to Postgres as `true`/`false`, not `1`/`0`.
-     */
-    public function setIsTakenAttribute($value): void
-    {
-        $this->attributes['isTaken'] = DB::raw($value ? 'true' : 'false');
-    }
-
-    /**
-     * Query scope for safely filtering on isTaken.
-     * Usage: AvailableSchedule::whereIsTaken(false)->get();
+     * Filter schedules by isTaken status.
      */
     public function scopeWhereIsTaken(Builder $query, bool $value): Builder
     {
         return $query->whereRaw('"isTaken" = ?::boolean', [$value]);
+    }
+
+    /**
+     * Get only available (not taken) schedules ordered by datetime.
+     */
+    public function scopeAvailable(Builder $query): Builder
+    {
+        return $this->scopeWhereIsTaken($query, false)->orderBy('datetime');
+    }
+
+    /**
+     * Data structure for UI slot display.
+     */
+    public function toSlotData(): array
+    {
+        return [
+            'id' => $this->id,
+            'date' => $this->datetime->format('M d, Y'),
+            'startTime' => $this->datetime->format('h:i A'),
+        ];
     }
 }

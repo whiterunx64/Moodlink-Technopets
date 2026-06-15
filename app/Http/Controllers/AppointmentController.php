@@ -7,62 +7,109 @@ use App\Models\AvailableSchedule;
 use App\Services\AppointmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class AppointmentController extends Controller
 {
-  public function __construct(
-    private readonly AppointmentService $appointments,
-  ) {
-  }
+    public function __construct(
+        private readonly AppointmentService $service,
+    ) {
+    }
+    
+    public function index(Request $request): Response
+    {
+        $tab = $request->string('tab')->toString() ?: 'requests';
 
-  public function index(Request $request): Response
-  {
-    $tab = $request->string('tab')->toString() ?: 'requests';
+        $appointments = $this->loadAppointmentsForTab($tab);
 
-    return Inertia::render('Appointments/Index', [
-      'appointments' => $this->appointments->getByTab($tab),
-      'tabCounts' => $this->appointments->tabCounts(),
-      'availableSlots' => $this->appointments->availableSlots(),
-      'filters' => ['tab' => $tab],
-    ]);
-  }
+        $tabCounts = Appointment::getCountsPerStatusTab();
 
-  public function approve(Appointment $appointment): RedirectResponse
-  {
-    $this->appointments->approve($appointment);
-    return back();
-  }
+        $availableSlots = $this->loadAvailableSlots();
 
-  public function deny(Appointment $appointment): RedirectResponse
-  {
-    $this->appointments->deny($appointment);
-    return back();
-  }
+        return Inertia::render('Appointments/Index', [
+            'appointments' => $appointments,
+            'tabCounts' => $tabCounts,
+            'availableSlots' => $availableSlots,
+            'filters' => [
+                'tab' => $tab,
+            ],
+        ]);
+    }
 
-  public function complete(Appointment $appointment): RedirectResponse
-  {
-    $this->appointments->complete($appointment);
-    return back();
-  }
+    public function approve(Appointment $appointment): RedirectResponse
+    {
+        $this->service->approve($appointment);
 
-  public function storeSchedule(Request $request): RedirectResponse
-  {
-    $request->validate([
-      'date' => ['required', 'date'],
-      'start_time' => ['required', 'date_format:H:i'],
-    ]);
+        return back();
+    }
 
-    $datetime = $request->date . ' ' . $request->start_time . ':00';
-    $this->appointments->addSlot($datetime);
+    public function deny(Appointment $appointment): RedirectResponse
+    {
+        $this->service->deny($appointment);
 
-    return back();
-  }
+        return back();
+    }
 
-  public function destroySchedule(AvailableSchedule $schedule): RedirectResponse
-  {
-    $this->appointments->deleteSlot($schedule);
-    return back();
-  }
+    /**
+     * Mark an appointment as completed.
+     */
+    public function complete(Appointment $appointment): RedirectResponse
+    {
+        $this->service->complete($appointment);
+
+        return back();
+    }
+
+
+    /**
+     * Store a new available schedule slot.
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function storeSchedule(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'date' => ['required', 'date'],
+            'start_time' => ['required', 'date_format:H:i'],
+        ]);
+
+        $scheduledAt = "{$validated['date']} {$validated['start_time']}:00";
+
+        $this->service->addSlot($scheduledAt);
+
+        return back();
+    }
+
+    public function destroySchedule(AvailableSchedule $schedule): RedirectResponse
+    {
+        $this->service->deleteSlot($schedule);
+
+        return back();
+    }
+
+    /**
+     * Query and shape appointments for the given tab, ordered by datetime.
+     */
+    private function loadAppointmentsForTab(string $tab): Collection
+    {
+        return Appointment::query()
+            ->with('student')
+            ->forTab($tab)
+            ->orderBy('datetime')
+            ->get()
+            ->map(fn(Appointment $appointment) => $appointment->toListRow());
+    }
+
+    /**
+     * Query all untaken schedule slots, ordered by datetime.
+     */
+    private function loadAvailableSlots(): Collection
+    {
+        return AvailableSchedule::query()
+            ->available()
+            ->get()
+            ->map(fn(AvailableSchedule $schedule) => $schedule->toSlotData());
+    }
 }
