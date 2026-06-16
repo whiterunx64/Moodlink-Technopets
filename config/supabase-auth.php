@@ -18,6 +18,20 @@ return [
 
   /*
   |--------------------------------------------------------------------------
+  | Storage Configuration
+  |--------------------------------------------------------------------------
+  |
+  | Buckets used for file uploads. The avatar bucket must exist in Supabase
+  | Storage and be marked public so uploaded images resolve via public URL.
+  |
+  */
+
+  'storage' => [
+    'avatar_bucket' => env('SUPABASE_AVATAR_BUCKET', 'avatars'),
+  ],
+
+  /*
+  |--------------------------------------------------------------------------
   | JWT Configuration
   |--------------------------------------------------------------------------
   |

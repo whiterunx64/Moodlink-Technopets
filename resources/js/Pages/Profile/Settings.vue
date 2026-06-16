@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { router, useForm } from '@inertiajs/vue3';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ProfileCard from '@/Components/Profile/ProfileCard.vue';
@@ -19,12 +19,22 @@ const props = defineProps<{
         lastName: string;
         email: string;
         phone: string | null;
+        avatar: string | null;
         role: string;
         status: string;
     } | null;
+    notifications?: Partial<NotificationPreferences>;
 }>();
 
 const { add } = useToast();
+
+const NOTIFICATION_DEFAULTS: NotificationPreferences = {
+    newFlags: true,
+    appointments: true,
+    escalations: true,
+    weeklyReports: false,
+    systemUpdates: false,
+};
 
 const profile = ref<AdminProfile>({
     firstName: props.admin?.firstName ?? '',
@@ -36,12 +46,38 @@ const profile = ref<AdminProfile>({
 });
 
 const notifications = ref<NotificationPreferences>({
-    newFlags: true,
-    appointments: true,
-    escalations: true,
-    weeklyReports: false,
-    systemUpdates: false,
+    ...NOTIFICATION_DEFAULTS,
+    ...(props.notifications ?? {}),
 });
+
+// Persist notification toggles to Supabase user_metadata whenever they change.
+const notificationForm = useForm({ notifications: { ...notifications.value } });
+
+watch(notifications, (value) => {
+    notificationForm.notifications = { ...value };
+    notificationForm.patch(route('profile.preferences.update'), {
+        preserveScroll: true,
+        onSuccess: () => add({ type: 'success', message: 'Notification preferences saved.' }),
+        onError: () => add({ type: 'error', message: 'Could not save preferences. Please try again.' }),
+    });
+}, { deep: true });
+
+// --- Avatar upload ---
+const avatarForm = useForm<{ avatar: File | null }>({ avatar: null });
+
+function onChangeAvatar(file: File) {
+    avatarForm.avatar = file;
+    avatarForm.post(route('profile.avatar.update'), {
+        preserveScroll: true,
+        forceFormData: true,
+        onSuccess: () => add({ type: 'success', message: 'Avatar updated successfully.' }),
+        onError: (errors) => add({
+            type: 'error',
+            message: errors.avatar ?? 'Could not upload avatar. Please try again.',
+        }),
+        onFinish: () => avatarForm.reset(),
+    });
+}
 
 const showProfileModal = ref(false);
 const profileForm = useForm({
@@ -167,7 +203,8 @@ function submitDeleteAccount(password: string) {
     <AdminLayout title="Settings">
         <div class="max-w-4xl space-y-6">
             <ProfileCard :first-name="profile.firstName" :last-name="profile.lastName" :role="profile.role"
-                :status="admin?.status ?? 'inactive'" />
+                :status="admin?.status ?? 'inactive'" :avatar-url="admin?.avatar ?? null"
+                :uploading="avatarForm.processing" @change-avatar="onChangeAvatar" />
 
             <ProfileInfoForm :profile="profile" :processing="profileForm.processing" :errors="profileForm.errors"
                 @save="onSaveProfile" />

@@ -46,6 +46,7 @@ class ProfileUpdateRequest extends FormRequest
             // PH mobile in canonical international form: +63 followed by a 10-digit
             // number starting with 9 (e.g. +639171234567).
             'phone' => ['nullable', 'string', 'regex:/^\+639\d{9}$/'],
+            'avatar' => ['nullable', 'string', 'url', 'max:2048'],
         ];
     }
 

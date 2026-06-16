@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Contracts\CircuitBreakerInterface;
 use App\Contracts\RateLimiterInterface;
+use App\Contracts\AvatarStorageInterface;
 use App\Contracts\SupabaseAuthInterface;
 use App\Exceptions\ConfigurationException;
 use App\Guards\SupabaseGuard;
@@ -14,6 +15,7 @@ use App\Providers\SupabaseUserProvider;
 use App\Services\CacheManager;
 use App\Services\CircuitBreaker;
 use App\Services\RateLimiter;
+use App\Services\AvatarStorage;
 use App\Services\SupabaseAuth;
 use App\Services\SupabaseClient;
 use Illuminate\Support\Facades\Auth;
@@ -47,6 +49,12 @@ class AppServiceProvider extends ServiceProvider
             $app->make(SupabaseClient::class),
             $app->make(CacheManager::class),
             $app['log']->channel(config('supabase-auth.monitoring.logging.channel')),
+        ));
+
+        $this->app->singleton(AvatarStorageInterface::class, fn($app) => new AvatarStorage(
+            $app->make(SupabaseClient::class),
+            $app['log']->channel(config('supabase-auth.monitoring.logging.channel')),
+            config('supabase-auth.storage.avatar_bucket'),
         ));
     }
 

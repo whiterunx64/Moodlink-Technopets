@@ -95,7 +95,7 @@ class Admin extends Model
      * Name/phone are admin columns; email lives on the Supabase-managed user.
      * Writes are handled separately in ProfileController.
      *
-     * @return array{firstName: string, lastName: string, email: string|null, phone: string|null, role: string, status: string}
+     * @return array{firstName: string, lastName: string, email: string|null, phone: string|null, avatar: string|null, role: string, status: string}
      */
     public function profileSummary(): array
     {
@@ -104,6 +104,7 @@ class Admin extends Model
             'lastName' => $this->last_name,
             'email' => $this->user?->email,
             'phone' => $this->phone,
+            'avatar' => $this->avatar,
             'role' => $this->role,
             'status' => $this->status,
         ];
