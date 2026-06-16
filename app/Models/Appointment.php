@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\AppointmentStatus;
@@ -8,14 +10,17 @@ use App\Traits\HasInitials;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
 
 /**
- * @property int                              $id
- * @property int                              $student_id
- * @property string|null                      $context
- * @property string|null                      $note
- * @property AppointmentStatus                $status
- * @property \Illuminate\Support\Carbon       $datetime
+ * Appointment Model
+ *
+ * @property int                        $id
+ * @property int                        $student_id
+ * @property string|null                $context
+ * @property string|null                $note
+ * @property AppointmentStatus          $status
+ * @property \Illuminate\Support\Carbon $datetime
  *
  * @property-read Student|null $student
  *
@@ -26,11 +31,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static Builder|Appointment forTab(string $tab)
  * @method static Builder|Appointment forStudent(int $studentId)
  */
+
 class Appointment extends Model
 {
     use HasInitials;
-    protected $table = 'appointments';
 
+    protected $table = 'appointments';
     public $timestamps = false;
 
     protected $fillable = [
@@ -41,14 +47,16 @@ class Appointment extends Model
         'datetime',
     ];
 
-    protected $casts = [
-        'datetime' => 'datetime',
-        'status' => AppointmentStatus::class,
-    ];
-
+    protected function casts(): array
+    {
+        return [
+            'datetime' => 'datetime',
+            'status' => AppointmentStatus::class,
+        ];
+    }
 
     /**
-     * The student who booked this appointment.
+     * @return BelongsTo<Student, Appointment>
      */
     public function student(): BelongsTo
     {
@@ -64,6 +72,7 @@ class Appointment extends Model
     {
         return $query->where('status', AppointmentStatus::Scheduled->value);
     }
+
     public function scopeHistory(Builder $query): Builder
     {
         return $query->whereIn('status', [
@@ -77,9 +86,6 @@ class Appointment extends Model
         return $query->where('status', AppointmentStatus::Rejected->value);
     }
 
-    /**
-     * filter rows to match the given tab name.
-     */
     public function scopeForTab(Builder $query, string $tab): Builder
     {
         return match ($tab) {
@@ -93,27 +99,32 @@ class Appointment extends Model
         };
     }
 
-    /**
-     * appointments belonging to a specific student.
-     */
     public function scopeForStudent(Builder $query, int $studentId): Builder
     {
         return $query->where('student_id', $studentId);
     }
 
-    public static function getListForTab(string $tab): \Illuminate\Support\Collection
+    public static function getListForTab(string $tab): Collection
     {
         return static::query()
             ->with('student')
             ->forTab($tab)
             ->orderBy('datetime')
             ->get()
-            ->map(fn(Appointment $appointment) => $appointment->toListRow());
+            ->map(fn(Appointment $appointment): array => [
+                'id' => $appointment->id,
+                'student_id' => $appointment->student_id,
+                'context' => $appointment->context,
+                'note' => $appointment->note,
+                'status' => $appointment->status->label(),
+                'date' => $appointment->datetime->toFormattedDayDateString(),
+                'time' => $appointment->datetime->format('h:i A'),
+                'studentName' => $appointment->student?->name ?? 'Unknown',
+                'section' => $appointment->student?->section ?? '',
+                'studentProfile' => $appointment->studentProfile($appointment->student),
+            ]);
     }
 
-    /**
-     * Return appointment counts grouped by UI tab name.
-     */
     public static function getCountsPerStatusTab(): array
     {
         $counts = static::selectRaw('status, count(*) as total')
@@ -121,67 +132,51 @@ class Appointment extends Model
             ->pluck('total', 'status');
 
         return [
-            'requests' => $counts[AppointmentStatus::Pending->value] ?? 0,
-            'scheduled' => $counts[AppointmentStatus::Scheduled->value] ?? 0,
-            'history' => ($counts[AppointmentStatus::Completed->value] ?? 0)
-                + ($counts[AppointmentStatus::Rejected->value] ?? 0),
-            'rejected' => $counts[AppointmentStatus::Rejected->value] ?? 0,
+            'requests' => $counts->get(AppointmentStatus::Pending->value, 0),
+            'scheduled' => $counts->get(AppointmentStatus::Scheduled->value, 0),
+            'history' => $counts->get(AppointmentStatus::Completed->value, 0)
+                + $counts->get(AppointmentStatus::Rejected->value, 0),
+            'rejected' => $counts->get(AppointmentStatus::Rejected->value, 0),
         ];
     }
 
-    /**
-     * Shape this appointment into a flat array for the list view.
-     */
-    public function toListRow(): array
+    private function studentProfile(?Student $student): array
     {
-        $student = $this->student;
+        if ($student === null) {
+            return [
+                'initials' => '',
+                'section' => '',
+                'course' => '',
+                'yearLevel' => '',
+                'studentId' => '',
+                'totalAppointments' => 0,
+                'history' => [],
+            ];
+        }
 
         return [
-            'id' => $this->id,
-            'student_id' => $this->student_id,
-            'context' => $this->context,
-            'note' => $this->note,
-            'status' => $this->status->label(),
-            'date' => $this->datetime->format('M d, Y'),
-            'time' => $this->datetime->format('h:i A'),
-            'studentName' => $student?->name ?? 'Null',
-            'section' => $student?->section ?? '',
-            'studentProfile' => $this->buildStudentProfile($student),
-        ];
-    }
-
-    /**
-     * Student profile data structure for appointment modal.
-     */
-    private function buildStudentProfile(?Student $student): array
-    {
-        return [
-            'initials' => $this->getInitialsFromName($student?->name ?? ''),
-            'section' => $student?->section ?? '',
-            'course' => $student?->section ?? '',
-            'yearLevel' => YearLevel::tryFrom($student?->year_level ?? 0)?->label() ?? '',
-            'studentId' => $student?->student_number ?? '',
-            'totalAppointments' => static::forStudent($this->student_id)->count(),
+            'initials' => $this->getInitialsFromName($student->name),
+            'section' => $student->section,
+            'course' => $student->section,
+            'yearLevel' => YearLevel::tryFrom($student->year_level)?->label() ?? '',
+            'studentId' => $student->student_number,
+            'totalAppointments' => static::forStudent($student->id)->count(),
             'history' => $this->getStudentAppointmentHistory(),
         ];
     }
 
-    /**
-     * Student appointment history data structure (newest first).
-     */
     private function getStudentAppointmentHistory(): array
     {
         return static::forStudent($this->student_id)
             ->orderByDesc('datetime')
             ->get()
-            ->map(fn(Appointment $appointment) => [
+            ->map(fn(Appointment $appointment): array => [
                 'context' => $appointment->context,
-                'date' => $appointment->datetime->format('M d, Y'),
+                'date' => $appointment->datetime->toFormattedDayDateString(),
                 'time' => $appointment->datetime->format('h:i A'),
                 'note' => $appointment->note,
                 'status' => $appointment->status->label(),
             ])
             ->toArray();
     }
-
 }

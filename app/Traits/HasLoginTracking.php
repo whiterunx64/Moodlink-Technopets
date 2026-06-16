@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Traits;
 
+use App\Enums\AdminUserStatus;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
@@ -54,7 +55,7 @@ trait HasLoginTracking
         }
 
         $this->update([
-            'status' => 'active',
+            'status' => AdminUserStatus::Active,
             'failed_login_attempts' => 0,
             'locked_until' => null,
             'last_login_at' => now(),

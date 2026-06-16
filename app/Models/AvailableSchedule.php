@@ -1,10 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 /**
  * @property int                        $id
@@ -25,9 +28,12 @@ class AvailableSchedule extends Model
         'isTaken',
     ];
 
-    protected $casts = [
-        'datetime' => 'datetime',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'datetime' => 'datetime',
+        ];
+    }
 
     protected function isTaken(): Attribute
     {
@@ -37,42 +43,25 @@ class AvailableSchedule extends Model
         );
     }
 
-    /**
-     * Filter schedules by isTaken status.
-     */
     public function scopeWhereIsTaken(Builder $query, bool $value): Builder
     {
         return $query->whereRaw('"isTaken" = ?::boolean', [$value]);
     }
 
-    /**
-     * Get only available (not taken) schedules ordered by datetime.
-     */
     public function scopeAvailable(Builder $query): Builder
     {
         return $this->scopeWhereIsTaken($query, false)->orderBy('datetime');
     }
 
-    /**
-     * Fetch all available slots and shape them for UI display.
-     */
-    public static function getAvailableSlotsList(): \Illuminate\Support\Collection
+    public static function getAvailableSlotsList(): Collection
     {
         return static::query()
             ->available()
             ->get()
-            ->map(fn(AvailableSchedule $schedule) => $schedule->toSlotData());
-    }
-
-    /**
-     * Data structure for UI slot display.
-     */
-    public function toSlotData(): array
-    {
-        return [
-            'id' => $this->id,
-            'date' => $this->datetime->format('M d, Y'),
-            'startTime' => $this->datetime->format('h:i A'),
-        ];
+            ->map(fn(AvailableSchedule $schedule): array => [
+                'id' => $schedule->id,
+                'date' => $schedule->datetime->format('M d, Y'),
+                'startTime' => $schedule->datetime->format('h:i A'),
+            ]);
     }
 }

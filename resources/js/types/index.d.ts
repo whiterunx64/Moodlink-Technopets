@@ -46,7 +46,6 @@ export interface Post {
 export interface AdminProfile {
     firstName: string;
     lastName: string;
-    email: string;
     phone: string;
     role: string;
     department: string;

@@ -1,21 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Enums\StudentStatus;
 use App\Enums\YearLevel;
-use App\Traits\HasPaginatedList;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-
-use function intval;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
- * Student model representing enrolled users in the system.
- *
  * @property int $id
  * @property string|null $user_id
  * @property string $student_number
@@ -28,23 +24,19 @@ use function intval;
  * @property string|null $daily_result
  *
  * @property-read string $name
- * @property-read User|null $user
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Post> $posts
+ * @property-read string $verification_status
  *
- * @method static Builder verified()
- * @method static Builder withStatus(StudentStatus $status)
- * @method static Builder matchingSearch(string $search)
- * @method static Builder byYearLevel(int $yearLevel)
- * @method static Builder byTab(string $tab)
+ * @method static Builder|Student verified()
+ * @method static Builder|Student withStatus(StudentStatus $status)
+ * @method static Builder|Student matchingSearch(string $search)
+ * @method static Builder|Student byYearLevel(int $yearLevel)
+ * @method static Builder|Student byTab(string $tab)
  */
+
 class Student extends Model
 {
-    use HasPaginatedList;
-
     protected $table = 'students';
-
     public $timestamps = false;
-
     public const int ADMIN_PAGE_SIZE = 7;
 
     protected $fillable = [
@@ -59,26 +51,20 @@ class Student extends Model
         'daily_result',
     ];
 
-    protected $casts = [
-        'status' => StudentStatus::class,
-        'year_level' => 'integer',
-    ];
-
-    /** @return HasMany<Post> */
-    public function posts(): HasMany
+    protected function casts(): array
     {
-        return $this->hasMany(Post::class, 'student_id');
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'user_id', 'id');
+        return [
+            'status' => StudentStatus::class,
+            'year_level' => 'integer',
+        ];
     }
 
     protected function name(): Attribute
     {
         return Attribute::make(
-            get: fn(): string => trim("{$this->first_name} {$this->last_name}"),
+            get: fn(): string => str("{$this->first_name} {$this->last_name}")
+                ->squish()
+                ->toString(),
         );
     }
 
@@ -94,13 +80,12 @@ class Student extends Model
 
     public function scopeMatchingSearch(Builder $query, string $search): Builder
     {
-        $pattern = "%{$search}%";
-
-        return $query->where(function (Builder $q) use ($pattern): void {
-            $q->where('student_number', 'ilike', $pattern)
-                ->orWhere('first_name', 'ilike', $pattern)
-                ->orWhere('last_name', 'ilike', $pattern);
-        });
+        return $query->where(
+            fn(Builder $q) => $q
+                ->where('student_number', 'ilike', "%{$search}%")
+                ->orWhere('first_name', 'ilike', "%{$search}%")
+                ->orWhere('last_name', 'ilike', "%{$search}%")
+        );
     }
 
     public function scopeByYearLevel(Builder $query, int $yearLevel): Builder
@@ -110,38 +95,40 @@ class Student extends Model
 
     public function scopeByTab(Builder $query, string $tab): Builder
     {
-        $status = match ($tab) {
-            'Pending' => StudentStatus::Pending,
-            'Verified' => StudentStatus::Verified,
-            'Suspended' => StudentStatus::Suspended,
-            default => null,
-        };
+        $status = StudentStatus::tryFrom($tab);
 
-        return $status !== null ? $query->withStatus($status) : $query;
+        if ($status !== null) {
+            return $query->withStatus($status);
+        }
+
+        return $query;
     }
 
     public static function queryWithFilters(array $filters): Builder
     {
-        $search = trim((string) ($filters['search'] ?? ''));
-        $yearLevel = (int) ($filters['year_level'] ?? 0);
+        $search = str($filters['search'] ?? '')->squish()->toString();
 
         return static::query()
-            ->when($search !== '', fn(Builder $q) => $q->matchingSearch($search))
-            ->when($yearLevel !== 0, fn(Builder $q) => $q->byYearLevel($yearLevel));
+            ->when(
+                $search !== '',
+                fn(Builder $q) => $q->matchingSearch($search)
+            )
+            ->when(
+                filled($filters['year_level'] ?? null),
+                fn(Builder $q) => $q->byYearLevel($filters['year_level'])
+            );
     }
-    
+
+    public static function queryWithFiltersAndTab(array $filters): Builder
+    {
+        return static::queryWithFilters($filters)->byTab($filters['tab'] ?? 'All');
+    }
+
     protected static function filteredQuery(array $filters): Builder
     {
         return static::queryWithFiltersAndTab($filters)
             ->orderBy('last_name')
             ->orderBy('first_name');
-    }
-
-    public static function queryWithFiltersAndTab(array $filters): Builder
-    {
-        $tab = $filters['tab'] ?? 'All';
-
-        return static::queryWithFilters($filters)->byTab($tab);
     }
 
     public static function countsByTab(array $filters): array
@@ -154,36 +141,35 @@ class Student extends Model
             ->pluck('aggregate', 'status');
 
         return [
-            'All'       => (clone $base)->count(),
-            'Pending'   => intval($countsPerStatus->get(StudentStatus::Pending->value,   0)),
-            'Verified'  => intval($countsPerStatus->get(StudentStatus::Verified->value,  0)),
-            'Suspended' => intval($countsPerStatus->get(StudentStatus::Suspended->value, 0)),
+            'All' => (clone $base)->count(),
+            'Pending' => $countsPerStatus->get(StudentStatus::Pending->value, 0),
+            'Verified' => $countsPerStatus->get(StudentStatus::Verified->value, 0),
+            'Suspended' => $countsPerStatus->get(StudentStatus::Suspended->value, 0),
         ];
     }
 
-    public function toListRow(): array
+    public static function paginatedListWithFilters(array $filters): LengthAwarePaginator
     {
-        $yearLabel = YearLevel::tryFrom($this->year_level)?->label() ?? 'Not Set';
-        $verificationStatus = $this->displayVerificationStatus($this->status);
-        $accountStatus = $this->status->isActive() ? 'active' : 'suspended';
-
-        return [
-            'id' => $this->id,
-            'student_id' => $this->student_number,
-            'name' => $this->name,
-            'year_level' => $yearLabel,
-            'section' => $this->section,
-            'verification_status' => $verificationStatus,
-            'account_status' => $accountStatus,
-        ];
+        return static::filteredQuery($filters)
+            ->paginate(static::ADMIN_PAGE_SIZE)
+            ->withQueryString()
+            ->through(fn(Student $student): array => [
+                'id' => $student->id,
+                'student_id' => $student->student_number,
+                'name' => $student->name,
+                'year_level' => YearLevel::tryFrom($student->year_level)?->label() ?? 'Not Set',
+                'section' => $student->section,
+                'verification_status' => $student->displayVerificationStatus(),
+                'account_status' => $student->status->isActive() ? 'active' : 'suspended',
+            ]);
     }
 
-    private function displayVerificationStatus(StudentStatus $status): string
+    private function displayVerificationStatus(): string
     {
-        if ($status === StudentStatus::Suspended) {
+        if ($this->status === StudentStatus::Suspended) {
             return StudentStatus::Verified->value;
         }
 
-        return $status->value;
+        return $this->status->value;
     }
 }

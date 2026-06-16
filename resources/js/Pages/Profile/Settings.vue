@@ -17,7 +17,6 @@ const props = defineProps<{
     admin: {
         firstName: string;
         lastName: string;
-        email: string;
         phone: string | null;
         avatar: string | null;
         role: string;
@@ -39,7 +38,6 @@ const NOTIFICATION_DEFAULTS: NotificationPreferences = {
 const profile = ref<AdminProfile>({
     firstName: props.admin?.firstName ?? '',
     lastName: props.admin?.lastName ?? '',
-    email: props.admin?.email ?? '',
     phone: props.admin?.phone ?? '',
     role: props.admin?.role ?? '',
     department: '',
