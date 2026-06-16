@@ -13,20 +13,14 @@ const sidebar_open = ref(false);
 const page = usePage();
 const { add: addToast } = useToast();
 
-const flash = () => page.props.flash as { error?: string; success?: string };
-
 watch(
-  () => flash()?.error,
-  (error) => {
+  () => page.props.flash,
+  (flash) => {
+    const { error, success } = (flash ?? {}) as { error?: string; success?: string };
     if (error) addToast({ type: 'error', message: error });
-  },
-);
-
-watch(
-  () => flash()?.success,
-  (success) => {
     if (success) addToast({ type: 'success', message: success });
   },
+  { deep: true },
 );
 
 function handleResize() {

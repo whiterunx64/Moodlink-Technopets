@@ -196,6 +196,7 @@ export interface AvailableSlot {
     id: number;
     date: string;
     startTime: string;
+    taken: boolean;
 }
 
 export interface AppointmentStudentProfile {

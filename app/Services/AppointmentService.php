@@ -11,15 +11,17 @@ class AppointmentService
 {
 
   /**
-   * @throws DomainException when the appointment is not in Pending status.
+   * @throws DomainException when the appointment is not pending, or its slot is
+   *                         missing or already booked by someone else.
    */
   public function approve(Appointment $appointment): void
   {
     $this->ensureAppointmentCanBeApproved($appointment);
 
-    AvailableSchedule::where('datetime', $appointment->datetime)
-      ->first()
-        ?->update(['isTaken' => true]);
+    $slot = $this->findSlotForAppointment($appointment);
+    $this->ensureSlotCanBeBooked($slot, $appointment);
+
+    $slot->update(['takenBy' => $appointment->student_id]);
 
     $appointment->update(['status' => AppointmentStatus::Scheduled->value]);
   }
@@ -53,7 +55,6 @@ class AppointmentService
 
     AvailableSchedule::create([
       'datetime' => $datetime,
-      'isTaken' => false,
     ]);
   }
 
@@ -101,8 +102,27 @@ class AppointmentService
 
   private function ensureSlotIsNotAlreadyBooked(AvailableSchedule $slot): void
   {
-    if ($slot->isTaken) {
+    if ($slot->takenBy !== null) {
       throw new DomainException('Cannot delete a slot that is already booked.');
+    }
+  }
+  
+  private function findSlotForAppointment(Appointment $appointment): ?AvailableSchedule
+  {
+    return AvailableSchedule::whereBetween('datetime', [
+      $appointment->datetime->copy()->startOfMinute(),
+      $appointment->datetime->copy()->endOfMinute(),
+    ])->first();
+  }
+
+  private function ensureSlotCanBeBooked(?AvailableSchedule $slot, Appointment $appointment): void
+  {
+    if ($slot === null) {
+      throw new DomainException('No available slot matches this appointment time.');
+    }
+
+    if ($slot->takenBy !== null && $slot->takenBy !== $appointment->student_id) {
+      throw new DomainException('That time slot has already been booked by another student.');
     }
   }
 }

@@ -191,10 +191,13 @@ function deleteSlot(id: number) {
                         <div v-for="slot in availableSlots" :key="slot.id"
                             class="flex items-center justify-between group">
                             <div>
-                                <p class="text-xs font-medium text-text-primary">{{ slot.date }}</p>
+                                <p class="text-xs font-medium text-text-primary">
+                                    {{ slot.date }}
+                                    <span v-if="slot.taken" class="ml-1 font-semibold text-red-500">Taken</span>
+                                </p>
                                 <p class="text-xs text-text-muted mt-0.5">{{ slot.startTime }}</p>
                             </div>
-                            <button type="button"
+                            <button v-if="!slot.taken" type="button"
                                 class="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-red-400 hover:bg-red-50"
                                 @click="deleteSlot(slot.id)">
                                 <TrashIcon class="w-3.5 h-3.5" />

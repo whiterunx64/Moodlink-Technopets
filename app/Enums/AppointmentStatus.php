@@ -4,10 +4,10 @@ namespace App\Enums;
 
 enum AppointmentStatus: string
 {
-    case Pending   = 'pending';
-    case Scheduled = 'scheduled';
-    case Completed = 'completed';
-    case Rejected  = 'rejected';
+    case Pending   = 'Pending';
+    case Scheduled = 'Scheduled';
+    case Completed = 'Completed';
+    case Rejected  = 'Rejected';
 
     public function label(): string
     {

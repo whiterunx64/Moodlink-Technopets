@@ -4,18 +4,13 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 /**
  * @property int                        $id
- * @property bool                       $isTaken
+ * @property int|null                   $takenBy
  * @property \Illuminate\Support\Carbon $datetime
- *
- * @method static Builder|AvailableSchedule whereIsTaken(bool $value)
- * @method static Builder|AvailableSchedule available()
  */
 class AvailableSchedule extends Model
 {
@@ -25,7 +20,7 @@ class AvailableSchedule extends Model
 
     protected $fillable = [
         'datetime',
-        'isTaken',
+        'takenBy',
     ];
 
     protected function casts(): array
@@ -35,33 +30,16 @@ class AvailableSchedule extends Model
         ];
     }
 
-    protected function isTaken(): Attribute
-    {
-        return Attribute::make(
-            get: fn($value) => filter_var($value, FILTER_VALIDATE_BOOLEAN),
-            set: fn(bool $value) => ['isTaken' => $value ? 'true' : 'false'],
-        );
-    }
-
-    public function scopeWhereIsTaken(Builder $query, bool $value): Builder
-    {
-        return $query->whereRaw('"isTaken" = ?::boolean', [$value]);
-    }
-
-    public function scopeAvailable(Builder $query): Builder
-    {
-        return $this->scopeWhereIsTaken($query, false)->orderBy('datetime');
-    }
-
     public static function getAvailableSlotsList(): Collection
     {
         return static::query()
-            ->available()
+            ->orderBy('datetime')
             ->get()
             ->map(fn(AvailableSchedule $schedule): array => [
                 'id' => $schedule->id,
                 'date' => $schedule->datetime->format('M d, Y'),
                 'startTime' => $schedule->datetime->format('h:i A'),
+                'taken' => $schedule->takenBy !== null,
             ]);
     }
 }
