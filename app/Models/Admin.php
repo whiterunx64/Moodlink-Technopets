@@ -122,6 +122,40 @@ class Admin extends Model
     }
 
     /**
+     * Mutations
+     *
+     * @method bool savePersonalDetails(array $details)
+     * Persists editable personal details. Avatar is only overwritten when a new
+     * value is supplied, so editing details never clears an existing avatar.
+     *
+     * @method bool saveAvatarUrl(string $url)
+     * Stores the public URL of a freshly uploaded avatar image.
+     *
+     * @method void deactivateAndDelete()
+     * Flags the admin inactive then soft-deletes it during account closure.
+     */
+    public function savePersonalDetails(array $details): bool
+    {
+        return $this->update([
+            'first_name' => $details['firstName'],
+            'last_name' => $details['lastName'],
+            'phone' => $details['phone'] ?? null,
+            'avatar' => $details['avatar'] ?? $this->avatar,
+        ]);
+    }
+
+    public function saveAvatarUrl(string $url): bool
+    {
+        return $this->update(['avatar' => $url]);
+    }
+
+    public function deactivateAndDelete(): void
+    {
+        $this->update(['status' => 'inactive']);
+        $this->delete();
+    }
+
+    /**
      * Finders
      *
      * @method static \App\Models\Admin|null findByEmail(string $email)

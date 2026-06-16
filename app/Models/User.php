@@ -10,6 +10,19 @@ use Carbon\Carbon;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+/**
+ * Supabase-managed auth.users record. Laravel reads but never migrates this table.
+ *
+ * @property string                          $id
+ * @property string|null                     $email
+ * @property array|null                      $raw_user_meta_data
+ * @property array|null                      $raw_app_meta_data
+ * @property \Illuminate\Support\Carbon|null $email_confirmed_at
+ * @property \Illuminate\Support\Carbon|null $phone_confirmed_at
+ * @property \Illuminate\Support\Carbon|null $last_sign_in_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 class User extends Authenticatable implements SupabaseAuthenticatable
 {
     use Notifiable, HasSupabaseAuth;

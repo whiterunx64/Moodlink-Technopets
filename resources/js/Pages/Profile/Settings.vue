@@ -83,7 +83,6 @@ const showProfileModal = ref(false);
 const profileForm = useForm({
     firstName: profile.value.firstName,
     lastName: profile.value.lastName,
-    email: profile.value.email,
     phone: profile.value.phone,
 });
 
@@ -93,7 +92,6 @@ function onSaveProfile(updated: AdminProfile) {
 
     profileForm.firstName = updated.firstName;
     profileForm.lastName = updated.lastName;
-    profileForm.email = updated.email;
     profileForm.phone = updated.phone;
 
     showProfileModal.value = true;
@@ -108,7 +106,7 @@ function confirmProfileUpdate() {
         preserveScroll: true,
         onSuccess: () => add({ type: 'success', message: 'Profile updated successfully.' }),
         onError: (errors) => {
-            const message = errors.firstName ?? errors.lastName ?? errors.email ?? errors.phone
+            const message = errors.firstName ?? errors.lastName ?? errors.phone ?? errors.profile
                 ?? 'Unable to update profile. Please try again.';
             add({ type: 'error', message });
         },

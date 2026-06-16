@@ -73,7 +73,7 @@ Route::middleware(['supabase.auth', 'supabase.token'])->group(function () {
     Route::delete('/appointments/schedules/{schedule}', [AppointmentController::class, 'destroySchedule'])
         ->name('appointments.schedules.destroy');
 
-    Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile', [ProfileController::class, 'settings'])->name('profile.settings');
     Route::patch('/profile/change-metadata', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/profile/change-password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
     Route::patch('/profile/preferences', [ProfileController::class, 'updatePreferences'])->name('profile.preferences.update');
