@@ -37,8 +37,8 @@ class AvailableSchedule extends Model
             ->get()
             ->map(fn(AvailableSchedule $schedule): array => [
                 'id' => $schedule->id,
-                'date' => $schedule->datetime->format('M d, Y'),
-                'startTime' => $schedule->datetime->format('h:i A'),
+                'date' => $schedule->datetime->setTimezone(config('app.timezone'))->format('M d, Y'),
+                'startTime' => $schedule->datetime->setTimezone(config('app.timezone'))->format('h:i A'),
                 'taken' => $schedule->takenBy !== null,
             ]);
     }

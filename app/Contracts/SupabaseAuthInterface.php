@@ -6,13 +6,14 @@ namespace App\Contracts;
 
 interface SupabaseAuthInterface
 {
-  public function signUp(string $email, string $password, array $data = []): array;
 
   public function signIn(string $email, string $password): array;
 
   public function signOut(string $accessToken): array;
 
   public function refreshToken(string $refreshToken): array;
+  
+  public function createUser(string $email, string $password, array $data = [], bool $emailConfirm = true): array;
 
   public function getUser(string $accessToken): array;
 

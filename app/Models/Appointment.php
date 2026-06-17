@@ -117,8 +117,8 @@ class Appointment extends Model
                 'context' => $appointment->context,
                 'note' => $appointment->note,
                 'status' => $appointment->status->label(),
-                'date' => $appointment->datetime->toFormattedDayDateString(),
-                'time' => $appointment->datetime->format('h:i A'),
+                'date' => $appointment->datetime->setTimezone(config('app.timezone'))->toDateString(),
+                'time' => $appointment->datetime->setTimezone('Asia/Manila')->format('h:i A'),
                 'studentName' => $appointment->student?->name ?? 'Unknown',
                 'section' => $appointment->student?->section ?? '',
                 'studentProfile' => $appointment->studentProfile($appointment->student),
@@ -172,8 +172,8 @@ class Appointment extends Model
             ->get()
             ->map(fn(Appointment $appointment): array => [
                 'context' => $appointment->context,
-                'date' => $appointment->datetime->toFormattedDayDateString(),
-                'time' => $appointment->datetime->format('h:i A'),
+                'date' => $appointment->datetime->setTimezone(config('app.timezone'))->toDateString(),
+                'time' => $appointment->datetime->setTimezone(config('app.timezone'))->format('h:i A'),
                 'note' => $appointment->note,
                 'status' => $appointment->status->label(),
             ])

@@ -95,13 +95,16 @@ class Student extends Model
 
     public function scopeByTab(Builder $query, string $tab): Builder
     {
-        $status = StudentStatus::tryFrom($tab);
-
-        if ($status !== null) {
-            return $query->withStatus($status);
+        if ($tab === 'All' || $tab === '') {
+            return $query;
         }
 
-        return $query;
+        $status = collect(StudentStatus::cases())
+            ->first(fn ($case) => $case->label() === $tab);
+
+        return $status
+            ? $query->withStatus($status)
+            : $query;
     }
 
     public static function queryWithFilters(array $filters): Builder

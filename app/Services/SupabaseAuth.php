@@ -45,37 +45,7 @@ final class SupabaseAuth implements SupabaseAuthInterface
      * @throws Exception
      */
     #[Override]
-    public function signUp(string $email, string $password, array $data = []): array
-    {
-        $this->logger->info('User registration attempt', [
-            'email' => $this->maskEmail($email),
-            'has_metadata' => !empty($data),
-        ]);
 
-        try {
-            $payload = ['email' => $email, 'password' => $password];
-
-            if (!empty($data)) {
-                $payload['data'] = $data;
-            }
-
-            $response = $this->client->request('POST', '/auth/v1/signup', ['json' => $payload]);
-
-            $this->logger->info('User registration successful', [
-                'email' => $this->maskEmail($email),
-                'user_id' => $response['user']['id'] ?? 'unknown',
-            ]);
-
-            return $response;
-
-        } catch (Exception $e) {
-            $this->logger->error('User registration failed', [
-                'email' => $this->maskEmail($email),
-                'error' => $e->getMessage(),
-            ]);
-            throw $e;
-        }
-    }
 
     /**
      * Authenticate user with email and password.
@@ -320,6 +290,57 @@ final class SupabaseAuth implements SupabaseAuthInterface
             $this->logger->warning('JWT token validation failed', ['error' => $e->getMessage()]);
 
             return ['valid' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Create a user via the admin endpoint with the email already confirmed.
+     *
+     * Unlike signUp() (the public /signup flow, which leaves the email
+     * unconfirmed and blocks sign-in until verification), this provisions a
+     * ready-to-use account — matching how the Supabase dashboard creates users.
+     *
+     * @param string $email
+     * @param string $password
+     * @param array $data Optional user metadata
+     * @param bool $emailConfirm Mark the email as confirmed on creation
+     * @return array API response (user object at top level)
+     * @throws Exception
+     */
+    #[Override]
+    public function createUser(string $email, string $password, array $data = [], bool $emailConfirm = true): array
+    {
+        $this->logger->info('Admin user creation attempt', [
+            'email' => $this->maskEmail($email),
+            'email_confirm' => $emailConfirm,
+        ]);
+
+        try {
+            $payload = [
+                'email' => $email,
+                'password' => $password,
+                'email_confirm' => $emailConfirm,
+            ];
+
+            if (!empty($data)) {
+                $payload['user_metadata'] = $data;
+            }
+
+            $response = $this->client->request('POST', '/auth/v1/admin/users', ['json' => $payload], true);
+
+            $this->logger->info('Admin user creation successful', [
+                'email' => $this->maskEmail($email),
+                'user_id' => $response['id'] ?? 'unknown',
+            ]);
+
+            return $response;
+
+        } catch (Exception $e) {
+            $this->logger->error('Admin user creation failed', [
+                'email' => $this->maskEmail($email),
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
         }
     }
 

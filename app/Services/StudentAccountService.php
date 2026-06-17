@@ -69,10 +69,11 @@ final class StudentAccountService
             'name' => $student->name,
         ];
 
-        $this->supabase->signUp(
+        $this->supabase->createUser(
             email: $email,
             password: $password,
             data: $supabaseMetadata,
+            emailConfirm: true,
         );
 
         $this->verifyStudent($student);

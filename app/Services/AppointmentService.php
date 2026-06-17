@@ -6,6 +6,7 @@ use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\AvailableSchedule;
 use DomainException;
+use Carbon\Carbon;
 
 class AppointmentService
 {
@@ -54,7 +55,11 @@ class AppointmentService
     $this->ensureNoSlotExistsAtSameTime($datetime);
 
     AvailableSchedule::create([
-      'datetime' => $datetime,
+      'datetime' => Carbon::createFromFormat(
+            'Y-m-d H:i:s',
+            $datetime,
+            'Asia/Manila'
+        )->utc(),
     ]);
   }
 

@@ -56,9 +56,12 @@ Route::middleware(['supabase.auth', 'supabase.token'])->group(function () {
     Route::patch('/post-management/{post}/unflagPost', [PostManagementController::class, 'unflagPost'])
         ->name('post-management.unflagPost');
 
-    Route::get('/summary-reports', [SummaryReportController::class, 'index'])->name('summary-reports.index');
-    Route::get('/summary-reports/section/{section}', [SummaryReportController::class, 'showSection'])->name('summary-reports.section');
-    Route::get('/summary-reports/students/{studentId}', [SummaryReportController::class, 'showStudent'])->name('summary-reports.student');
+    Route::get('/summary-reports', [SummaryReportController::class, 'index'])
+        ->name('summary-reports.index');
+    Route::get('/summary-reports/section/{section}', [SummaryReportController::class, 'showSection'])
+        ->name('summary-reports.section');
+    Route::get('/summary-reports/students/{studentId}', [SummaryReportController::class, 'showStudent'])
+        ->name('summary-reports.student');
 
     Route::get('/appointments', [AppointmentController::class, 'index'])
         ->name('appointments.index');
@@ -73,12 +76,18 @@ Route::middleware(['supabase.auth', 'supabase.token'])->group(function () {
     Route::delete('/appointments/schedules/{schedule}', [AppointmentController::class, 'destroySchedule'])
         ->name('appointments.schedules.destroy');
 
-    Route::get('/profile', [ProfileController::class, 'settings'])->name('profile.settings');
-    Route::patch('/profile/change-metadata', [ProfileController::class, 'update'])->name('profile.update');
-    Route::put('/profile/change-password', [ProfileController::class, 'updatePassword'])->name('profile.password.update');
-    Route::patch('/profile/preferences', [ProfileController::class, 'updatePreferences'])->name('profile.preferences.update');
-    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
-    Route::delete('/profile/account', [ProfileController::class, 'destroy'])->name('profile.account.delete');
+    Route::get('/profile', [ProfileController::class, 'settings'])
+        ->name('profile.settings');
+    Route::patch('/profile/change-metadata', [ProfileController::class, 'update'])
+        ->name('profile.update');
+    Route::put('/profile/change-password', [ProfileController::class, 'updatePassword'])
+        ->name('profile.password.update');
+    Route::patch('/profile/preferences', [ProfileController::class, 'updatePreferences'])
+        ->name('profile.preferences.update');
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])
+        ->name('profile.avatar.update');
+    Route::delete('/profile/account', [ProfileController::class, 'destroy'])
+        ->name('profile.account.delete');
 });
 
 require __DIR__ . '/auth.php';
