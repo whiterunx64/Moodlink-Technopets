@@ -36,18 +36,6 @@ final class SupabaseAuth implements SupabaseAuthInterface
     }
 
     /**
-     * Register a new user in Supabase.
-     *
-     * @param string $email
-     * @param string $password
-     * @param array $data Optional user metadata
-     * @return array API response
-     * @throws Exception
-     */
-    #[Override]
-
-
-    /**
      * Authenticate user with email and password.
      *
      * @throws Exception

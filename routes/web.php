@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HealthController;
+use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\PostManagementController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SummaryReportController;
@@ -10,6 +12,11 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', fn() => redirect()->route('login'));
+
+Route::get(config('supabase-auth.monitoring.health_checks.endpoint'), [HealthController::class, 'supabase'])
+    ->name('health.supabase');
+
+Route::get('/metrics', [MetricsController::class, 'index'])->name('metrics');
 
 //Route::get('/debug-session', function () {
 //    abort_unless(app()->environment('local'), 403);
@@ -32,12 +39,14 @@ Route::get('/', fn() => redirect()->route('login'));
 //    ];
 //});
 
-Route::middleware(['supabase.auth', 'supabase.token'])->group(function () {
+Route::middleware(['auth', 'supabase.verify-token'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
     Route::get('/user-accounts', [UserAccountController::class, 'index'])
         ->name('user-accounts.index');
+    Route::get('/user-accounts/{student}/auth-details', [UserAccountController::class, 'authDetails'])
+        ->name('user-accounts.auth-details');
     Route::post('/user-accounts/{student}/register', [UserAccountController::class, 'register'])
         ->name('user-accounts.register');
     Route::patch('/user-accounts/{student}/verify', [UserAccountController::class, 'verify'])
@@ -81,12 +90,14 @@ Route::middleware(['supabase.auth', 'supabase.token'])->group(function () {
     Route::patch('/profile/change-metadata', [ProfileController::class, 'update'])
         ->name('profile.update');
     Route::put('/profile/change-password', [ProfileController::class, 'updatePassword'])
+        ->middleware('supabase.revalidate')
         ->name('profile.password.update');
     Route::patch('/profile/preferences', [ProfileController::class, 'updatePreferences'])
         ->name('profile.preferences.update');
     Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])
         ->name('profile.avatar.update');
     Route::delete('/profile/account', [ProfileController::class, 'destroy'])
+        ->middleware('supabase.revalidate')
         ->name('profile.account.delete');
 });
 

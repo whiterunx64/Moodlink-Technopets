@@ -8,22 +8,14 @@ use App\Contracts\SupabaseAuthenticatable;
 use App\Contracts\SupabaseAuthInterface;
 use App\Contracts\SupabaseGuardInterface;
 use Closure;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-/**
- * Validates the Supabase access token once per request on protected routes.
- *
- * The guard's user() is session-only (no API call). This middleware owns the
- * single Supabase API call per request: verifyToken(). If the token is expired
- * it attempts one silent refresh via the guard before giving up.
- *
- * Applied after AuthenticateSupabase in the protected route group.
- */
 class EnsureTokenIsValid
 {
+  private const SESSION_EXPIRED = 'Your session has expired or is no longer valid. Please sign in again to continue.';
+
   public function __construct(
     protected readonly SupabaseAuthInterface $supabase,
   ) {
@@ -31,53 +23,50 @@ class EnsureTokenIsValid
 
   public function handle(Request $request, Closure $next): mixed
   {
-    /** @var SupabaseAuthenticatable|null $user */
-    $user = Auth::user();
+    $user = $this->getAuthenticatedUserWithToken();
 
-    if (!$user instanceof SupabaseAuthenticatable || !$user->getAccessToken()) {
-      return $this->unauthorized($request);
+    if (!$user) {
+      throw new AuthenticationException(self::SESSION_EXPIRED);
     }
 
-    // Single Supabase API call per request, validates the JWT server-side.
-    $validation = $this->supabase->verifyToken($user->getAccessToken());
-
-    if (!$validation['valid']) {
-      $guard = Auth::guard();
-
-      // Attempt one silent refresh before giving up.
-      if ($guard instanceof SupabaseGuardInterface && $guard->refreshAccessToken()) {
-
-        $user = $guard->user();  // cache reset forces user to be loaded again from session
-
-        if ($user instanceof SupabaseAuthenticatable && $user->getAccessToken()) {
-          $validation = $this->supabase->verifyToken($user->getAccessToken());
-
-          if ($validation['valid']) {
-            return $next($request);
-          }
-        }
-      }
-
-      Auth::logout();
-
-      return $this->unauthorized($request);
+    if ($this->verifyAccessToken($user) || $this->refreshAndVerifyAccessToken()) {
+      return $next($request);
     }
 
-    return $next($request);
+    Auth::logout();
+    throw new AuthenticationException(self::SESSION_EXPIRED);
   }
 
-  /**
-   * Redirect to login for Inertia/browser requests, JSON 401 for API calls.
-   */
-  protected function unauthorized(Request $request): JsonResponse|RedirectResponse
+  protected function getAuthenticatedUserWithToken(): ?SupabaseAuthenticatable
   {
-    if ($request->expectsJson()) {
-      return response()->json([
-        'error' => 'Token invalid or expired',
-        'message' => 'Please login again.',
-      ], 401);
+    $user = Auth::user();
+
+    if ($user instanceof SupabaseAuthenticatable && $user->getAccessToken()) {
+      return $user;
     }
 
-    return redirect()->route('login');
+    return null;
+  }
+
+  protected function refreshAndVerifyAccessToken(): bool
+  {
+    $guard = Auth::guard();
+
+    if (!$guard instanceof SupabaseGuardInterface || !$guard->refreshAccessToken()) {
+      return false;
+    }
+
+    $user = $guard->user();
+
+    if (!$user instanceof SupabaseAuthenticatable || !$user->getAccessToken()) {
+      return false;
+    }
+
+    return $this->verifyAccessToken($user);
+  }
+
+  protected function verifyAccessToken(SupabaseAuthenticatable $user): bool
+  {
+    return $this->supabase->verifyToken($user->getAccessToken())['valid'] === true;
   }
 }

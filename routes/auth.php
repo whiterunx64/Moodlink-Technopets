@@ -14,7 +14,7 @@ Route::middleware('guest')->group(function () {
         ->name('login.json');
 });
 
-Route::middleware(['supabase.auth', 'supabase.token'])->group(function () {
+Route::middleware(['auth', 'supabase.verify-token'])->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
 
