@@ -3,7 +3,6 @@
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HealthController;
-use App\Http\Controllers\MetricsController;
 use App\Http\Controllers\PostManagementController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SummaryReportController;
@@ -13,10 +12,8 @@ use Inertia\Inertia;
 
 Route::get('/', fn() => redirect()->route('login'));
 
-Route::get(config('supabase-auth.monitoring.health_checks.endpoint'), [HealthController::class, 'supabase'])
-    ->name('health.supabase');
-
-Route::get('/metrics', [MetricsController::class, 'index'])->name('metrics');
+Route::get(config('supabase-auth.monitoring.health_checks.endpoint'), [HealthController::class, 'check'])
+    ->name('health');
 
 //Route::get('/debug-session', function () {
 //    abort_unless(app()->environment('local'), 403);

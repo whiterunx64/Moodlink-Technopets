@@ -41,10 +41,9 @@ return [
 
   'jwt' => [
     'secret' => env('SUPABASE_JWT_SECRET'),
-    'algorithm' => env('SUPABASE_JWT_ALGORITHM', 'HS256'),
+    'algorithm' => env('SUPABASE_JWT_ALGORITHM', 'ES256'),
     'leeway' => filter_var(env('SUPABASE_JWT_LEEWAY', 60), FILTER_VALIDATE_INT), // seconds
     'ttl' => filter_var(env('SUPABASE_JWT_TTL', 3600), FILTER_VALIDATE_INT), // seconds
-    'refresh_ttl' => filter_var(env('SUPABASE_JWT_REFRESH_TTL', 604800), FILTER_VALIDATE_INT), // 7 days
   ],
 
   /*
@@ -57,12 +56,8 @@ return [
   */
 
   'auth' => [
-    'redirect_url' => env('SUPABASE_AUTH_REDIRECT_URL', config('app.url') . '/auth/callback'),
     'provider_redirect' => env('SUPABASE_AUTH_PROVIDER_REDIRECT', '/dashboard'),
     'logout_redirect' => env('SUPABASE_AUTH_LOGOUT_REDIRECT', '/'),
-    'session_timeout' => filter_var(env('SUPABASE_AUTH_SESSION_TIMEOUT', 3600), FILTER_VALIDATE_INT), // seconds
-    'auto_refresh' => env('SUPABASE_AUTH_AUTO_REFRESH', true),
-    'remember_duration' => filter_var(env('SUPABASE_AUTH_REMEMBER_DURATION', 2419200), FILTER_VALIDATE_INT), // 28 days
   ],
 
   /*
@@ -82,13 +77,6 @@ return [
       'require_numbers' => env('SUPABASE_PASSWORD_REQUIRE_NUMBERS', false),
       'require_symbols' => env('SUPABASE_PASSWORD_REQUIRE_SYMBOLS', false),
     ],
-    'encryption' => [
-      'algorithm' => env('SUPABASE_ENCRYPTION_ALGORITHM', 'AES-256-GCM'),
-      'key_rotation_days' => filter_var(env('SUPABASE_KEY_ROTATION_DAYS', 90), FILTER_VALIDATE_INT),
-    ],
-    'csrf_protection' => env('SUPABASE_CSRF_PROTECTION', true),
-    'secure_cookies' => env('SUPABASE_SECURE_COOKIES', true),
-    'same_site' => env('SUPABASE_SAME_SITE', 'lax'),
   ],
 
   /*
@@ -106,14 +94,6 @@ return [
       'max_attempts' => filter_var(env('SUPABASE_LOGIN_MAX_ATTEMPTS', 5), FILTER_VALIDATE_INT),
       'decay_minutes' => filter_var(env('SUPABASE_LOGIN_DECAY_MINUTES', 15), FILTER_VALIDATE_INT),
     ],
-    'register' => [
-      'max_attempts' => filter_var(env('SUPABASE_REGISTER_MAX_ATTEMPTS', 3), FILTER_VALIDATE_INT),
-      'decay_minutes' => filter_var(env('SUPABASE_REGISTER_DECAY_MINUTES', 60), FILTER_VALIDATE_INT),
-    ],
-    'password_reset' => [
-      'max_attempts' => filter_var(env('SUPABASE_PASSWORD_RESET_MAX_ATTEMPTS', 3), FILTER_VALIDATE_INT),
-      'decay_minutes' => filter_var(env('SUPABASE_PASSWORD_RESET_DECAY_MINUTES', 30), FILTER_VALIDATE_INT),
-    ],
   ],
 
   /*
@@ -129,10 +109,6 @@ return [
     'enabled' => env('SUPABASE_CIRCUIT_BREAKER_ENABLED', true),
     'failure_threshold' => filter_var(env('SUPABASE_CB_FAILURE_THRESHOLD', 5), FILTER_VALIDATE_INT),
     'recovery_timeout' => filter_var(env('SUPABASE_CB_RECOVERY_TIMEOUT', 60), FILTER_VALIDATE_INT), // seconds
-    'expected_exception_types' => [
-      \GuzzleHttp\Exception\ConnectException::class,
-      \GuzzleHttp\Exception\RequestException::class,
-    ],
   ],
 
   /*
@@ -184,11 +160,6 @@ return [
 
   'monitoring' => [
     'enabled' => env('SUPABASE_MONITORING_ENABLED', true),
-    'metrics' => [
-      'enabled' => env('SUPABASE_METRICS_ENABLED', true),
-      'driver' => env('SUPABASE_METRICS_DRIVER', 'prometheus'),
-      'namespace' => env('SUPABASE_METRICS_NAMESPACE', 'supabase_auth'),
-    ],
     'logging' => [
       'channel' => env('SUPABASE_LOG_CHANNEL', 'stack'),
       'level' => env('SUPABASE_LOG_LEVEL', 'info'),
@@ -227,37 +198,6 @@ return [
       'driver' => 'supabase',
       'model' => env('SUPABASE_USER_MODEL', App\Models\User::class),
     ],
-  ],
-
-  /*
-  |--------------------------------------------------------------------------
-  | Password Reset Configuration
-  |--------------------------------------------------------------------------
-  |
-  | Configure password reset behavior
-  |
-  */
-
-  'password_reset' => [
-    'redirect_url' => env('SUPABASE_PASSWORD_RESET_URL', config('app.url') . '/password/reset'),
-    'token_ttl' => filter_var(env('SUPABASE_PASSWORD_RESET_TTL', 3600), FILTER_VALIDATE_INT), // 1 hour
-    'throttle_minutes' => filter_var(env('SUPABASE_PASSWORD_RESET_THROTTLE', 60), FILTER_VALIDATE_INT),
-  ],
-
-  /*
-  |--------------------------------------------------------------------------
-  | Email Verification Configuration
-  |--------------------------------------------------------------------------
-  |
-  | Configure email verification behavior
-  |
-  */
-
-  'email_verification' => [
-    'enabled' => env('SUPABASE_EMAIL_VERIFICATION_ENABLED', true),
-    'redirect_url' => env('SUPABASE_EMAIL_VERIFICATION_URL', config('app.url') . '/email/verify'),
-    'token_ttl' => filter_var(env('SUPABASE_EMAIL_VERIFICATION_TTL', 86400), FILTER_VALIDATE_INT), // 24 hours
-    'auto_verify' => env('SUPABASE_EMAIL_AUTO_VERIFY', false),
   ],
 
   /*

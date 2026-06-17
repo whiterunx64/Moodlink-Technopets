@@ -45,7 +45,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended(config('supabase-auth.auth.provider_redirect'));
     }
 
     /**
@@ -79,7 +79,7 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        return redirect(config('supabase-auth.auth.logout_redirect'));
     }
 
     /**
