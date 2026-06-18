@@ -9,7 +9,7 @@ use App\Contracts\SupabaseAuthInterface;
 use App\Contracts\SupabaseGuardInterface;
 use App\Contracts\SupabaseUserProviderInterface;
 use App\Models\Admin;
-use App\Services\SupabasePersistentStorage;
+use App\Services\SupabaseSessionStore;
 use Exception;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -46,14 +46,14 @@ class SupabaseGuard implements Guard, SupabaseGuardInterface
     /**
      * @param string                    $name           Guard name as registered in config/auth.php.
      * @param UserProvider              $provider       Loads the local User model.
-     * @param SupabasePersistentStorage    $storage Owns all session read/write operations.
+     * @param SupabaseSessionStore    $storage Owns all session read/write operations.
      * @param SupabaseAuthInterface     $supabase       Supabase auth service for API calls.
      */
 
     public function __construct(
         protected readonly string $name,
         UserProvider $provider,
-        protected readonly SupabasePersistentStorage $storage,
+        protected readonly SupabaseSessionStore $storage,
         protected readonly SupabaseAuthInterface $supabase,
     ) {
         $this->provider = $provider;

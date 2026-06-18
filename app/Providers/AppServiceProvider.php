@@ -10,13 +10,13 @@ use App\Contracts\AvatarStorageInterface;
 use App\Contracts\SupabaseAuthInterface;
 use App\Exceptions\ConfigurationException;
 use App\Guards\SupabaseGuard;
-use App\Services\SupabasePersistentStorage;
+use App\Services\SupabaseSessionStore;
 use App\Providers\SupabaseUserProvider;
 use App\Services\CacheManager;
 use App\Services\CircuitBreaker;
 use App\Services\RateLimiter;
 use App\Services\AvatarStorage;
-use App\Services\SupabaseAuth;
+use App\Services\SupabaseAuthApi;
 use App\Services\SupabaseClient;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Vite;
@@ -45,7 +45,7 @@ class AppServiceProvider extends ServiceProvider
             config('supabase-auth.cache'),
         ));
 
-        $this->app->singleton(SupabaseAuthInterface::class, fn($app) => new SupabaseAuth(
+        $this->app->singleton(SupabaseAuthInterface::class, fn($app) => new SupabaseAuthApi(
             $app->make(SupabaseClient::class),
             $app->make(CacheManager::class),
             $app['log']->channel(config('supabase-auth.monitoring.logging.channel')),
@@ -71,7 +71,7 @@ class AppServiceProvider extends ServiceProvider
             $guard = new SupabaseGuard(
                 $name,
                 Auth::createUserProvider($config['provider']),
-                new SupabasePersistentStorage($app['session.store']),
+                new SupabaseSessionStore($app['session.store']),
                 $app->make(SupabaseAuthInterface::class),
             );
 

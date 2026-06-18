@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Traits;
 
 use App\Contracts\SupabaseAuthInterface;
-use App\Services\SupabasePersistentStorage;
+use App\Services\SupabaseSessionStore;
 use Carbon\Carbon;
 use RuntimeException;
 trait HasSupabaseAuth
@@ -29,7 +29,7 @@ trait HasSupabaseAuth
         if (isset($response['id'])) {
             $this->supabaseData = $response;
             
-            app(SupabasePersistentStorage::class)->persist($response, null);
+            app(SupabaseSessionStore::class)->persist($response, null);
 
             $this->save();
         }

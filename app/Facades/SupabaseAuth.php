@@ -12,10 +12,8 @@ use Illuminate\Support\Facades\Facade;
  * @method static array createUser(string $email, string $password, array $data = [], bool $emailConfirm = true)
  * @method static array getUser(string $accessToken)
  * @method static array updateUser(string $accessToken, array $data)
- * @method static array resetPasswordForEmail(string $email, ?string $redirectTo = null)
  * @method static array updatePassword(string $accessToken, string $newPassword)
  * @method static array verifyToken(string $token)
- * @method static array getUserById(string $userId)
  * @method static array deleteUser(string $userId)
  */
 class SupabaseAuth extends Facade

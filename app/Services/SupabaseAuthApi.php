@@ -19,14 +19,7 @@ use function explode;
 use function is_int;
 use function strlen;
 
-/**
- * Supabase authentication service handling all auth operations:
- * - sign up / sign in / sign out
- * - token refresh
- * - JWT validation
- * - user CRUD operations via Supabase Auth API
- */
-final class SupabaseAuth implements SupabaseAuthInterface
+final class SupabaseAuthApi implements SupabaseAuthInterface
 {
     public function __construct(
         private readonly SupabaseClient $client,
@@ -35,11 +28,6 @@ final class SupabaseAuth implements SupabaseAuthInterface
     ) {
     }
 
-    /**
-     * Authenticate user with email and password.
-     *
-     * @throws Exception
-     */
     #[Override]
     public function signIn(string $email, string $password): array
     {
@@ -71,11 +59,6 @@ final class SupabaseAuth implements SupabaseAuthInterface
         }
     }
 
-    /**
-     * Sign out user from Supabase.
-     *
-     * @throws Exception
-     */
     #[Override]
     public function signOut(string $accessToken): array
     {
@@ -94,11 +77,6 @@ final class SupabaseAuth implements SupabaseAuthInterface
         }
     }
 
-    /**
-     * Refresh authentication token.
-     *
-     * @throws Exception
-     */
     #[Override]
     public function refreshToken(string $refreshToken): array
     {
@@ -124,11 +102,6 @@ final class SupabaseAuth implements SupabaseAuthInterface
         }
     }
 
-    /**
-     * Get authenticated user from Supabase.
-     *
-     * @throws Exception
-     */
     #[Override]
     public function getUser(string $accessToken): array
     {
@@ -149,11 +122,6 @@ final class SupabaseAuth implements SupabaseAuthInterface
         }
     }
 
-    /**
-     * Update user metadata or profile.
-     *
-     * @throws Exception
-     */
     #[Override]
     public function updateUser(string $accessToken, array $data): array
     {
@@ -179,43 +147,6 @@ final class SupabaseAuth implements SupabaseAuthInterface
         }
     }
 
-    /**
-     * Send password reset email.
-     *
-     * @throws Exception
-     */
-    #[Override]
-    public function resetPasswordForEmail(string $email, ?string $redirectTo = null): array
-    {
-        $this->logger->info('Password reset request', ['email' => $this->maskEmail($email)]);
-
-        try {
-            $data = ['email' => $email];
-
-            if ($redirectTo !== null) {
-                $data['redirectTo'] = $redirectTo;
-            }
-
-            $response = $this->client->request('POST', '/auth/v1/recover', ['json' => $data]);
-
-            $this->logger->info('Password reset email sent', ['email' => $this->maskEmail($email)]);
-
-            return $response;
-
-        } catch (Exception $e) {
-            $this->logger->error('Password reset failed', [
-                'email' => $this->maskEmail($email),
-                'error' => $e->getMessage(),
-            ]);
-            throw $e;
-        }
-    }
-
-    /**
-     * Update user password.
-     *
-     * @throws Exception
-     */
     #[Override]
     public function updatePassword(string $accessToken, string $newPassword): array
     {
@@ -238,8 +169,6 @@ final class SupabaseAuth implements SupabaseAuthInterface
     }
 
     /**
-     * Verify and decode JWT token.
-     *
      * @return array{valid: bool, payload?: array, error?: string, expires_at?: mixed}
      */
     #[Override]
@@ -258,7 +187,7 @@ final class SupabaseAuth implements SupabaseAuthInterface
             if (!is_int($leeway) || $leeway < 0) {
                 throw new RuntimeException('supabase-auth jwt.leeway config must be a non-negative integer.');
             }
-            JWT::$leeway = $leeway;
+            JWT::$leeway = $leeway; // allow clock skew between servers
 
             $decoded = $algorithm->isAsymmetric()
                 ? JWT::decode($token, $this->fetchPublicKeys())
@@ -281,20 +210,6 @@ final class SupabaseAuth implements SupabaseAuthInterface
         }
     }
 
-    /**
-     * Create a user via the admin endpoint with the email already confirmed.
-     *
-     * Unlike signUp() (the public /signup flow, which leaves the email
-     * unconfirmed and blocks sign-in until verification), this provisions a
-     * ready-to-use account — matching how the Supabase dashboard creates users.
-     *
-     * @param string $email
-     * @param string $password
-     * @param array $data Optional user metadata
-     * @param bool $emailConfirm Mark the email as confirmed on creation
-     * @return array API response (user object at top level)
-     * @throws Exception
-     */
     #[Override]
     public function createUser(string $email, string $password, array $data = [], bool $emailConfirm = true): array
     {
@@ -314,7 +229,7 @@ final class SupabaseAuth implements SupabaseAuthInterface
                 $payload['user_metadata'] = $data;
             }
 
-            $response = $this->client->request('POST', '/auth/v1/admin/users', ['json' => $payload], true);
+            $response = $this->client->request('POST', '/auth/v1/admin/users', ['json' => $payload], true); // true = use service role key
 
             $this->logger->info('Admin user creation successful', [
                 'email' => $this->maskEmail($email),
@@ -332,37 +247,6 @@ final class SupabaseAuth implements SupabaseAuthInterface
         }
     }
 
-    /**
-     * Get user by ID (admin endpoint).
-     */
-    #[Override]
-    public function getUserById(string $userId): array
-    {
-        try {
-            $cached = $this->cache->getCachedUserData($userId);
-
-            if ($cached !== null) {
-                return $cached;
-            }
-
-            $response = $this->client->request('GET', "/auth/v1/admin/users/{$userId}", [], true);
-
-            $this->cache->cacheUserData($userId, $response);
-
-            return $response;
-
-        } catch (Exception $e) {
-            $this->logger->error('Get user by ID failed', [
-                'user_id' => $userId,
-                'error' => $e->getMessage(),
-            ]);
-            throw $e;
-        }
-    }
-
-    /**
-     * Delete user (admin endpoint).
-     */
     #[Override]
     public function deleteUser(string $userId): array
     {
@@ -386,13 +270,12 @@ final class SupabaseAuth implements SupabaseAuthInterface
     }
 
     /**
-     * Fetch JWKS public keys for JWT validation.
-     *
      * @return array<string, Key>
      */
     private function fetchPublicKeys(): array
     {
-        $cacheKey = hash('sha256', '__supabase_jwks__');
+        $cacheKey = hash('sha256', '__supabase_jwks__'); // stable cache key for the JWKS endpoint
+
         $raw = $this->cache->getCachedJwks($cacheKey);
 
         if ($raw === null) {
@@ -407,9 +290,6 @@ final class SupabaseAuth implements SupabaseAuthInterface
         return JWK::parseKeySet($raw);
     }
 
-    /**
-     * Mask email for safe logging.
-     */
     private function maskEmail(string $email): string
     {
         $parts = explode('@', $email);

@@ -19,13 +19,9 @@ interface SupabaseAuthInterface
 
   public function updateUser(string $accessToken, array $data): array;
 
-  public function resetPasswordForEmail(string $email, ?string $redirectTo = null): array;
-
   public function updatePassword(string $accessToken, string $newPassword): array;
 
   public function verifyToken(string $token): array;
-
-  public function getUserById(string $userId): array;
 
   public function deleteUser(string $userId): array;
 }
