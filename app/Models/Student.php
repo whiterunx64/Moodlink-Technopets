@@ -8,7 +8,9 @@ use App\Enums\StudentStatus;
 use App\Enums\YearLevel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 /**
@@ -25,6 +27,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
  *
  * @property-read string $name
  * @property-read string $verification_status
+ * @property-read Collection<int, Appointment> $appointments
  *
  * @method static Builder|Student verified()
  * @method static Builder|Student withStatus(StudentStatus $status)
@@ -68,6 +71,14 @@ class Student extends Model
         );
     }
 
+    /**
+     * @return HasMany<Appointment, $this>
+     */
+    public function appointments(): HasMany
+    {
+        return $this->hasMany(Appointment::class, 'student_id');
+    }
+
     public function scopeVerified(Builder $query): Builder
     {
         return $query->where('status', StudentStatus::Verified->value);
@@ -100,7 +111,7 @@ class Student extends Model
         }
 
         $status = collect(StudentStatus::cases())
-            ->first(fn ($case) => $case->label() === $tab);
+            ->first(fn($case) => $case->label() === $tab);
 
         return $status
             ? $query->withStatus($status)

@@ -22,6 +22,7 @@ use Illuminate\Support\Collection;
  * @property AppointmentStatus          $status
  * @property \Illuminate\Support\Carbon $datetime
  *
+ * 
  * @property-read Student|null $student
  *
  * @method static Builder|Appointment pending()
@@ -107,7 +108,7 @@ class Appointment extends Model
     public static function getListForTab(string $tab): Collection
     {
         return static::query()
-            ->with('student')
+            ->with('student.appointments')
             ->forTab($tab)
             ->orderBy('datetime')
             ->get()
@@ -154,22 +155,27 @@ class Appointment extends Model
             ];
         }
 
+        $appointments = $student->appointments;
+
         return [
             'initials' => $this->getInitialsFromName($student->name),
             'section' => $student->section,
             'course' => $student->section,
             'yearLevel' => YearLevel::tryFrom($student->year_level)?->label() ?? '',
             'studentId' => $student->student_number,
-            'totalAppointments' => static::forStudent($student->id)->count(),
-            'history' => $this->getStudentAppointmentHistory(),
+            'totalAppointments' => $appointments->count(),
+            'history' => $this->buildAppointmentHistory($appointments),
         ];
     }
 
-    private function getStudentAppointmentHistory(): array
+    /**
+     * @param Collection<int, Appointment> $appointments
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildAppointmentHistory(Collection $appointments): array
     {
-        return static::forStudent($this->student_id)
-            ->orderByDesc('datetime')
-            ->get()
+        return $appointments
+            ->sortByDesc('datetime')
             ->map(fn(Appointment $appointment): array => [
                 'context' => $appointment->context,
                 'date' => $appointment->datetime->setTimezone(config('app.timezone'))->toDateString(),
@@ -177,6 +183,7 @@ class Appointment extends Model
                 'note' => $appointment->note,
                 'status' => $appointment->status->label(),
             ])
+            ->values()
             ->toArray();
     }
 }

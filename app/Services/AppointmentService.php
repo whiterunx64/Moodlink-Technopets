@@ -7,6 +7,14 @@ use App\Models\Appointment;
 use App\Models\AvailableSchedule;
 use DomainException;
 use Carbon\Carbon;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * @property int|null $takenBy
+ * @property Carbon $datetime
+ * @property int $id
+ */
 
 class AppointmentService
 {
@@ -19,13 +27,19 @@ class AppointmentService
   {
     $this->ensureAppointmentCanBeApproved($appointment);
 
-    $slot = $this->findSlotForAppointment($appointment);
-    $this->ensureSlotCanBeBooked($slot, $appointment);
-    $this->ensureStudentHasNoOtherBookedSlot($appointment, $slot);
+    try {
+      DB::transaction(function () use ($appointment) {
+        $slot = $this->findSlotForAppointment($appointment);
+        $this->ensureSlotCanBeBooked($slot, $appointment);
+        $this->ensureStudentHasNoOtherBookedSlot($appointment, $slot);
 
-    $slot->update(['takenBy' => $appointment->student_id]);
-
-    $appointment->update(['status' => AppointmentStatus::Scheduled->value]);
+        $slot->update(['takenBy' => $appointment->student_id]);
+        $appointment->update(['status' => AppointmentStatus::Scheduled->value]);
+      });
+    } catch (UniqueConstraintViolationException) {
+      // Two approvals for the same student slipped past the guard at once;
+      throw new DomainException('This student already has a booked slot. Complete or release it before booking another.');
+    }
   }
 
   /**
@@ -46,6 +60,8 @@ class AppointmentService
     $this->ensureAppointmentCanBeCompleted($appointment);
 
     $appointment->update(['status' => AppointmentStatus::Completed->value]);
+
+    AvailableSchedule::where('takenBy', $appointment->student_id)->delete();
   }
 
   /**
@@ -53,15 +69,11 @@ class AppointmentService
    */
   public function addSlot(string $datetime): void
   {
-    $this->ensureNoSlotExistsAtSameTime($datetime);
+    $slotAt = Carbon::createFromFormat('Y-m-d H:i:s', $datetime, 'Asia/Manila')->utc();
 
-    AvailableSchedule::create([
-      'datetime' => Carbon::createFromFormat(
-            'Y-m-d H:i:s',
-            $datetime,
-            'Asia/Manila'
-        )->utc(),
-    ]);
+    $this->ensureNoSlotExistsAtSameTime($slotAt);
+
+    AvailableSchedule::create(['datetime' => $slotAt]);
   }
 
   /**
@@ -97,7 +109,7 @@ class AppointmentService
     }
   }
 
-  private function ensureNoSlotExistsAtSameTime(string $datetime): void
+  private function ensureNoSlotExistsAtSameTime(Carbon $datetime): void
   {
     $alreadyExists = AvailableSchedule::where('datetime', $datetime)->exists();
 
@@ -112,13 +124,13 @@ class AppointmentService
       throw new DomainException('Cannot delete a slot that is already booked.');
     }
   }
-  
+
   private function findSlotForAppointment(Appointment $appointment): ?AvailableSchedule
   {
     return AvailableSchedule::whereBetween('datetime', [
       $appointment->datetime->copy()->startOfMinute(),
       $appointment->datetime->copy()->endOfMinute(),
-    ])->first();
+    ])->lockForUpdate()->first();
   }
 
   private function ensureSlotCanBeBooked(?AvailableSchedule $slot, Appointment $appointment): void
