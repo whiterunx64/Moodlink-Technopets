@@ -48,6 +48,11 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
                 ]);
             }
 
+            if (isset($response['access_token'])) {
+                // Supabase invalidates previous refresh tokens after login
+                $this->revokeOtherSessions($response['access_token']);
+            }
+
             return $response;
 
         } catch (Exception $e) {
@@ -77,6 +82,25 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
         } catch (Exception $e) {
             $this->logger->error('User logout failed', ['error' => $e->getMessage()]);
             throw $e;
+        }
+    }
+
+    private function revokeOtherSessions(string $accessToken): void
+    {
+        try {
+            $this->client->request('POST', '/auth/v1/logout', [
+                'headers' => ['Authorization' => "Bearer {$accessToken}"],
+                'query' => ['scope' => 'others'],
+            ]);
+
+            $this->logger->info('Supabase sessions revoked after login', [
+                'action' => 'revoke_other_sessions',
+            ]);
+        } catch (Exception $e) {
+            $this->logger->warning('Failed to revoke other Supabase sessions after login', [
+                'action' => 'revoke_other_sessions',
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

@@ -36,7 +36,7 @@ Route::get(config('supabase-auth.monitoring.health_checks.endpoint'), [HealthCon
 //    ];
 //});
 
-Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-access'])->group(function () {
+Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-access', 'supabase.single-session'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 

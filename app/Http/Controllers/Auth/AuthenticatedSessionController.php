@@ -7,6 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -43,6 +44,16 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Record this session as the account's only active one (single-session enforcement).
+        $userId = Auth::id();
+        if ($userId !== null) {
+            Cache::put(
+                "auth:active_session:{$userId}",
+                $request->session()->getId(),
+                config('session.lifetime') * 60,
+            );
+        }
+
         return redirect()->intended(config('supabase-auth.auth.provider_redirect'));
     }
 
@@ -55,6 +66,10 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        if ($userId !== null) {
+            Cache::forget("auth:active_session:{$userId}");
+        }
 
         logger()->channel(config('supabase-auth.monitoring.logging.channel'))
             ->info('User logged out', [

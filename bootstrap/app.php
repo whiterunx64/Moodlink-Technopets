@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'supabase.verify-token' => \App\Http\Middleware\EnsureTokenIsValid::class,
             'supabase.revalidate' => \App\Http\Middleware\RevalidateSupabaseUser::class,
             'supabase.require-admin-access' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+            'supabase.single-session' => \App\Http\Middleware\EnsureSingleActiveSession::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -24,6 +24,11 @@ onMounted(() => {
     if (props.status) {
         add({ type: 'success', message: props.status });
     }
+
+    // Surface flash errors from redirects (e.g. single-session boot, admin denied),
+    // not just from form submits.
+    const error = page.props.flash?.error;
+    if (error) add({ type: 'error', message: error });
 });
 
 const submit = () => {
