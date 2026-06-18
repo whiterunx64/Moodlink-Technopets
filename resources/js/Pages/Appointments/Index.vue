@@ -18,10 +18,10 @@ const props = defineProps<{
 // ── Tabs ──────────────────────────────────────────────────────────────────────
 
 const TABS: { key: AppointmentTab; label: string; badge: string }[] = [
-    { key: 'requests',  label: 'Requests',  badge: 'bg-red-500' },
+    { key: 'requests', label: 'Requests', badge: 'bg-red-500' },
     { key: 'scheduled', label: 'Scheduled', badge: 'bg-green-500' },
-    { key: 'history',   label: 'History',   badge: 'bg-gray-400' },
-    { key: 'rejected',  label: 'Rejected',  badge: 'bg-orange-400' },
+    { key: 'history', label: 'History', badge: 'bg-gray-400' },
+    { key: 'rejected', label: 'Rejected', badge: 'bg-orange-400' },
 ];
 
 const activeTab = computed(() => props.filters.tab ?? 'requests');
@@ -35,8 +35,8 @@ function switchTab(tab: AppointmentTab) {
 function approve(id: number) {
     router.patch(route('appointments.approve', id), {}, { preserveScroll: true });
 }
-function deny(id: number) {
-    router.patch(route('appointments.deny', id), {}, { preserveScroll: true });
+function reject(id: number) {
+    router.patch(route('appointments.reject', id), {}, { preserveScroll: true });
 }
 function complete(id: number) {
     router.patch(route('appointments.complete', id), {}, { preserveScroll: true });
@@ -47,8 +47,8 @@ function complete(id: number) {
 const STATUS_BADGE: Record<string, string> = {
     Scheduled: 'bg-green-100 text-green-700',
     Completed: 'bg-amber-100 text-amber-700',
-    Rejected:  'bg-red-100 text-red-600',
-    Pending:   'bg-amber-50 text-amber-600',
+    Rejected: 'bg-red-100 text-red-600',
+    Pending: 'bg-amber-50 text-amber-600',
 };
 
 // ── Student profile modal ─────────────────────────────────────────────────────
@@ -86,6 +86,7 @@ function deleteSlot(id: number) {
 </script>
 
 <template>
+
     <Head title="Appointments" />
 
     <AdminLayout title="Appointments">
@@ -96,20 +97,15 @@ function deleteSlot(id: number) {
 
                 <!-- Tabs -->
                 <div class="flex items-center gap-1 mb-5 border-b border-border-light">
-                    <button
-                        v-for="tab in TABS"
-                        :key="tab.key"
-                        type="button"
-                        :class="[
-                            'flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px',
-                            activeTab === tab.key
-                                ? 'border-sidebar text-sidebar'
-                                : 'border-transparent text-text-muted hover:text-text-secondary',
-                        ]"
-                        @click="switchTab(tab.key)"
-                    >
+                    <button v-for="tab in TABS" :key="tab.key" type="button" :class="[
+                        'flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px',
+                        activeTab === tab.key
+                            ? 'border-sidebar text-sidebar'
+                            : 'border-transparent text-text-muted hover:text-text-secondary',
+                    ]" @click="switchTab(tab.key)">
                         {{ tab.label }}
-                        <span :class="['inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-xs font-bold', tab.badge]">
+                        <span
+                            :class="['inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-xs font-bold', tab.badge]">
                             {{ tabCounts[tab.key] }}
                         </span>
                     </button>
@@ -127,11 +123,9 @@ function deleteSlot(id: number) {
 
                             <!-- Info -->
                             <div class="min-w-0">
-                                <button
-                                    type="button"
+                                <button type="button"
                                     class="text-sm font-semibold text-sidebar hover:underline text-left"
-                                    @click="openProfile(apt)"
-                                >
+                                    @click="openProfile(apt)">
                                     {{ apt.studentName }}
                                 </button>
                                 <p class="text-sm text-text-primary mt-0.5">{{ apt.context }}</p>
@@ -151,13 +145,14 @@ function deleteSlot(id: number) {
                                     </button>
                                     <button type="button"
                                         class="px-4 py-1.5 rounded-lg border border-red-300 text-red-500 text-xs font-semibold hover:bg-red-50 transition-colors"
-                                        @click="deny(apt.id)">
-                                        Deny
+                                        @click="reject(apt.id)">
+                                        Reject
                                     </button>
                                 </template>
 
                                 <template v-else-if="activeTab === 'scheduled'">
-                                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                    <span
+                                        class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
                                         Scheduled
                                     </span>
                                     <button type="button"
@@ -168,7 +163,8 @@ function deleteSlot(id: number) {
                                 </template>
 
                                 <template v-else>
-                                    <span :class="['px-3 py-1 rounded-full text-xs font-semibold', STATUS_BADGE[apt.status] ?? 'bg-gray-100 text-gray-600']">
+                                    <span
+                                        :class="['px-3 py-1 rounded-full text-xs font-semibold', STATUS_BADGE[apt.status] ?? 'bg-gray-100 text-gray-600']">
                                         {{ apt.status === 'Completed' ? 'Done' : apt.status }}
                                     </span>
                                 </template>
@@ -216,14 +212,9 @@ function deleteSlot(id: number) {
 
         <!-- ── Student Profile Modal ──────────────────────────────────────── -->
         <Teleport to="body">
-            <Transition
-                enter-active-class="transition duration-200"
-                enter-from-class="opacity-0"
-                enter-to-class="opacity-100"
-                leave-active-class="transition duration-150"
-                leave-from-class="opacity-100"
-                leave-to-class="opacity-0"
-            >
+            <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0"
+                enter-to-class="opacity-100" leave-active-class="transition duration-150" leave-from-class="opacity-100"
+                leave-to-class="opacity-0">
                 <div v-if="selectedStudent" class="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div class="absolute inset-0 bg-black/30" @click="selectedStudent = null" />
 
@@ -239,7 +230,8 @@ function deleteSlot(id: number) {
                         <div class="p-7">
                             <!-- Avatar + identity -->
                             <div class="flex items-center gap-4 mb-6">
-                                <div class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                                <div
+                                    class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
                                     <span class="text-xl font-bold text-blue-500">{{ selectedStudent.initials }}</span>
                                 </div>
                                 <div>
@@ -255,15 +247,20 @@ function deleteSlot(id: number) {
                             <div class="grid grid-cols-2 gap-x-8 gap-y-4 mb-6">
                                 <div>
                                     <p class="text-xs text-text-muted">Year Level</p>
-                                    <p class="text-sm font-semibold text-text-primary mt-0.5">{{ selectedStudent.yearLevel }}</p>
+                                    <p class="text-sm font-semibold text-text-primary mt-0.5">{{
+                                        selectedStudent.yearLevel }}
+                                    </p>
                                 </div>
                                 <div>
                                     <p class="text-xs text-text-muted">Student ID</p>
-                                    <p class="text-sm font-semibold text-text-primary mt-0.5">{{ selectedStudent.studentId }}</p>
+                                    <p class="text-sm font-semibold text-text-primary mt-0.5">{{
+                                        selectedStudent.studentId }}
+                                    </p>
                                 </div>
                                 <div>
                                     <p class="text-xs text-text-muted">Total Appointments</p>
-                                    <p class="text-sm font-semibold text-text-primary mt-0.5">{{ selectedStudent.totalAppointments }}</p>
+                                    <p class="text-sm font-semibold text-text-primary mt-0.5">{{
+                                        selectedStudent.totalAppointments }}</p>
                                 </div>
                             </div>
 
@@ -278,12 +275,14 @@ function deleteSlot(id: number) {
                                         <p class="text-xs text-text-muted mt-0.5">{{ h.date }} &bull; {{ h.time }}</p>
                                         <p v-if="h.note" class="text-xs text-text-muted italic mt-1">"{{ h.note }}"</p>
                                     </div>
-                                    <span :class="['shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold', STATUS_BADGE[h.status] ?? 'bg-gray-100 text-gray-600']">
+                                    <span
+                                        :class="['shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold', STATUS_BADGE[h.status] ?? 'bg-gray-100 text-gray-600']">
                                         {{ h.status === 'Completed' ? 'Done' : h.status }}
                                     </span>
                                 </div>
 
-                                <p v-if="selectedStudent.history.length === 0" class="text-xs text-text-muted text-center py-4">
+                                <p v-if="selectedStudent.history.length === 0"
+                                    class="text-xs text-text-muted text-center py-4">
                                     No appointment history.
                                 </p>
                             </div>
@@ -295,14 +294,9 @@ function deleteSlot(id: number) {
 
         <!-- ── Set Schedule Modal ─────────────────────────────────────────── -->
         <Teleport to="body">
-            <Transition
-                enter-active-class="transition duration-200"
-                enter-from-class="opacity-0"
-                enter-to-class="opacity-100"
-                leave-active-class="transition duration-150"
-                leave-from-class="opacity-100"
-                leave-to-class="opacity-0"
-            >
+            <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0"
+                enter-to-class="opacity-100" leave-active-class="transition duration-150" leave-from-class="opacity-100"
+                leave-to-class="opacity-0">
                 <div v-if="showScheduleModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div class="absolute inset-0 bg-black/30" @click="showScheduleModal = false" />
 
@@ -320,14 +314,17 @@ function deleteSlot(id: number) {
                                 <label class="block text-xs font-medium text-text-secondary mb-1.5">Date</label>
                                 <input v-model="scheduleForm.date" type="date" required
                                     class="w-full border border-border-light rounded-xl px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-sidebar/30 focus:border-sidebar" />
-                                <p v-if="scheduleForm.errors.date" class="text-xs text-red-500 mt-1">{{ scheduleForm.errors.date }}</p>
+                                <p v-if="scheduleForm.errors.date" class="text-xs text-red-500 mt-1">{{
+                                    scheduleForm.errors.date
+                                }}</p>
                             </div>
 
                             <div>
                                 <label class="block text-xs font-medium text-text-secondary mb-1.5">Start time</label>
                                 <input v-model="scheduleForm.start_time" type="time" required
                                     class="w-full border border-border-light rounded-xl px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-sidebar/30 focus:border-sidebar" />
-                                <p v-if="scheduleForm.errors.start_time" class="text-xs text-red-500 mt-1">{{ scheduleForm.errors.start_time }}</p>
+                                <p v-if="scheduleForm.errors.start_time" class="text-xs text-red-500 mt-1">{{
+                                    scheduleForm.errors.start_time }}</p>
                             </div>
 
                             <div class="flex items-center gap-3 pt-2">

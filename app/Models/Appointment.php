@@ -117,7 +117,7 @@ class Appointment extends Model
                 'student_id' => $appointment->student_id,
                 'context' => $appointment->context,
                 'note' => $appointment->note,
-                'status' => $appointment->status->label(),
+                'status' => $appointment->status->value,
                 'date' => $appointment->datetime->setTimezone(config('app.timezone'))->toDateString(),
                 'time' => $appointment->datetime->setTimezone('Asia/Manila')->format('h:i A'),
                 'studentName' => $appointment->student?->name ?? 'Unknown',
@@ -179,7 +179,7 @@ class Appointment extends Model
                 'date' => $appointment->datetime->setTimezone(config('app.timezone'))->toDateString(),
                 'time' => $appointment->datetime->setTimezone(config('app.timezone'))->format('h:i A'),
                 'note' => $appointment->note,
-                'status' => $appointment->status->label(),
+                'status' => $appointment->status->value,
             ])
             ->values()
             ->toArray();

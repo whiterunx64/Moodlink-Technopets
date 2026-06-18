@@ -73,8 +73,8 @@ Route::middleware(['auth', 'supabase.verify-token'])->group(function () {
         ->name('appointments.index');
     Route::patch('/appointments/{appointment}/approve', [AppointmentController::class, 'approve'])
         ->name('appointments.approve');
-    Route::patch('/appointments/{appointment}/deny', [AppointmentController::class, 'deny'])
-        ->name('appointments.deny');
+    Route::patch('/appointments/{appointment}/reject', [AppointmentController::class, 'reject'])
+        ->name('appointments.reject');
     Route::patch('/appointments/{appointment}/complete', [AppointmentController::class, 'complete'])
         ->name('appointments.complete');
     Route::post('/appointments/schedules', [AppointmentController::class, 'storeSchedule'])

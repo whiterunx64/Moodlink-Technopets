@@ -1,24 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\AvailableSchedule;
-use DomainException;
 use Carbon\Carbon;
+use DomainException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
-/**
- * @property int|null $takenBy
- * @property Carbon $datetime
- * @property int $id
- */
-
 class AppointmentService
 {
-
   /**
    * @throws DomainException when the appointment is not pending, or its slot is
    *                         missing or already booked by someone else.
@@ -28,7 +23,7 @@ class AppointmentService
     $this->ensureAppointmentCanBeApproved($appointment);
 
     try {
-      DB::transaction(function () use ($appointment) {
+      DB::transaction(function () use ($appointment): void {
         $slot = $this->findSlotForAppointment($appointment);
         $this->ensureSlotCanBeBooked($slot, $appointment);
         $this->ensureStudentHasNoOtherBookedSlot($appointment, $slot);
@@ -45,9 +40,9 @@ class AppointmentService
   /**
    * @throws DomainException when the appointment is not in Pending status.
    */
-  public function deny(Appointment $appointment): void
+  public function reject(Appointment $appointment): void
   {
-    $this->ensureAppointmentCanBeDenied($appointment);
+    $this->ensureAppointmentCanBeRejected($appointment);
 
     $appointment->update(['status' => AppointmentStatus::Rejected->value]);
   }
@@ -95,10 +90,10 @@ class AppointmentService
     }
   }
 
-  private function ensureAppointmentCanBeDenied(Appointment $appointment): void
+  private function ensureAppointmentCanBeRejected(Appointment $appointment): void
   {
     if ($appointment->status !== AppointmentStatus::Pending) {
-      throw new DomainException('Only pending appointments can be denied.');
+      throw new DomainException('Only pending appointments can be rejected.');
     }
   }
 
