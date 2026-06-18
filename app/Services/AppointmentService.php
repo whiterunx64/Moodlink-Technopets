@@ -21,6 +21,7 @@ class AppointmentService
 
     $slot = $this->findSlotForAppointment($appointment);
     $this->ensureSlotCanBeBooked($slot, $appointment);
+    $this->ensureStudentHasNoOtherBookedSlot($appointment, $slot);
 
     $slot->update(['takenBy' => $appointment->student_id]);
 
@@ -128,6 +129,17 @@ class AppointmentService
 
     if ($slot->takenBy !== null && $slot->takenBy !== $appointment->student_id) {
       throw new DomainException('That time slot has already been booked by another student.');
+    }
+  }
+
+  private function ensureStudentHasNoOtherBookedSlot(Appointment $appointment, AvailableSchedule $slot): void
+  {
+    $holdsAnotherSlot = AvailableSchedule::where('takenBy', $appointment->student_id)
+      ->where('id', '!=', $slot->id)
+      ->exists();
+
+    if ($holdsAnotherSlot) {
+      throw new DomainException('This student already has a booked slot. Complete or release it before booking another.');
     }
   }
 }
