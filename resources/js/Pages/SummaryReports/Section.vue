@@ -19,12 +19,12 @@ const props = defineProps<{
 
 // ── Mood overview items ───────────────────────────────────────────────────────
 const OVERVIEW_ITEMS = computed(() => [
-    { label: 'Total',    value: props.detail.total,    color: 'text-text-primary', bg: 'bg-gray-50' },
-    { label: 'Excited',  value: props.detail.excited,  color: 'text-green-600',   bg: 'bg-green-50' },
-    { label: 'Content',  value: props.detail.content,  color: 'text-blue-600',    bg: 'bg-blue-50' },
-    { label: 'Stressed', value: props.detail.stressed, color: 'text-orange-500',  bg: 'bg-orange-50' },
-    { label: 'Drained',  value: props.detail.drained,  color: 'text-red-500',     bg: 'bg-red-50' },
-    { label: 'At-Risk',  value: props.detail.atRisk,   color: 'text-red-600',     bg: 'bg-red-50' },
+    { label: 'Total', value: props.detail.total, color: 'text-text-primary', bg: 'bg-gray-50' },
+    { label: 'Excited', value: props.detail.excited, color: 'text-green-600', bg: 'bg-green-50' },
+    { label: 'Content', value: props.detail.content, color: 'text-blue-600', bg: 'bg-blue-50' },
+    { label: 'Stressed', value: props.detail.stressed, color: 'text-orange-500', bg: 'bg-orange-50' },
+    { label: 'Drained', value: props.detail.drained, color: 'text-red-500', bg: 'bg-red-50' },
+    { label: 'At-Risk', value: props.detail.atRisk, color: 'text-red-600', bg: 'bg-red-50' },
 ]);
 
 // ── Client-side student search ────────────────────────────────────────────────
@@ -41,8 +41,8 @@ const filteredStudents = computed(() => {
 // ── Trend badge styles ────────────────────────────────────────────────────────
 const TREND_STYLE: Record<string, { icon: Component; cls: string }> = {
     Declining: { icon: ArrowDownIcon, cls: 'bg-red-50 text-red-500 border border-red-100' },
-    Stable:    { icon: MinusIcon,     cls: 'bg-gray-50 text-text-muted border border-border-light' },
-    Improving: { icon: ArrowUpIcon,   cls: 'bg-green-50 text-green-600 border border-green-100' },
+    Stable: { icon: MinusIcon, cls: 'bg-gray-50 text-text-muted border border-border-light' },
+    Improving: { icon: ArrowUpIcon, cls: 'bg-green-50 text-green-600 border border-green-100' },
 };
 
 // ── Distribution bar width helper ─────────────────────────────────────────────
@@ -52,7 +52,7 @@ function barPct(count: number): string {
 
 // ── Navigation ────────────────────────────────────────────────────────────────
 function onPeriodChange(p: SummaryPeriod) {
-    router.get(route('summary-reports.section', props.detail.section), { period: p }, {
+    router.get(route('summary-reports.section-aggregated-report', props.detail.section), { period: p }, {
         preserveState: true,
         replace: true,
     });
@@ -63,11 +63,12 @@ function goBack() {
 }
 
 function openStudent(studentId: number) {
-    router.get(route('summary-reports.student', studentId), { period: props.filters.period });
+    router.get(route('summary-reports.student-mood-report', studentId), { period: props.filters.period });
 }
 </script>
 
 <template>
+
     <Head :title="`Section ${detail.section}`" />
 
     <AdminLayout :title="`Section ${detail.section}`">
@@ -104,9 +105,9 @@ function openStudent(studentId: number) {
                 <!-- Distribution bar -->
                 <div class="flex h-3 rounded-full overflow-hidden">
                     <div class="bg-green-500 h-full" :style="{ width: barPct(detail.excited) }" />
-                    <div class="bg-blue-500 h-full"   :style="{ width: barPct(detail.content) }" />
+                    <div class="bg-blue-500 h-full" :style="{ width: barPct(detail.content) }" />
                     <div class="bg-orange-400 h-full" :style="{ width: barPct(detail.stressed) }" />
-                    <div class="bg-red-400 h-full"    :style="{ width: barPct(detail.drained) }" />
+                    <div class="bg-red-400 h-full" :style="{ width: barPct(detail.drained) }" />
                 </div>
             </div>
 
@@ -148,7 +149,8 @@ function openStudent(studentId: number) {
                             <span class="px-2.5 py-1 rounded-full bg-gray-100 text-text-muted text-xs font-medium">
                                 {{ student.yearLevel }}
                             </span>
-                            <span :class="['inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium', TREND_STYLE[student.trend]?.cls]">
+                            <span
+                                :class="['inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium', TREND_STYLE[student.trend]?.cls]">
                                 <component :is="TREND_STYLE[student.trend]?.icon" class="w-3 h-3" />
                                 {{ student.trend }}
                             </span>

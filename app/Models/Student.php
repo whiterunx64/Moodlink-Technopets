@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\StudentStatus;
+use App\Enums\PostMood;
 use App\Traits\HasStudentStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -81,6 +83,14 @@ class Student extends Model
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class, 'student_id');
+    }
+
+    /**
+     * @return HasMany<Post, $this>
+     */
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class, 'student_id');
     }
 
     public function scopeVerified(Builder $query): Builder
@@ -175,4 +185,33 @@ class Student extends Model
                 'account_status' => $student->displayAccountStatus(),
             ]);
     }
+
+    public static function getAtRiskCount(string $period): int
+    {
+        $from = match ($period) {
+            'this_week' => Carbon::now()->startOfWeek(),
+            'this_month' => Carbon::now()->startOfMonth(),
+            default => null,
+        };
+
+        return static::query()
+            ->verified()
+            ->whereHas('posts', function (Builder $q) use ($from): void {
+                $q->whereIn('mood', [
+                    PostMood::Stressed->value,
+                    PostMood::Drained->value
+                ])
+                    ->when($from, fn(Builder $q) => $q->where('datetime', '>=', $from));
+            }, '>=', 1)
+            ->count();
+        //->get();
+
+        //dd($students->map(fn(Student $s) => [
+        //    'id' => $s->id,
+        //    'name' => $s->name,
+        //   'student_number' => $s->student_number,
+        //    'section' => $s->section,
+        //])->all());
+    }
+
 }

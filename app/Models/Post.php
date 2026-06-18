@@ -12,14 +12,15 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
  * @property int $student_id
  * @property string|null $content
- * @property \App\Enums\PostMood|null $mood
- * @property \App\Enums\PostStatus $status
- * @property \Illuminate\Support\Carbon $datetime
+ * @property PostMood|null $mood
+ * @property PostStatus $status
+ * @property  Carbon $datetime
  *
  * @property-read \App\Models\Student|null $student
  *
@@ -28,7 +29,9 @@ use Illuminate\Pagination\LengthAwarePaginator;
  * @method static Builder|Post fromStudentSection(string $section)
  * @method static Builder|Post withPostMood(string $mood)
  * @method static Builder|Post sortedByDateDirection(string $direction)
- *
+ * @method static Builder|Post fromVerifiedStudents()
+ * @method static Builder|Post withPostMood(string $mood)
+ * 
  * @mixin HasAdminPagination
  * @mixin HasDateTimeDisplay
  */
@@ -129,5 +132,52 @@ class Post extends Model
                 'section' => $post->student?->section ?? '',
                 'anonymous_name' => $post->student?->anonymous_name,
             ]);
+    }
+    public static function getMoodDistribution(string $period): array
+    {
+        $from = static::periodFrom($period);
+
+        $rows = static::query()
+            ->fromVerifiedStudents()
+            ->when($from, fn(Builder $q) => $q->where('datetime', '>=', $from))
+            ->whereNotNull('mood')
+            ->selectRaw('mood, count(*) as total')
+            ->groupBy('mood')
+            ->pluck('total', 'mood');
+
+        $grand = $rows->sum();
+
+        return collect(PostMood::cases())
+            ->map(function (PostMood $mood) use ($rows, $grand): array {
+                $count = (int) $rows->get($mood->value, 0);
+
+                return [
+                    'label' => $mood->value,
+                    'count' => $count,
+                    'pct' => $grand > 0 ? (int) round($count / $grand * 100) : 0,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    public static function getAvgDailyLogs(string $period, int $totalMoodLogs): int
+    {
+        $days = match ($period) {
+            'this_week' => 7,
+            'this_month' => (int) Carbon::now()->daysInMonth,
+            default => 1,
+        };
+
+        return (int) round($totalMoodLogs / $days);
+    }
+
+    private static function periodFrom(string $period): ?Carbon
+    {
+        return match ($period) {
+            'this_week' => Carbon::now()->startOfWeek(),
+            'this_month' => Carbon::now()->startOfMonth(),
+            default => null,
+        };
     }
 }

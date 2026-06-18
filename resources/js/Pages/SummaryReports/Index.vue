@@ -32,10 +32,10 @@ const props = defineProps<{
 }>();
 
 const MOOD_STYLE: Record<string, { bar: string; text: string; dot: string; tag: string }> = {
-    Excited:  { bar: 'bg-green-500',  text: 'text-green-600',  dot: 'bg-green-500',  tag: 'bg-green-100 text-green-700' },
-    Content:  { bar: 'bg-blue-500',   text: 'text-blue-600',   dot: 'bg-blue-500',   tag: 'bg-blue-100 text-blue-700' },
+    Excited: { bar: 'bg-green-500', text: 'text-green-600', dot: 'bg-green-500', tag: 'bg-green-100 text-green-700' },
+    Content: { bar: 'bg-blue-500', text: 'text-blue-600', dot: 'bg-blue-500', tag: 'bg-blue-100 text-blue-700' },
     Stressed: { bar: 'bg-orange-400', text: 'text-orange-500', dot: 'bg-orange-400', tag: 'bg-orange-100 text-orange-700' },
-    Drained:  { bar: 'bg-red-400',    text: 'text-red-500',    dot: 'bg-red-400',    tag: 'bg-red-100 text-red-700' },
+    Drained: { bar: 'bg-red-400', text: 'text-red-500', dot: 'bg-red-400', tag: 'bg-red-100 text-red-700' },
 };
 
 // ── Period filter ─────────────────────────────────────────────────────────────
@@ -50,14 +50,14 @@ function onPeriodChange(p: SummaryPeriod) {
 const activeTab = ref<string>(props.filters.tab ?? 'overview');
 
 const tabs: Array<{ key: string; label: string; icon: Component }> = [
-    { key: 'overview', label: 'Overview',         icon: GlobeAltIcon },
-    { key: 'sections', label: 'Section Reports',  icon: ListBulletIcon },
-    { key: 'at-risk',  label: 'At-Risk Students', icon: ExclamationTriangleIcon },
+    { key: 'overview', label: 'Overview', icon: GlobeAltIcon },
+    { key: 'sections', label: 'Section Reports', icon: ListBulletIcon },
+    { key: 'at-risk', label: 'At-Risk Students', icon: ExclamationTriangleIcon },
 ];
 
 // ── Section navigation ────────────────────────────────────────────────────────
 function openSection(section: string) {
-    router.get(route('summary-reports.section', section), { period: props.filters.period });
+    router.get(route('summary-reports.section-aggregated-report', section), { period: props.filters.period });
 }
 
 // ── Consult action ────────────────────────────────────────────────────────────
@@ -75,6 +75,7 @@ function miniBarWidth(count: number, total: number): string {
 </script>
 
 <template>
+
     <Head title="Summary Reports" />
 
     <AdminLayout title="Summary Reports">
@@ -151,7 +152,8 @@ function miniBarWidth(count: number, total: number): string {
                 <div class="bg-white rounded-2xl border border-border-light shadow-sm">
                     <div class="px-6 py-4 border-b border-border-light">
                         <h3 class="text-base font-semibold text-text-primary">Section-Based Mood Reports</h3>
-                        <p class="text-xs text-text-muted mt-0.5">Click a section to view its students and mood details</p>
+                        <p class="text-xs text-text-muted mt-0.5">Click a section to view its students and mood details
+                        </p>
                     </div>
 
                     <table class="w-full text-sm">
@@ -186,10 +188,14 @@ function miniBarWidth(count: number, total: number): string {
                                 </td>
                                 <td class="px-4 py-4">
                                     <div class="flex h-2 w-28 rounded-full overflow-hidden">
-                                        <div class="bg-green-500 h-full" :style="{ width: miniBarWidth(sec.excited, sec.total) }" />
-                                        <div class="bg-blue-500 h-full"   :style="{ width: miniBarWidth(sec.content, sec.total) }" />
-                                        <div class="bg-orange-400 h-full" :style="{ width: miniBarWidth(sec.stressed, sec.total) }" />
-                                        <div class="bg-red-400 h-full"    :style="{ width: miniBarWidth(sec.drained, sec.total) }" />
+                                        <div class="bg-green-500 h-full"
+                                            :style="{ width: miniBarWidth(sec.excited, sec.total) }" />
+                                        <div class="bg-blue-500 h-full"
+                                            :style="{ width: miniBarWidth(sec.content, sec.total) }" />
+                                        <div class="bg-orange-400 h-full"
+                                            :style="{ width: miniBarWidth(sec.stressed, sec.total) }" />
+                                        <div class="bg-red-400 h-full"
+                                            :style="{ width: miniBarWidth(sec.drained, sec.total) }" />
                                     </div>
                                 </td>
                             </tr>
@@ -210,7 +216,8 @@ function miniBarWidth(count: number, total: number): string {
                     <div class="px-6 py-4 border-b border-border-light flex items-center justify-between">
                         <div>
                             <h3 class="text-base font-semibold text-text-primary">At-Risk Students</h3>
-                            <p class="text-xs text-text-muted mt-0.5">Students with consistently negative mood patterns</p>
+                            <p class="text-xs text-text-muted mt-0.5">Students with consistently negative mood patterns
+                            </p>
                         </div>
                         <span v-if="atRiskStudents.length > 0"
                             class="px-3 py-1 rounded-full bg-red-100 text-red-600 text-xs font-semibold">
@@ -221,14 +228,16 @@ function miniBarWidth(count: number, total: number): string {
                     <div class="divide-y divide-border-light">
                         <div v-for="student in atRiskStudents" :key="student.id"
                             class="px-6 py-4 flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0 text-red-400">
+                            <div
+                                class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center shrink-0 text-red-400">
                                 <UserIcon class="w-5 h-5" />
                             </div>
 
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <span class="font-semibold text-text-primary text-sm">{{ student.name }}</span>
-                                    <span class="text-xs text-text-muted">· {{ student.studentNumber }} · {{ student.section }}</span>
+                                    <span class="text-xs text-text-muted">· {{ student.studentNumber }} · {{
+                                        student.section }}</span>
                                 </div>
                                 <div class="flex items-center gap-1.5 mt-1 flex-wrap">
                                     <span v-for="mood in student.moods" :key="mood"
@@ -240,7 +249,8 @@ function miniBarWidth(count: number, total: number): string {
 
                             <div class="flex items-center gap-4 shrink-0">
                                 <div class="text-right">
-                                    <p class="text-sm font-semibold text-red-500">{{ student.daysFlagged }} days flagged</p>
+                                    <p class="text-sm font-semibold text-red-500">{{ student.daysFlagged }} days flagged
+                                    </p>
                                     <p class="text-xs text-text-muted">Last log: {{ student.lastLog }}</p>
                                 </div>
 

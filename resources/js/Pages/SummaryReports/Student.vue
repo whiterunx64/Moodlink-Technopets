@@ -14,18 +14,18 @@ const props = defineProps<{
 
 // ── Mood styles (student-report palette) ─────────────────────────────────────
 const MOOD_STYLE: Record<string, { bar: string; dot: string }> = {
-    Excited:  { bar: 'bg-amber-400',  dot: 'bg-amber-400' },
-    Content:  { bar: 'bg-green-500',  dot: 'bg-green-500' },
-    Stressed: { bar: 'bg-red-400',    dot: 'bg-red-400' },
-    Drained:  { bar: 'bg-slate-400',  dot: 'bg-slate-400' },
+    Excited: { bar: 'bg-amber-400', dot: 'bg-amber-400' },
+    Content: { bar: 'bg-green-500', dot: 'bg-green-500' },
+    Stressed: { bar: 'bg-red-400', dot: 'bg-red-400' },
+    Drained: { bar: 'bg-slate-400', dot: 'bg-slate-400' },
 };
 
 // Mood log tag colors (overview palette for the log list)
 const LOG_TAG: Record<string, string> = {
-    Excited:  'bg-green-100 text-green-700',
-    Content:  'bg-blue-100 text-blue-700',
+    Excited: 'bg-green-100 text-green-700',
+    Content: 'bg-blue-100 text-blue-700',
     Stressed: 'bg-orange-100 text-orange-700',
-    Drained:  'bg-red-100 text-red-700',
+    Drained: 'bg-red-100 text-red-700',
 };
 
 // ── Mood bars ─────────────────────────────────────────────────────────────────
@@ -34,10 +34,10 @@ const MOOD_ORDER = ['Excited', 'Content', 'Stressed', 'Drained'] as const;
 const moodBars = computed(() => {
     const { moodSummary } = props.studentReport;
     const values: Record<string, number> = {
-        Excited:  moodSummary.excited,
-        Content:  moodSummary.content,
+        Excited: moodSummary.excited,
+        Content: moodSummary.content,
         Stressed: moodSummary.stressed,
-        Drained:  moodSummary.drained,
+        Drained: moodSummary.drained,
     };
     const max = Math.max(...Object.values(values), 1);
     return MOOD_ORDER.map((mood) => ({
@@ -50,7 +50,7 @@ const moodBars = computed(() => {
 // ── Navigation & actions ──────────────────────────────────────────────────────
 function onPeriodChange(p: SummaryPeriod) {
     router.get(
-        route('summary-reports.student', props.studentReport.id),
+        route('summary-reports.student-mood-report', props.studentReport.id),
         { period: p, trendDays: props.filters.trendDays },
         { preserveState: true, replace: true },
     );
@@ -58,7 +58,7 @@ function onPeriodChange(p: SummaryPeriod) {
 
 function onTrendDaysChange(days: number) {
     router.get(
-        route('summary-reports.student', props.studentReport.id),
+        route('summary-reports.student-mood-report', props.studentReport.id),
         { period: props.filters.period, trendDays: days },
         { preserveState: true, replace: true, only: ['studentReport', 'filters'] },
     );
@@ -66,13 +66,14 @@ function onTrendDaysChange(days: number) {
 
 function goBack() {
     router.get(
-        route('summary-reports.section', props.studentReport.section),
+        route('summary-reports.section-aggregated-report', props.studentReport.section),
         { period: props.filters.period },
     );
 }
 </script>
 
 <template>
+
     <Head title="Student Mood Report" />
 
     <AdminLayout title="Student Mood Report">
@@ -107,11 +108,13 @@ function goBack() {
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-10 gap-y-3 flex-1">
                         <div>
                             <p class="text-xs text-text-muted">Anonymous Name</p>
-                            <p class="text-sm font-semibold text-text-primary mt-0.5">{{ studentReport.anonymousName }}</p>
+                            <p class="text-sm font-semibold text-text-primary mt-0.5">{{ studentReport.anonymousName }}
+                            </p>
                         </div>
                         <div>
                             <p class="text-xs text-text-muted">Student Number</p>
-                            <p class="text-sm font-semibold text-text-primary mt-0.5">{{ studentReport.studentNumber }}</p>
+                            <p class="text-sm font-semibold text-text-primary mt-0.5">{{ studentReport.studentNumber }}
+                            </p>
                         </div>
                         <div>
                             <p class="text-xs text-text-muted">Year Level</p>
@@ -183,12 +186,8 @@ function goBack() {
             </div>
 
             <!-- Mood Trend chart (extracted component) -->
-            <MoodTrendChart
-                :data="studentReport.trendData"
-                :trend="studentReport.trend"
-                :trend-days="filters.trendDays"
-                @update:trend-days="onTrendDaysChange"
-            />
+            <MoodTrendChart :data="studentReport.trendData" :trend="studentReport.trend" :trend-days="filters.trendDays"
+                @update:trend-days="onTrendDaysChange" />
 
             <!-- Recent Mood Logs -->
             <div class="bg-white rounded-2xl border border-border-light shadow-sm">
@@ -199,7 +198,8 @@ function goBack() {
                 <div class="divide-y divide-border-light">
                     <div v-for="log in studentReport.recentLogs" :key="log.id"
                         class="px-6 py-4 flex items-center gap-4">
-                        <span :class="['px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 w-20 text-center', LOG_TAG[log.mood] ?? 'bg-gray-100 text-gray-600']">
+                        <span
+                            :class="['px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 w-20 text-center', LOG_TAG[log.mood] ?? 'bg-gray-100 text-gray-600']">
                             {{ log.mood }}
                         </span>
                         <p class="flex-1 text-sm text-text-secondary">{{ log.content }}</p>

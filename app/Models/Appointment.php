@@ -10,6 +10,7 @@ use App\Traits\HasStudentDisplay;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
@@ -20,7 +21,7 @@ use Illuminate\Support\Collection;
  * @property string|null $context
  * @property string|null $note
  * @property AppointmentStatus $status
- * @property \Illuminate\Support\Carbon $datetime
+ * @property Carbon $datetime
  *
  * @property-read \App\Models\Student|null $student
  *
@@ -144,5 +145,22 @@ class Appointment extends Model
                 + $counts->get(AppointmentStatus::Rejected->value, 0),
             'rejected' => $counts->get(AppointmentStatus::Rejected->value, 0),
         ];
+    }
+
+    public static function getScheduledCount(string $period): int
+    {
+        $from = match ($period) {
+            'this_week' => Carbon::now()->startOfWeek(),
+            'this_month' => Carbon::now()->startOfMonth(),
+            default => null,
+        };
+
+        return static::query()
+            ->whereIn('status', [
+                AppointmentStatus::Scheduled->value,
+                AppointmentStatus::Completed->value,
+            ])
+            ->when($from, fn(Builder $q) => $q->where('datetime', '>=', $from))
+            ->count();
     }
 }
