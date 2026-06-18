@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Admin;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -30,13 +31,16 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
+        $admin = $user ? Admin::findByUserId($user->id) : null;
 
         return [
             ...parent::share($request),
             'auth' => [
                 'user' => $user ? [
                     'id'                 => $user->id,
+                    'name'               => $admin ? trim("{$admin->first_name} {$admin->last_name}") : $user->email,
                     'email'              => $user->email,
+                    'avatar'             => $admin?->avatar,
                     'email_verified_at'  => $user->email_confirmed_at,
                     'created_at'         => $user->created_at,
                     // TEST JWT TOKEN ALGO

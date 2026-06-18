@@ -1,10 +1,16 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { usePage } from '@inertiajs/vue3';
 import { Bars3Icon } from '@heroicons/vue/24/outline';
+import { getInitials } from '@/composables/useInitials';
+import type { PageProps } from '@/types';
 
 defineProps<{
   title: string;
 }>();
+
+const user = computed(() => usePage<PageProps>().props.auth.user);
+const initials = computed(() => getInitials(user.value?.name ?? ''));
 
 const emit = defineEmits<{
   'toggle-sidebar': [];
@@ -51,8 +57,9 @@ onUnmounted(() => {
     </div>
 
     <div class="flex items-center gap-2 shrink-0">
-      <div class="w-8 h-8 rounded-full bg-sidebar/10 flex items-center justify-center">
-        <span class="text-sidebar text-sm font-bold">A</span>
+      <div class="w-8 h-8 rounded-full bg-sidebar/10 flex items-center justify-center overflow-hidden">
+        <img v-if="user?.avatar" :src="user.avatar" alt="Avatar" class="w-full h-full object-cover" />
+        <span v-else class="text-sidebar text-sm font-bold">{{ initials }}</span>
       </div>
     </div>
   </header>
