@@ -56,7 +56,7 @@ const STATUS_BADGE: Record<string, string> = {
 const selectedStudent = ref<(AppointmentStudentProfile & { name: string }) | null>(null);
 
 function openProfile(apt: Appointment) {
-    selectedStudent.value = { ...apt.studentProfile, name: apt.studentName };
+    selectedStudent.value = { ...apt.student_profile, name: apt.student_name };
 }
 
 // ── Set Schedule modal ────────────────────────────────────────────────────────
@@ -126,7 +126,7 @@ function deleteSlot(id: number) {
                                 <button type="button"
                                     class="text-sm font-semibold text-sidebar hover:underline text-left"
                                     @click="openProfile(apt)">
-                                    {{ apt.studentName }}
+                                    {{ apt.student_name }}
                                 </button>
                                 <p class="text-sm text-text-primary mt-0.5">{{ apt.context }}</p>
                                 <p v-if="apt.note" class="text-sm text-text-muted italic mt-1">"{{ apt.note }}"</p>
@@ -191,7 +191,7 @@ function deleteSlot(id: number) {
                                     {{ slot.date }}
                                     <span v-if="slot.taken" class="ml-1 font-semibold text-red-500">Taken</span>
                                 </p>
-                                <p class="text-xs text-text-muted mt-0.5">{{ slot.startTime }}</p>
+                                <p class="text-xs text-text-muted mt-0.5">{{ slot.start_time }}</p>
                             </div>
                             <button v-if="!slot.taken" type="button"
                                 class="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-red-400 hover:bg-red-50"
@@ -237,7 +237,7 @@ function deleteSlot(id: number) {
                                 <div>
                                     <p class="text-lg font-bold text-text-primary">{{ selectedStudent.name }}</p>
                                     <p class="text-sm text-text-muted mt-0.5">
-                                        {{ selectedStudent.studentId }} &bull; {{ selectedStudent.yearLevel }}
+                                        {{ selectedStudent.student_id }} &bull; {{ selectedStudent.section }} &bull; {{ selectedStudent.year_level }}
                                     </p>
                                     <p class="text-sm text-text-muted">{{ selectedStudent.email }}</p>
                                 </div>
@@ -246,21 +246,27 @@ function deleteSlot(id: number) {
                             <!-- Stats grid -->
                             <div class="grid grid-cols-2 gap-x-8 gap-y-4 mb-6">
                                 <div>
+                                    <p class="text-xs text-text-muted">Section</p>
+                                    <p class="text-sm font-semibold text-text-primary mt-0.5">{{
+                                        selectedStudent.section }}
+                                    </p>
+                                </div>
+                                <div>
                                     <p class="text-xs text-text-muted">Year Level</p>
                                     <p class="text-sm font-semibold text-text-primary mt-0.5">{{
-                                        selectedStudent.yearLevel }}
+                                        selectedStudent.year_level }}
                                     </p>
                                 </div>
                                 <div>
                                     <p class="text-xs text-text-muted">Student ID</p>
                                     <p class="text-sm font-semibold text-text-primary mt-0.5">{{
-                                        selectedStudent.studentId }}
+                                        selectedStudent.student_id }}
                                     </p>
                                 </div>
                                 <div>
                                     <p class="text-xs text-text-muted">Total Appointments</p>
                                     <p class="text-sm font-semibold text-text-primary mt-0.5">{{
-                                        selectedStudent.totalAppointments }}</p>
+                                        selectedStudent.total_appointments }}</p>
                                 </div>
                             </div>
 

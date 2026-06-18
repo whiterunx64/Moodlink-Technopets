@@ -9,10 +9,9 @@ use App\Traits\HasLoginTracking;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
 
 /**
- * Admin model
- *
  * @property string $user_id
  * @property string $role
  * @property string $first_name
@@ -22,13 +21,18 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $phone
  * @property AdminUserStatus $status
  * @property int $failed_login_attempts
- * @property \Illuminate\Support\Carbon|null $locked_until
- * @property \Illuminate\Support\Carbon|null $last_login_at
+ * @property Carbon|null $locked_until
+ * @property Carbon|null $last_login_at
  * @property string|null $last_login_ip
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property Carbon|null $deleted_at
+ *
+ * @property-read \App\Models\User $linkedSupabaseUser
+ *
+ * @mixin HasLoginTracking
  */
+
 class Admin extends Model
 {
     use SoftDeletes, HasLoginTracking;
@@ -70,9 +74,6 @@ class Admin extends Model
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
 
-    /**
-     * Profile summary for UI display.
-     */
     public function profileSummary(): array
     {
         return [
@@ -110,7 +111,7 @@ class Admin extends Model
     {
         return static::whereHas(
             'linkedSupabaseUser',
-            fn($q) => $q->where('email', $email)
+            fn($query) => $query->where('email', $email)
         )->first();
     }
 

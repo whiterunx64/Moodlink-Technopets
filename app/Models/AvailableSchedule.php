@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\HasDateTimeDisplay;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 /**
- * @property int                        $id
- * @property int|null                   $takenBy
+ * @property int $id
+ * @property int|null $takenBy
  * @property \Illuminate\Support\Carbon $datetime
+ *
+ * @mixin HasDateTimeDisplay
  */
+
 class AvailableSchedule extends Model
 {
-    protected $table = 'available_schedules';
+    use HasDateTimeDisplay;
 
+    protected $table = 'available_schedules';
     public $timestamps = false;
 
     protected $fillable = [
@@ -37,8 +42,8 @@ class AvailableSchedule extends Model
             ->get()
             ->map(fn(AvailableSchedule $schedule): array => [
                 'id' => $schedule->id,
-                'date' => $schedule->datetime->setTimezone(config('app.timezone'))->format('M d, Y'),
-                'startTime' => $schedule->datetime->setTimezone(config('app.timezone'))->format('h:i A'),
+                'date' => $schedule->displayPhDate(),
+                'start_time' => $schedule->displayTime(),
                 'taken' => $schedule->takenBy !== null,
             ]);
     }

@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\StudentStatus;
-use App\Enums\YearLevel;
+use App\Traits\HasAdminPagination;
+use App\Traits\HasStudentStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
@@ -27,17 +28,22 @@ use Illuminate\Pagination\LengthAwarePaginator;
  *
  * @property-read string $name
  * @property-read string $verification_status
- * @property-read Collection<int, Appointment> $appointments
+ * @property-read Collection<int, \App\Models\Appointment> $appointments
  *
  * @method static Builder|Student verified()
- * @method static Builder|Student withStatus(StudentStatus $status)
+ * @method static Builder|Student withStatus(\App\Enums\StudentStatus $status)
  * @method static Builder|Student matchingSearch(string $search)
  * @method static Builder|Student byYearLevel(int $yearLevel)
  * @method static Builder|Student byTab(string $tab)
+ *
+ * @mixin HasAdminPagination
+ * @mixin HasStudentStatus
  */
 
 class Student extends Model
 {
+    use HasAdminPagination, HasStudentStatus;
+
     protected $table = 'students';
     public $timestamps = false;
     public const int ADMIN_PAGE_SIZE = 7;
@@ -110,12 +116,13 @@ class Student extends Model
             return $query;
         }
 
-        $status = collect(StudentStatus::cases())
-            ->first(fn($case) => $case->label() === $tab);
+        $status = StudentStatus::tryFrom(strtolower($tab));
 
-        return $status
-            ? $query->withStatus($status)
-            : $query;
+        if ($status !== null) {
+            return $query->withStatus($status);
+        } else {
+            return $query;
+        }
     }
 
     public static function queryWithFilters(array $filters): Builder
@@ -164,26 +171,15 @@ class Student extends Model
 
     public static function paginatedListWithFilters(array $filters): LengthAwarePaginator
     {
-        return static::filteredQuery($filters)
-            ->paginate(static::ADMIN_PAGE_SIZE)
-            ->withQueryString()
+        return static::paginateForAdmin(static::filteredQuery($filters))
             ->through(fn(Student $student): array => [
                 'id' => $student->id,
                 'student_id' => $student->student_number,
                 'name' => $student->name,
-                'year_level' => YearLevel::tryFrom($student->year_level)?->label() ?? 'Not Set',
+                'year_level' => $student->displayYearLevel(),
                 'section' => $student->section,
                 'verification_status' => $student->displayVerificationStatus(),
-                'account_status' => $student->status->isActive() ? 'active' : 'suspended',
+                'account_status' => $student->displayAccountStatus(),
             ]);
-    }
-
-    private function displayVerificationStatus(): string
-    {
-        if ($this->status === StudentStatus::Suspended) {
-            return StudentStatus::Verified->value;
-        }
-
-        return $this->status->value;
     }
 }

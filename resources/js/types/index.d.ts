@@ -183,29 +183,29 @@ export type AppointmentStatus = 'Pending' | 'Scheduled' | 'Completed' | 'Rejecte
 
 export interface Appointment {
     id: number;
-    studentName: string;
+    student_name: string;
     context: string;
     note: string | null;
     date: string;
     time: string;
     status: AppointmentStatus;
-    studentProfile: AppointmentStudentProfile;
+    student_profile: AppointmentStudentProfile;
 }
 
 export interface AvailableSlot {
     id: number;
     date: string;
-    startTime: string;
+    start_time: string;
     taken: boolean;
 }
 
 export interface AppointmentStudentProfile {
     initials: string;
     section: string;
-    yearLevel: string;
+    year_level: string;
     email: string;
-    studentId: string;
-    totalAppointments: number;
+    student_id: string;
+    total_appointments: number;
     history: Array<{
         context: string;
         date: string;

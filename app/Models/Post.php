@@ -6,6 +6,8 @@ namespace App\Models;
 
 use App\Enums\PostMood;
 use App\Enums\PostStatus;
+use App\Traits\HasAdminPagination;
+use App\Traits\HasDateTimeDisplay;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,21 +17,26 @@ use Illuminate\Pagination\LengthAwarePaginator;
  * @property int $id
  * @property int $student_id
  * @property string|null $content
- * @property PostMood|null $mood
- * @property PostStatus $status
+ * @property \App\Enums\PostMood|null $mood
+ * @property \App\Enums\PostStatus $status
  * @property \Illuminate\Support\Carbon $datetime
  *
- * @property-read Student|null $student
+ * @property-read \App\Models\Student|null $student
  *
  * @method static Builder|Post fromVerifiedStudents()
  * @method static Builder|Post withPostStatus(string $status)
  * @method static Builder|Post fromStudentSection(string $section)
  * @method static Builder|Post withPostMood(string $mood)
  * @method static Builder|Post sortedByDateDirection(string $direction)
+ *
+ * @mixin HasAdminPagination
+ * @mixin HasDateTimeDisplay
  */
 
 class Post extends Model
 {
+    use HasAdminPagination, HasDateTimeDisplay;
+
     protected $table = 'posts';
     public const UPDATED_AT = null;
     public const CREATED_AT = null;
@@ -111,16 +118,14 @@ class Post extends Model
 
     public static function paginatedListWithFilters(array $filters): LengthAwarePaginator
     {
-        return static::queryVerifiedPostsWithFilters($filters)
-            ->paginate(static::ADMIN_PAGE_SIZE)
-            ->withQueryString()
+        return static::paginateForAdmin(static::queryVerifiedPostsWithFilters($filters))
             ->through(fn(Post $post): array => [
                 'id' => $post->id,
                 'content' => $post->content,
                 'mood' => $post->mood?->value,
                 'status' => $post->status?->value,
-                'date' => $post->datetime->setTimezone(config('app.timezone'))->toDateString(),
-                'time' => $post->datetime->setTimezone(config('app.timezone'))->format('h:i A'),
+                'date' => $post->displayDate(),
+                'time' => $post->displayTime(),
                 'section' => $post->student?->section ?? '',
                 'anonymous_name' => $post->student?->anonymous_name,
             ]);

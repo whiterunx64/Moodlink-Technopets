@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\AppointmentStatus;
-use App\Enums\YearLevel;
-use App\Traits\HasInitials;
+use App\Traits\HasDateTimeDisplay;
+use App\Traits\HasStudentDisplay;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,15 +15,14 @@ use Illuminate\Support\Collection;
 /**
  * Appointment Model
  *
- * @property int                        $id
- * @property int                        $student_id
- * @property string|null                $context
- * @property string|null                $note
- * @property AppointmentStatus          $status
+ * @property int $id
+ * @property int $student_id
+ * @property string|null $context
+ * @property string|null $note
+ * @property AppointmentStatus $status
  * @property \Illuminate\Support\Carbon $datetime
  *
- * 
- * @property-read Student|null $student
+ * @property-read \App\Models\Student|null $student
  *
  * @method static Builder|Appointment pending()
  * @method static Builder|Appointment scheduled()
@@ -31,11 +30,14 @@ use Illuminate\Support\Collection;
  * @method static Builder|Appointment rejected()
  * @method static Builder|Appointment forTab(string $tab)
  * @method static Builder|Appointment forStudent(int $studentId)
+ *
+ * @mixin HasDateTimeDisplay
+ * @mixin HasStudentDisplay
  */
 
 class Appointment extends Model
 {
-    use HasInitials;
+    use HasDateTimeDisplay, HasStudentDisplay;
 
     protected $table = 'appointments';
     public $timestamps = false;
@@ -89,15 +91,18 @@ class Appointment extends Model
 
     public function scopeForTab(Builder $query, string $tab): Builder
     {
-        return match ($tab) {
-            'scheduled' => $query->where('status', AppointmentStatus::Scheduled->value),
-            'history' => $query->whereIn('status', [
+        if ($tab === 'scheduled') {
+            return $query->where('status', AppointmentStatus::Scheduled->value);
+        } elseif ($tab === 'history') {
+            return $query->whereIn('status', [
                 AppointmentStatus::Completed->value,
                 AppointmentStatus::Rejected->value,
-            ]),
-            'rejected' => $query->where('status', AppointmentStatus::Rejected->value),
-            default => $query->where('status', AppointmentStatus::Pending->value),
-        };
+            ]);
+        } elseif ($tab === 'rejected') {
+            return $query->where('status', AppointmentStatus::Rejected->value);
+        } else {
+            return $query->where('status', AppointmentStatus::Pending->value);
+        }
     }
 
     public function scopeForStudent(Builder $query, int $studentId): Builder
@@ -118,11 +123,11 @@ class Appointment extends Model
                 'context' => $appointment->context,
                 'note' => $appointment->note,
                 'status' => $appointment->status->value,
-                'date' => $appointment->datetime->setTimezone(config('app.timezone'))->toDateString(),
-                'time' => $appointment->datetime->setTimezone('Asia/Manila')->format('h:i A'),
-                'studentName' => $appointment->student?->name ?? 'Unknown',
-                'section' => $appointment->student?->section ?? '',
-                'studentProfile' => $appointment->studentProfile($appointment->student),
+                'date' => $appointment->displayDate(),
+                'time' => $appointment->displayTime(),
+                'student_name' => $appointment->displayStudentName(),
+                'section' => $appointment->displayStudentSection(),
+                'student_profile' => $appointment->studentProfile(),
             ]);
     }
 
@@ -139,49 +144,5 @@ class Appointment extends Model
                 + $counts->get(AppointmentStatus::Rejected->value, 0),
             'rejected' => $counts->get(AppointmentStatus::Rejected->value, 0),
         ];
-    }
-
-    private function studentProfile(?Student $student): array
-    {
-        if ($student === null) {
-            return [
-                'initials' => '',
-                'section' => '',
-                'yearLevel' => '',
-                'studentId' => '',
-                'totalAppointments' => 0,
-                'history' => [],
-            ];
-        }
-
-        $appointments = $student->appointments;
-
-        return [
-            'initials' => $this->getInitialsFromName($student->name),
-            'section' => $student->section,
-            'yearLevel' => YearLevel::tryFrom($student->year_level)?->label() ?? '',
-            'studentId' => $student->student_number,
-            'totalAppointments' => $appointments->count(),
-            'history' => $this->buildAppointmentHistory($appointments),
-        ];
-    }
-
-    /**
-     * @param Collection<int, Appointment> $appointments
-     * @return array<int, array<string, mixed>>
-     */
-    private function buildAppointmentHistory(Collection $appointments): array
-    {
-        return $appointments
-            ->sortByDesc('datetime')
-            ->map(fn(Appointment $appointment): array => [
-                'context' => $appointment->context,
-                'date' => $appointment->datetime->setTimezone(config('app.timezone'))->toDateString(),
-                'time' => $appointment->datetime->setTimezone(config('app.timezone'))->format('h:i A'),
-                'note' => $appointment->note,
-                'status' => $appointment->status->value,
-            ])
-            ->values()
-            ->toArray();
     }
 }
