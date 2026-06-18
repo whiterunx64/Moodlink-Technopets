@@ -121,4 +121,12 @@ class Admin extends Model
             ->where('user_id', $userId)
             ->first();
     }
+
+    public static function isAdministratorRole(string $userId): bool
+    {
+        return static::query()
+            ->where('user_id', $userId)
+            ->where('role', 'Administrator')
+            ->exists();
+    }
 }

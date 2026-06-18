@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\StudentStatus;
-use App\Traits\HasAdminPagination;
 use App\Traits\HasStudentStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -36,13 +35,12 @@ use Illuminate\Pagination\LengthAwarePaginator;
  * @method static Builder|Student byYearLevel(int $yearLevel)
  * @method static Builder|Student byTab(string $tab)
  *
- * @mixin HasAdminPagination
  * @mixin HasStudentStatus
  */
 
 class Student extends Model
 {
-    use HasAdminPagination, HasStudentStatus;
+    use HasStudentStatus;
 
     protected $table = 'students';
     public $timestamps = false;
@@ -125,7 +123,7 @@ class Student extends Model
         }
     }
 
-    public static function queryWithFilters(array $filters): Builder
+    protected static function queryFilteredBySearchAndYearLevel(array $filters): Builder
     {
         $search = str($filters['search'] ?? '')->squish()->toString();
 
@@ -140,21 +138,9 @@ class Student extends Model
             );
     }
 
-    public static function queryWithFiltersAndTab(array $filters): Builder
-    {
-        return static::queryWithFilters($filters)->byTab($filters['tab'] ?? 'All');
-    }
-
-    protected static function filteredQuery(array $filters): Builder
-    {
-        return static::queryWithFiltersAndTab($filters)
-            ->orderBy('last_name')
-            ->orderBy('first_name');
-    }
-
     public static function countsByTab(array $filters): array
     {
-        $base = static::queryWithFilters($filters);
+        $base = static::queryFilteredBySearchAndYearLevel($filters);
 
         $countsPerStatus = (clone $base)
             ->selectRaw('status, count(*) as aggregate')
@@ -171,7 +157,14 @@ class Student extends Model
 
     public static function paginatedListWithFilters(array $filters): LengthAwarePaginator
     {
-        return static::paginateForAdmin(static::filteredQuery($filters))
+        $query = static::queryFilteredBySearchAndYearLevel($filters)
+            ->byTab($filters['tab'] ?? 'All')
+            ->orderBy('last_name')
+            ->orderBy('first_name');
+
+        return $query
+            ->paginate(static::ADMIN_PAGE_SIZE)
+            ->withQueryString()
             ->through(fn(Student $student): array => [
                 'id' => $student->id,
                 'student_id' => $student->student_number,

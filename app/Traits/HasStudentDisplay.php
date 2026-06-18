@@ -6,82 +6,60 @@ namespace App\Traits;
 
 use App\Enums\YearLevel;
 use App\Models\Appointment;
-use App\Models\Student;
-use Illuminate\Support\Collection;
 
 trait HasStudentDisplay
 {
-  private function displayStudentName(): string
-  {
-    if ($this->student === null) {
-      return 'Unknown';
+    public function displayStudentName(): string
+    {
+        return $this->student?->name ?? 'Unknown'; 
     }
 
-    return $this->student->name;
-  }
-
-  private function displayStudentSection(): string
-  {
-    if ($this->student === null) {
-      return '';
+    public function displayStudentSection(): string
+    {
+        return $this->student?->section ?? ''; 
     }
 
-    return $this->student->section;
-  }
+    public function studentProfile(): array
+    {
+        if ($this->student === null) {
+            return [
+                'initials' => '',
+                'section' => '',
+                'year_level' => '',
+                'student_id' => '',
+                'total_appointments' => 0,
+                'history' => [], 
+            ];
+        }
 
-  private function studentProfile(): array
-  {
-    if ($this->student === null) {
-      return [
-        'initials' => '',
-        'section' => '',
-        'year_level' => '',
-        'student_id' => '',
-        'total_appointments' => 0,
-        'history' => [],
-      ];
+        $initials = collect(explode(' ', trim($this->student->name)))
+            ->filter() // remove empty words
+            ->map(fn ($word) => strtoupper($word[0] ?? '')) // first letter uppercase
+            ->take(2) // only first two words
+            ->implode(''); // join initials
+
+        return [
+            'initials' => $initials, // computed initials
+
+            'section' => $this->student->section, // student section
+
+            'year_level' => YearLevel::tryFrom($this->student->year_level)?->toOrdinal() ?? '', // enum readable
+
+            'student_id' => $this->student->student_number, // student ID
+
+            'total_appointments' => $this->student->appointments->count(), // total appointments
+
+            'history' => $this->student->appointments
+                ->sortByDesc('datetime') // latest first
+                ->map(fn (Appointment $appointment) => [
+                    'context' => $appointment->context, // type
+                    'date' => $appointment->displayDate(), // formatted date
+                    'time' => $appointment->displayTime(), // formatted time
+                    'note' => $appointment->note, // note
+                    'status' => $appointment->status->value, // status
+                ])
+                ->values() // reset keys
+                ->all(), // to array
+        ];
     }
-
-    $appointments = $this->student->appointments;
-
-    return [
-      'initials' => $this->getInitialsFromName($this->student->name),
-      'section' => $this->student->section,
-      'year_level' => YearLevel::tryFrom($this->student->year_level)?->toOrdinal() ?? '',
-      'student_id' => $this->student->student_number,
-      'total_appointments' => $appointments->count(),
-      'history' => $this->appointmentHistory($appointments),
-    ];
-  }
-
-  private function getInitialsFromName(string $name): string
-  {
-    $words = explode(' ', trim($name));
-
-    $initials = collect($words)
-      ->map(fn(string $word) => $word[0] ?? '')
-      ->take(2)
-      ->implode('');
-
-    return strtoupper($initials);
-  }
-
-  /**
-   * @param Collection<int, Appointment> $appointments
-   * @return array<int, array<string, mixed>>
-   */
-  private function appointmentHistory(Collection $appointments): array
-  {
-    return $appointments
-      ->sortByDesc('datetime')
-      ->map(fn(Appointment $appointment): array => [
-        'context' => $appointment->context,
-        'date' => $appointment->displayDate(),
-        'time' => $appointment->displayTime(),
-        'note' => $appointment->note,
-        'status' => $appointment->status->value,
-      ])
-      ->values()
-      ->toArray();
-  }
 }
