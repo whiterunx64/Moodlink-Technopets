@@ -202,7 +202,6 @@ export interface AvailableSlot {
 export interface AppointmentStudentProfile {
     initials: string;
     section: string;
-    course: string;
     yearLevel: string;
     email: string;
     studentId: string;

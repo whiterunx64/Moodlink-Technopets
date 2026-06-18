@@ -147,7 +147,6 @@ class Appointment extends Model
             return [
                 'initials' => '',
                 'section' => '',
-                'course' => '',
                 'yearLevel' => '',
                 'studentId' => '',
                 'totalAppointments' => 0,
@@ -160,7 +159,6 @@ class Appointment extends Model
         return [
             'initials' => $this->getInitialsFromName($student->name),
             'section' => $student->section,
-            'course' => $student->section,
             'yearLevel' => YearLevel::tryFrom($student->year_level)?->label() ?? '',
             'studentId' => $student->student_number,
             'totalAppointments' => $appointments->count(),

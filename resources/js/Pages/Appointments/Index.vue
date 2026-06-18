@@ -245,7 +245,7 @@ function deleteSlot(id: number) {
                                 <div>
                                     <p class="text-lg font-bold text-text-primary">{{ selectedStudent.name }}</p>
                                     <p class="text-sm text-text-muted mt-0.5">
-                                        {{ selectedStudent.studentId }} &bull; {{ selectedStudent.course }} &bull; {{ selectedStudent.yearLevel }}
+                                        {{ selectedStudent.studentId }} &bull; {{ selectedStudent.yearLevel }}
                                     </p>
                                     <p class="text-sm text-text-muted">{{ selectedStudent.email }}</p>
                                 </div>
@@ -253,10 +253,6 @@ function deleteSlot(id: number) {
 
                             <!-- Stats grid -->
                             <div class="grid grid-cols-2 gap-x-8 gap-y-4 mb-6">
-                                <div>
-                                    <p class="text-xs text-text-muted">Course</p>
-                                    <p class="text-sm font-semibold text-text-primary mt-0.5">{{ selectedStudent.course }}</p>
-                                </div>
                                 <div>
                                     <p class="text-xs text-text-muted">Year Level</p>
                                     <p class="text-sm font-semibold text-text-primary mt-0.5">{{ selectedStudent.yearLevel }}</p>
