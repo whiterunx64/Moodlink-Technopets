@@ -8,6 +8,7 @@ use App\Models\Admin;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class EnsureUserIsAdmin
@@ -33,6 +34,13 @@ class EnsureUserIsAdmin
 
     private function deny(Request $request, string $message): Response
     {
+        Log::channel(config('supabase-auth.monitoring.logging.channel'))->warning('Admin access denied', [
+            'reason' => $message,
+            'user_id' => Auth::id(),
+            'ip' => $request->ip(),
+            'url' => $request->fullUrl(),
+        ]);
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

@@ -11,6 +11,8 @@ use Exception;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+
 
 class RevalidateSupabaseUser
 {
@@ -41,7 +43,12 @@ class RevalidateSupabaseUser
     {
         try {
             $supabaseUser = $this->supabase->getUser($user->getAccessToken());
-        } catch (Exception) {
+        } catch (Exception $e) {
+            Log::channel(config('supabase-auth.monitoring.logging.channel'))->warning('Supabase user revalidation failed', [
+                'user_id' => $user->getAuthIdentifier(),
+                'error' => $e->getMessage(),
+            ]);
+
             return false;
         }
 

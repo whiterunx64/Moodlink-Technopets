@@ -9,18 +9,9 @@ Route::middleware('guest')->group(function () {
         ->name('login');
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
-
-    Route::post('login/json', [AuthenticatedSessionController::class, 'login'])
-        ->name('login.json');
 });
 
 Route::middleware(['auth', 'supabase.verify-token'])->group(function () {
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
-
-    Route::get('auth/user', [AuthenticatedSessionController::class, 'user'])
-        ->name('auth.user');
-
-    Route::post('auth/refresh', [AuthenticatedSessionController::class, 'refresh'])
-        ->name('auth.refresh');
 });

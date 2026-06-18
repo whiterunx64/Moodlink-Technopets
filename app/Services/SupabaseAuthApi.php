@@ -67,7 +67,10 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
                 'headers' => ['Authorization' => "Bearer {$accessToken}"],
             ]);
 
-            $this->logger->info('User logout successful');
+            $this->logger->info('Supabase logout', [
+                'action' => 'revoke_access_token',
+                'status' => 'success',
+            ]);
 
             return $response;
 
