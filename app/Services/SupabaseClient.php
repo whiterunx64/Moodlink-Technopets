@@ -182,6 +182,7 @@ class SupabaseClient
 
         $errorMessage = $responseBody['error_description']
             ?? $responseBody['message']
+            ?? $responseBody['msg']        // Supabase GoTrue (auth) errors use this key
             ?? $responseBody['error']
             ?? $e->getMessage();
 
