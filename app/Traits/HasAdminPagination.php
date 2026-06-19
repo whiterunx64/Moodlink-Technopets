@@ -12,7 +12,7 @@ trait HasAdminPagination
   protected static function paginateForAdmin(Builder $query): LengthAwarePaginator
   {
     return $query
-      ->paginate(static::ADMIN_PAGE_SIZE)
+      ->paginate(15)
       ->withQueryString();
   }
 }

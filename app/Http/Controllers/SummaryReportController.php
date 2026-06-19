@@ -10,19 +10,26 @@ use App\Models\Post;
 use App\Models\Student;
 use Inertia\Inertia;
 use Inertia\Response;
+use function in_array;
 
 class SummaryReportController extends Controller
 {
     public function index(SummaryReportFilterRequest $request): Response
     {
         $filters = $request->filters();
+        $period = $filters['period'];
 
-        return Inertia::render('SummaryReports/Index', [
-            'overview' => $this->overviewMoodStatistics($filters['period']),
-            'sections' => $this->perSectionMoodCounts($filters['period']),
-            'atRiskStudents' => $this->atRiskStudents($filters['period']),
-            'filters' => $filters,
-        ]);
+        $props = ['filters' => $filters];
+
+        if ($filters['tab'] === 'sections') {
+            $props['sections'] = $this->perSectionMoodCounts($period);
+        } elseif ($filters['tab'] === 'at-risk') {
+            $props['atRiskStudents'] = $this->atRiskStudents($period);
+        } else {
+            $props['overview'] = $this->overviewMoodStatistics($period);
+        }
+
+        return Inertia::render('SummaryReports/Index', $props);
     }
 
     public function showSectionAggregatedReport(SummaryReportFilterRequest $request, string $section): Response
@@ -50,8 +57,8 @@ class SummaryReportController extends Controller
 
     private function overviewMoodStatistics(string $period): array
     {
-        $moodDistribution = Post::getMoodDistribution($period);
-        $totalMoodLogs = array_sum(array_column($moodDistribution, 'count'));
+        $moodDistribution = Post::getMoodDistribution($period); // Retrieve mood breakdown.
+        $totalMoodLogs = array_sum(array_column($moodDistribution, 'count')); // Calculate total mood entries.
 
         return [
             'totalMoodLogs' => $totalMoodLogs,
@@ -73,12 +80,26 @@ class SummaryReportController extends Controller
 
     private function atRiskStudents(string $period): array
     {
-        return [
-            ['id' => 1, 'name' => 'Dela Cruz, Juan', 'studentNumber' => '202610139', 'section' => 'DW31', 'moods' => ['Stressed', 'Drained'], 'daysFlagged' => 12, 'lastLog' => '2 hours ago', 'hasConsultation' => false],
-            ['id' => 2, 'name' => 'Garcia, Ana', 'studentNumber' => '202610221', 'section' => 'DX31A', 'moods' => ['Drained', 'Stressed'], 'daysFlagged' => 9, 'lastLog' => '5 hours ago', 'hasConsultation' => false],
-            ['id' => 3, 'name' => 'Santos, Maria', 'studentNumber' => '202610172', 'section' => 'DW31', 'moods' => ['Stressed'], 'daysFlagged' => 8, 'lastLog' => '1 day ago', 'hasConsultation' => true],
-            ['id' => 4, 'name' => 'Lopez, Carlos', 'studentNumber' => '202610250', 'section' => 'DX31A', 'moods' => ['Drained', 'Stressed'], 'daysFlagged' => 7, 'lastLog' => '3 hours ago', 'hasConsultation' => false],
-        ];
+        $students = Student::atRiskList($period); // Find at-risk students.
+        $studentIds = $students->pluck('id')->all(); // Collect student IDs.
+
+        $summaries = Post::getAtRiskSummary($studentIds, $period); // Load mood summaries.
+        $consultationIds = Appointment::activeConsultationStudentIds($studentIds); // Load active consultations.
+
+        return $students->map(function (Student $student) use ($summaries, $consultationIds): array {
+            $summary = $summaries[$student->id] ?? ['moods' => [], 'daysAtRisk' => 0, 'lastLog' => null];
+
+            return [
+                'id' => $student->id,
+                'name' => $student->name,
+                'studentNumber' => $student->student_number,
+                'section' => $student->section,
+                'moods' => $summary['moods'],
+                'daysAtRisk' => $summary['daysAtRisk'],
+                'lastLog' => $summary['lastLog'],
+                'hasConsultation' => in_array($student->id, $consultationIds, true),
+            ];
+        })->all();
     }
 
     private function sectionMoodAndStudents(string $section, string $period): array
@@ -115,7 +136,7 @@ class SummaryReportController extends Controller
         return [
             'id' => $studentId,
             'name' => 'Dela Cruz, Juan',
-            'anonymousName' => 'Anonymous Tabayoyon',
+            'fullName' => 'Anonymous Tabayoyon',
             'studentNumber' => '202610139',
             'yearLevel' => '3rd Year',
             'section' => 'DW31',

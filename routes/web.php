@@ -68,6 +68,8 @@ Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-acce
         ->name('summary-reports.section-aggregated-report');
     Route::get('/summary-reports/students/{studentId}', [SummaryReportController::class, 'showStudentReport'])
         ->name('summary-reports.student-mood-report');
+    Route::post('/summary-reports/{student}/consult', [SummaryReportController::class, 'consult'])
+        ->name('summary-reports.consult');
 
     Route::get('/appointments', [AppointmentController::class, 'index'])
         ->name('appointments.index');

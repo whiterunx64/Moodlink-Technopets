@@ -107,8 +107,8 @@ function goBack() {
 
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-10 gap-y-3 flex-1">
                         <div>
-                            <p class="text-xs text-text-muted">Anonymous Name</p>
-                            <p class="text-sm font-semibold text-text-primary mt-0.5">{{ studentReport.anonymousName }}
+                            <p class="text-xs text-text-muted">Name Of Student</p>
+                            <p class="text-sm font-semibold text-text-primary mt-0.5">{{ studentReport.fullName }}
                             </p>
                         </div>
                         <div>

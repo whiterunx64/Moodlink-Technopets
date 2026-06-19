@@ -8,11 +8,15 @@ use App\Enums\PostMood;
 use App\Enums\PostStatus;
 use App\Traits\HasAdminPagination;
 use App\Traits\HasDateTimeDisplay;
+use App\Traits\HasFilters;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
+
+use function in_array;
 
 /**
  * @property int $id
@@ -20,30 +24,29 @@ use Illuminate\Support\Carbon;
  * @property string|null $content
  * @property PostMood|null $mood
  * @property PostStatus $status
- * @property  Carbon $datetime
+ * @property Carbon $datetime
  *
  * @property-read \App\Models\Student|null $student
  *
  * @method static Builder|Post fromVerifiedStudents()
- * @method static Builder|Post withPostStatus(string $status)
- * @method static Builder|Post fromStudentSection(string $section)
- * @method static Builder|Post withPostMood(string $mood)
+ * @method static Builder|Post wherePostStatus(string $status)
+ * @method static Builder|Post fromStudentsInSection(string $section)
+ * @method static Builder|Post wherePostMood(string $mood)
+ * @method static Builder|Post stressedOrDrained()
+ * @method static Builder|Post startingFrom(?\Illuminate\Support\Carbon $from)
  * @method static Builder|Post sortedByDateDirection(string $direction)
- * @method static Builder|Post fromVerifiedStudents()
- * @method static Builder|Post withPostMood(string $mood)
- * 
+ *
  * @mixin HasAdminPagination
  * @mixin HasDateTimeDisplay
  */
 
 class Post extends Model
 {
-    use HasAdminPagination, HasDateTimeDisplay;
+    use HasAdminPagination, HasDateTimeDisplay, HasFilters;
 
     protected $table = 'posts';
     public const UPDATED_AT = null;
     public const CREATED_AT = null;
-    public const int ADMIN_PAGE_SIZE = 15;
 
     protected $fillable = [
         'student_id',
@@ -75,19 +78,32 @@ class Post extends Model
         return $query->whereHas('student', fn(Builder $q) => $q->verified());
     }
 
-    public function scopeWithPostStatus(Builder $query, string $status): Builder
+    public function scopeWherePostStatus(Builder $query, string $status): Builder
     {
         return $query->where('status', $status);
     }
 
-    public function scopeFromStudentSection(Builder $query, string $section): Builder
+    public function scopeFromStudentsInSection(Builder $query, string $section): Builder
     {
         return $query->whereHas('student', fn(Builder $q) => $q->where('section', $section));
     }
 
-    public function scopeWithPostMood(Builder $query, string $mood): Builder
+    public function scopeWherePostMood(Builder $query, string $mood): Builder
     {
         return $query->where('mood', $mood);
+    }
+
+    public function scopeStressedOrDrained(Builder $query): Builder
+    {
+        return $query->whereIn('mood', [
+            PostMood::Stressed->value,
+            PostMood::Drained->value,
+        ]);
+    }
+
+    public function scopeStartingFrom(Builder $query, ?Carbon $from): Builder
+    {
+        return $query->when($from, fn(Builder $q) => $q->where('datetime', '>=', $from));
     }
 
     public function scopeSortedByDateDirection(Builder $query, string $direction): Builder
@@ -106,15 +122,15 @@ class Post extends Model
             ->fromVerifiedStudents()
             ->when(
                 $filters['status'] ?? null,
-                fn(Builder $q, string $status) => $q->withPostStatus($status)
+                fn(Builder|Post $q, string $status) => $q->wherePostStatus($status)
             )
             ->when(
                 $filters['section'] ?? null,
-                fn(Builder $q, string $section) => $q->fromStudentSection($section)
+                fn(Builder|Post $q, string $section) => $q->fromStudentsInSection($section)
             )
             ->when(
                 $filters['mood'] ?? null,
-                fn(Builder $q, string $mood) => $q->withPostMood($mood)
+                fn(Builder|Post $q, string $mood) => $q->wherePostMood($mood)
             )
             ->sortedByDateDirection($filters['sort'] ?? 'latest');
     }
@@ -135,11 +151,11 @@ class Post extends Model
     }
     public static function getMoodDistribution(string $period): array
     {
-        $from = static::periodFrom($period);
+        $from = static::summaryReportPeriodStart($period);
 
         $rows = static::query()
             ->fromVerifiedStudents()
-            ->when($from, fn(Builder $q) => $q->where('datetime', '>=', $from))
+            ->startingFrom($from)
             ->whereNotNull('mood')
             ->selectRaw('mood, count(*) as total')
             ->groupBy('mood')
@@ -161,23 +177,74 @@ class Post extends Model
             ->all();
     }
 
+    public static function getAtRiskSummary(array $studentIds, string $period): array
+    {
+        if (empty($studentIds)) {
+            return [];
+        }
+
+        $from = static::summaryReportPeriodStart($period);
+
+        return static::query()
+            ->whereIn('student_id', $studentIds)
+            ->orderByDesc('datetime')
+            ->get(['student_id', 'mood', 'datetime'])
+            ->groupBy('student_id')
+            ->map(function (Collection $posts) use ($from): array {
+                $atRiskPosts = $posts->filter(
+                    fn(Post $post): bool => static::isAtRiskPost($post, $from)
+                );
+
+                // Posts are date-desc, so the last at-risk post is the earliest at-risk log.
+                $firstAtRiskPost = $atRiskPosts->last();
+
+                return [
+                    'moods' => $atRiskPosts
+                        ->groupBy(fn(Post $post): string => $post->mood->value)
+                        ->map(fn(Collection $group): int => $group->count())
+                        ->sortDesc()
+                        ->keys()
+                        ->all(),
+
+                    'daysAtRisk' => static::calculateDaysAtRisk($firstAtRiskPost),
+
+                    'lastLog' => $posts->first()?->datetime?->diffForHumans(),
+                ];
+            })
+            ->all();
+    }
+
     public static function getAvgDailyLogs(string $period, int $totalMoodLogs): int
     {
-        $days = match ($period) {
-            'this_week' => 7,
-            'this_month' => (int) Carbon::now()->daysInMonth,
-            default => 1,
-        };
+        $days = static::summaryReportPeriodDays($period);
 
         return (int) round($totalMoodLogs / $days);
     }
 
-    private static function periodFrom(string $period): ?Carbon
+    // Private Helpers
+    private static function isAtRiskMood(?PostMood $mood): bool
     {
-        return match ($period) {
-            'this_week' => Carbon::now()->startOfWeek(),
-            'this_month' => Carbon::now()->startOfMonth(),
-            default => null,
-        };
+        return in_array($mood, [
+            PostMood::Stressed,
+            PostMood::Drained,
+        ], true);
+    }
+
+    private static function isAtRiskPost(Post $post, ?Carbon $from): bool
+    {
+        return static::isAtRiskMood($post->mood)
+            && ($from === null || $post->datetime->greaterThanOrEqualTo($from));
+    }
+
+    private static function calculateDaysAtRisk(?Post $post): int
+    {
+        if ($post === null) {
+            return 0;
+        }
+
+        return (int) $post->datetime
+            ->copy()
+            ->startOfDay()
+            ->diffInDays(Carbon::now()->startOfDay()) + 1;
     }
 }

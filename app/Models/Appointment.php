@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\AppointmentStatus;
 use App\Traits\HasDateTimeDisplay;
+use App\Traits\HasFilters;
 use App\Traits\HasStudentDisplay;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -29,7 +30,9 @@ use Illuminate\Support\Collection;
  * @method static Builder|Appointment scheduled()
  * @method static Builder|Appointment history()
  * @method static Builder|Appointment rejected()
- * @method static Builder|Appointment forTab(string $tab)
+ * @method static Builder|Appointment scheduledOrCompleted()
+ * @method static Builder|Appointment startingFrom(?\Illuminate\Support\Carbon $from)
+ * @method static Builder|Appointment forAppointmentTab(string $tab)
  * @method static Builder|Appointment forStudent(int $studentId)
  *
  * @mixin HasDateTimeDisplay
@@ -38,7 +41,7 @@ use Illuminate\Support\Collection;
 
 class Appointment extends Model
 {
-    use HasDateTimeDisplay, HasStudentDisplay;
+    use HasDateTimeDisplay, HasStudentDisplay, HasFilters;
 
     protected $table = 'appointments';
     public $timestamps = false;
@@ -90,20 +93,37 @@ class Appointment extends Model
         return $query->where('status', AppointmentStatus::Rejected->value);
     }
 
-    public function scopeForTab(Builder $query, string $tab): Builder
+    public function scopeScheduledOrCompleted(Builder $query): Builder
+    {
+        return $query->whereIn('status', [
+            AppointmentStatus::Scheduled->value,
+            AppointmentStatus::Completed->value,
+        ]);
+    }
+
+    public function scopeStartingFrom(Builder $query, ?Carbon $from): Builder
+    {
+        return $query->when($from, fn(Builder $q) => $q->where('datetime', '>=', $from));
+    }
+
+    /**
+     * @param Builder|Appointment $query
+     */
+    public function scopeForAppointmentTab(Builder $query, string $tab): Builder
     {
         if ($tab === 'scheduled') {
-            return $query->where('status', AppointmentStatus::Scheduled->value);
-        } elseif ($tab === 'history') {
-            return $query->whereIn('status', [
-                AppointmentStatus::Completed->value,
-                AppointmentStatus::Rejected->value,
-            ]);
-        } elseif ($tab === 'rejected') {
-            return $query->where('status', AppointmentStatus::Rejected->value);
-        } else {
-            return $query->where('status', AppointmentStatus::Pending->value);
+            return $query->scheduled();
         }
+
+        if ($tab === 'history') {
+            return $query->history();
+        }
+
+        if ($tab === 'rejected') {
+            return $query->rejected();
+        }
+
+        return $query->pending();
     }
 
     public function scopeForStudent(Builder $query, int $studentId): Builder
@@ -115,7 +135,7 @@ class Appointment extends Model
     {
         return static::query()
             ->with('student.appointments')
-            ->forTab($tab)
+            ->forAppointmentTab($tab)
             ->orderBy('datetime')
             ->get()
             ->map(fn(Appointment $appointment): array => [
@@ -134,33 +154,44 @@ class Appointment extends Model
 
     public static function getCountsPerStatusTab(): array
     {
-        $counts = static::selectRaw('status, count(*) as total')
+        // Get appointment totals grouped by status.
+        $appointmentCounts = static::selectRaw('status, count(*) as total')
             ->groupBy('status')
             ->pluck('total', 'status');
 
         return [
-            'requests' => $counts->get(AppointmentStatus::Pending->value, 0),
-            'scheduled' => $counts->get(AppointmentStatus::Scheduled->value, 0),
-            'history' => $counts->get(AppointmentStatus::Completed->value, 0)
-                + $counts->get(AppointmentStatus::Rejected->value, 0),
-            'rejected' => $counts->get(AppointmentStatus::Rejected->value, 0),
+            'requests' => $appointmentCounts->get(AppointmentStatus::Pending->value, 0),
+            'scheduled' => $appointmentCounts->get(AppointmentStatus::Scheduled->value, 0),
+
+            // History includes completed and rejected appointments.
+            'history' => $appointmentCounts->get(AppointmentStatus::Completed->value, 0)
+                + $appointmentCounts->get(AppointmentStatus::Rejected->value, 0),
+
+            'rejected' => $appointmentCounts->get(AppointmentStatus::Rejected->value, 0),
         ];
+    }
+
+    public static function activeConsultationStudentIds(array $studentIds): array
+    {
+        if (empty($studentIds)) {
+            return [];
+        }
+
+        return static::query()
+            ->scheduledOrCompleted()
+            ->whereIn('student_id', $studentIds)
+            ->pluck('student_id')
+            ->unique()
+            ->all();
     }
 
     public static function getScheduledCount(string $period): int
     {
-        $from = match ($period) {
-            'this_week' => Carbon::now()->startOfWeek(),
-            'this_month' => Carbon::now()->startOfMonth(),
-            default => null,
-        };
+        $from = static::summaryReportPeriodStart($period); // Get report start date from filter period.
 
         return static::query()
-            ->whereIn('status', [
-                AppointmentStatus::Scheduled->value,
-                AppointmentStatus::Completed->value,
-            ])
-            ->when($from, fn(Builder $q) => $q->where('datetime', '>=', $from))
+            ->scheduledOrCompleted()
+            ->startingFrom($from)
             ->count();
     }
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, type Component } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
+import { computed, ref, type Component } from 'vue';
+import { Head, router, useForm } from '@inertiajs/vue3';
 import {
     ArrowTrendingUpIcon,
     CalendarDaysIcon,
@@ -12,6 +12,7 @@ import {
     HeartIcon,
     ListBulletIcon,
     UserIcon,
+    XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import MoodDistributionCard from '@/Components/SummaryReports/MoodDistributionCard.vue';
@@ -24,12 +25,18 @@ import type {
     SummaryPeriod,
 } from '@/types';
 
-const props = defineProps<{
-    overview: SummaryOverview;
-    sections: SectionSummary[];
-    atRiskStudents: AtRiskStudent[];
+// Only the active tab's data is sent by the server; the others fall back to
+// empty defaults so the inactive tab templates stay type-safe.
+const props = withDefaults(defineProps<{
     filters: SummaryFilters;
-}>();
+    overview?: SummaryOverview;
+    sections?: SectionSummary[];
+    atRiskStudents?: AtRiskStudent[];
+}>(), {
+    overview: () => ({ totalMoodLogs: 0, avgDailyLogs: 0, atRiskStudents: 0, appointmentsSet: 0, distribution: [] }),
+    sections: () => [],
+    atRiskStudents: () => [],
+});
 
 const MOOD_STYLE: Record<string, { bar: string; text: string; dot: string; tag: string }> = {
     Excited: { bar: 'bg-green-500', text: 'text-green-600', dot: 'bg-green-500', tag: 'bg-green-100 text-green-700' },
@@ -42,12 +49,13 @@ const MOOD_STYLE: Record<string, { bar: string; text: string; dot: string; tag: 
 function onPeriodChange(p: SummaryPeriod) {
     router.get(route('summary-reports.index'), { period: p, tab: activeTab.value }, {
         preserveState: true,
+        preserveScroll: true,
         replace: true,
     });
 }
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
-const activeTab = ref<string>(props.filters.tab ?? 'overview');
+// ── Tabs (server-rendered: each tab fetches its own data) ───────────────────────
+const activeTab = computed<string>(() => props.filters.tab ?? 'overview');
 
 const tabs: Array<{ key: string; label: string; icon: Component }> = [
     { key: 'overview', label: 'Overview', icon: GlobeAltIcon },
@@ -55,16 +63,46 @@ const tabs: Array<{ key: string; label: string; icon: Component }> = [
     { key: 'at-risk', label: 'At-Risk Students', icon: ExclamationTriangleIcon },
 ];
 
+function changeTab(tab: string) {
+    if (tab === activeTab.value) {
+        return;
+    }
+
+    router.get(route('summary-reports.index'), { period: props.filters.period, tab }, {
+        preserveState: true,
+        preserveScroll: true,
+        replace: true,
+    });
+}
+
 // ── Section navigation ────────────────────────────────────────────────────────
 function openSection(section: string) {
     router.get(route('summary-reports.section-aggregated-report', section), { period: props.filters.period });
 }
 
-// ── Consult action ────────────────────────────────────────────────────────────
-function consult(student: AtRiskStudent) {
-    router.post(route('summary-reports.consult', student.id), {}, {
+// ── Consult / set schedule modal ───────────────────────────────────────────────
+const showConsultModal = ref(false);
+const consultStudent = ref<AtRiskStudent | null>(null);
+const consultForm = useForm({ date: '', start_time: '' });
+
+function openConsult(student: AtRiskStudent) {
+    consultStudent.value = student;
+    consultForm.reset();
+    consultForm.clearErrors();
+    showConsultModal.value = true;
+}
+
+function submitConsult() {
+    if (consultStudent.value === null) {
+        return;
+    }
+
+    consultForm.post(route('summary-reports.consult', consultStudent.value.id), {
         preserveScroll: true,
-        only: ['atRiskStudents'],
+        onSuccess: () => {
+            showConsultModal.value = false;
+            consultForm.reset();
+        },
     });
 }
 
@@ -91,7 +129,7 @@ function miniBarWidth(count: number, total: number): string {
                     activeTab === tab.key
                         ? 'bg-white text-text-primary shadow-sm'
                         : 'text-text-muted hover:text-text-secondary',
-                ]" @click="activeTab = tab.key">
+                ]" @click="changeTab(tab.key)">
                     <component :is="tab.icon" class="w-4 h-4" />
                     {{ tab.label }}
                 </button>
@@ -221,7 +259,7 @@ function miniBarWidth(count: number, total: number): string {
                         </div>
                         <span v-if="atRiskStudents.length > 0"
                             class="px-3 py-1 rounded-full bg-red-100 text-red-600 text-xs font-semibold">
-                            {{ atRiskStudents.length }} Flagged
+                            {{ atRiskStudents.length }} At Risk
                         </span>
                     </div>
 
@@ -249,14 +287,14 @@ function miniBarWidth(count: number, total: number): string {
 
                             <div class="flex items-center gap-4 shrink-0">
                                 <div class="text-right">
-                                    <p class="text-sm font-semibold text-red-500">{{ student.daysFlagged }} days flagged
+                                    <p class="text-sm font-semibold text-red-500">{{ student.daysAtRisk }} days at risk
                                     </p>
                                     <p class="text-xs text-text-muted">Last log: {{ student.lastLog }}</p>
                                 </div>
 
                                 <button v-if="!student.hasConsultation" type="button"
                                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sidebar text-white text-xs font-semibold hover:bg-sidebar/90 transition-colors"
-                                    @click="consult(student)">
+                                    @click="openConsult(student)">
                                     <ChatBubbleLeftEllipsisIcon class="w-3.5 h-3.5" />
                                     Consult
                                 </button>
@@ -276,5 +314,59 @@ function miniBarWidth(count: number, total: number): string {
             </template>
 
         </div>
+
+        <!-- ── Set Consultation Schedule Modal ────────────────────────────── -->
+        <Teleport to="body">
+            <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0"
+                enter-to-class="opacity-100" leave-active-class="transition duration-150" leave-from-class="opacity-100"
+                leave-to-class="opacity-0">
+                <div v-if="showConsultModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div class="absolute inset-0 bg-black/30" @click="showConsultModal = false" />
+
+                    <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-7">
+                        <button type="button"
+                            class="absolute top-4 right-4 p-1 rounded-full text-text-muted hover:bg-gray-100 transition-colors"
+                            @click="showConsultModal = false">
+                            <XMarkIcon class="w-4 h-4" />
+                        </button>
+
+                        <h2 class="text-base font-bold text-text-primary mb-1 text-center">Set Consultation Schedule</h2>
+                        <p v-if="consultStudent" class="text-xs text-text-muted mb-6 text-center">
+                            {{ consultStudent.name }} · {{ consultStudent.studentNumber }}
+                        </p>
+
+                        <form @submit.prevent="submitConsult" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-medium text-text-secondary mb-1.5">Date</label>
+                                <input v-model="consultForm.date" type="date" required
+                                    class="w-full border border-border-light rounded-xl px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-sidebar/30 focus:border-sidebar" />
+                                <p v-if="consultForm.errors.date" class="text-xs text-red-500 mt-1">{{
+                                    consultForm.errors.date }}</p>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-medium text-text-secondary mb-1.5">Start time</label>
+                                <input v-model="consultForm.start_time" type="time" required
+                                    class="w-full border border-border-light rounded-xl px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-sidebar/30 focus:border-sidebar" />
+                                <p v-if="consultForm.errors.start_time" class="text-xs text-red-500 mt-1">{{
+                                    consultForm.errors.start_time }}</p>
+                            </div>
+
+                            <div class="flex items-center gap-3 pt-2">
+                                <button type="button"
+                                    class="flex-1 py-2.5 rounded-xl border border-border-light text-sm font-medium text-text-secondary hover:bg-gray-50 transition-colors"
+                                    @click="showConsultModal = false">
+                                    Cancel
+                                </button>
+                                <button type="submit" :disabled="consultForm.processing"
+                                    class="flex-1 py-2.5 rounded-xl bg-sidebar text-white text-sm font-semibold hover:bg-sidebar/90 transition-colors disabled:opacity-60">
+                                    {{ consultForm.processing ? 'Scheduling…' : 'Schedule' }}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
     </AdminLayout>
 </template>

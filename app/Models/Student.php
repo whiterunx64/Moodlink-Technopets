@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\StudentStatus;
-use App\Enums\PostMood;
+use App\Traits\HasFilters;
 use App\Traits\HasStudentStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -32,7 +32,7 @@ use Illuminate\Support\Carbon;
  * @property-read Collection<int, \App\Models\Appointment> $appointments
  *
  * @method static Builder|Student verified()
- * @method static Builder|Student withStatus(\App\Enums\StudentStatus $status)
+ * @method static Builder|Student whereStatus(\App\Enums\StudentStatus $status)
  * @method static Builder|Student matchingSearch(string $search)
  * @method static Builder|Student byYearLevel(int $yearLevel)
  * @method static Builder|Student byTab(string $tab)
@@ -42,11 +42,11 @@ use Illuminate\Support\Carbon;
 
 class Student extends Model
 {
+    use HasFilters;
     use HasStudentStatus;
 
     protected $table = 'students';
     public $timestamps = false;
-    public const int ADMIN_PAGE_SIZE = 7;
 
     protected $fillable = [
         'user_id',
@@ -98,7 +98,7 @@ class Student extends Model
         return $query->where('status', StudentStatus::Verified->value);
     }
 
-    public function scopeWithStatus(Builder $query, StudentStatus $status): Builder
+    public function scopeWhereStatus(Builder $query, StudentStatus $status): Builder
     {
         return $query->where('status', $status->value);
     }
@@ -127,10 +127,20 @@ class Student extends Model
         $status = StudentStatus::tryFrom(strtolower($tab));
 
         if ($status !== null) {
-            return $query->withStatus($status);
+            return $query->whereStatus($status);
         } else {
             return $query;
         }
+    }
+    public function scopeAtRisk(Builder $query, ?Carbon $from): Builder
+    {
+        $atRiskPosts = fn(Builder $query) => $query
+            ->stressedOrDrained()
+            ->startingFrom($from);
+
+        return $query
+            ->verified()
+            ->whereHas('posts', $atRiskPosts, '>=', 1);
     }
 
     protected static function queryFilteredBySearchAndYearLevel(array $filters): Builder
@@ -173,7 +183,7 @@ class Student extends Model
             ->orderBy('first_name');
 
         return $query
-            ->paginate(static::ADMIN_PAGE_SIZE)
+            ->paginate(7)
             ->withQueryString()
             ->through(fn(Student $student): array => [
                 'id' => $student->id,
@@ -188,30 +198,26 @@ class Student extends Model
 
     public static function getAtRiskCount(string $period): int
     {
-        $from = match ($period) {
-            'this_week' => Carbon::now()->startOfWeek(),
-            'this_month' => Carbon::now()->startOfMonth(),
-            default => null,
-        };
+        return static::query()
+            ->atRisk(static::summaryReportPeriodStart($period)) // Apply period-based risk filter.
+            ->count();
+    }
+
+    public static function atRiskList(string $period): Collection
+    {
+        $from = static::summaryReportPeriodStart($period);
+
+        $concerningPosts = fn(Builder $query) => $query
+            ->stressedOrDrained()
+            ->startingFrom($from); // Limit posts by date.
 
         return static::query()
-            ->verified()
-            ->whereHas('posts', function (Builder $q) use ($from): void {
-                $q->whereIn('mood', [
-                    PostMood::Stressed->value,
-                    PostMood::Drained->value
-                ])
-                    ->when($from, fn(Builder $q) => $q->where('datetime', '>=', $from));
-            }, '>=', 1)
-            ->count();
-        //->get();
-
-        //dd($students->map(fn(Student $s) => [
-        //    'id' => $s->id,
-        //    'name' => $s->name,
-        //   'student_number' => $s->student_number,
-        //    'section' => $s->section,
-        //])->all());
+            ->atRisk($from) // Get students matching risk rules.
+            ->withCount([
+                'posts as concerning_count' => $concerningPosts, // Avoid loading full posts.
+            ])
+            ->orderByDesc('concerning_count')
+            ->get();
     }
 
 }

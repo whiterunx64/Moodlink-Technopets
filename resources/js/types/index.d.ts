@@ -140,7 +140,7 @@ export interface AtRiskStudent {
     studentNumber: string;
     section: string;
     moods: string[];
-    daysFlagged: number;
+    daysAtRisk: number;
     lastLog: string;
     hasConsultation: boolean;
 }
@@ -230,7 +230,7 @@ export interface AppointmentFilters {
 export interface StudentMoodReport {
     id: number;
     name: string;
-    anonymousName: string;
+    fullName: string;
     studentNumber: string;
     yearLevel: string;
     section: string;
