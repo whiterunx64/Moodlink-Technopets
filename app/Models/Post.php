@@ -147,6 +147,8 @@ class Post extends Model
                 'time' => $post->displayTime(),
                 'section' => $post->student?->section ?? '',
                 'anonymous_name' => $post->student?->anonymous_name,
+                'last_name' => $post->student?->last_name,
+                'first_name' => $post->student?->first_name,
             ]);
     }
     public static function getMoodDistribution(string $period): array

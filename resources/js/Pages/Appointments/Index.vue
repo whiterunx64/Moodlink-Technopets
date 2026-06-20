@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { Head, router, useForm } from '@inertiajs/vue3';
-import { TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import type {
-    Appointment, AppointmentStudentProfile, AvailableSlot,
-    AppointmentTabCounts, AppointmentFilters, AppointmentTab,
+    Appointment,
+    AppointmentFilters,
+    AppointmentStudentProfile,
+    AppointmentTab,
+    AppointmentTabCounts,
+    AvailableSlot,
 } from '@/types';
+import { TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
+import { Head, router, useForm } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 
 const props = defineProps<{
     appointments: Appointment[];
@@ -27,19 +31,35 @@ const TABS: { key: AppointmentTab; label: string; badge: string }[] = [
 const activeTab = computed(() => props.filters.tab ?? 'requests');
 
 function switchTab(tab: AppointmentTab) {
-    router.get(route('appointments.index'), { tab }, { preserveState: true, replace: true });
+    router.get(
+        route('appointments.index'),
+        { tab },
+        { preserveState: true, replace: true },
+    );
 }
 
 // ── Appointment actions ───────────────────────────────────────────────────────
 
 function approve(id: number) {
-    router.patch(route('appointments.approve', id), {}, { preserveScroll: true });
+    router.patch(
+        route('appointments.approve', id),
+        {},
+        { preserveScroll: true },
+    );
 }
 function reject(id: number) {
-    router.patch(route('appointments.reject', id), {}, { preserveScroll: true });
+    router.patch(
+        route('appointments.reject', id),
+        {},
+        { preserveScroll: true },
+    );
 }
 function complete(id: number) {
-    router.patch(route('appointments.complete', id), {}, { preserveScroll: true });
+    router.patch(
+        route('appointments.complete', id),
+        {},
+        { preserveScroll: true },
+    );
 }
 
 // ── Status badge map ──────────────────────────────────────────────────────────
@@ -53,7 +73,9 @@ const STATUS_BADGE: Record<string, string> = {
 
 // ── Student profile modal ─────────────────────────────────────────────────────
 
-const selectedStudent = ref<(AppointmentStudentProfile & { name: string }) | null>(null);
+const selectedStudent = ref<
+    (AppointmentStudentProfile & { name: string }) | null
+>(null);
 
 function openProfile(apt: Appointment) {
     selectedStudent.value = { ...apt.student_profile, name: apt.student_name };
@@ -81,7 +103,9 @@ function submitSchedule() {
 }
 
 function deleteSlot(id: number) {
-    router.delete(route('appointments.schedules.destroy', id), { preserveScroll: true });
+    router.delete(route('appointments.schedules.destroy', id), {
+        preserveScroll: true,
+    });
 }
 </script>
 
@@ -90,61 +114,74 @@ function deleteSlot(id: number) {
     <Head title="Appointments" />
 
     <AdminLayout title="Appointments">
-        <div class="flex gap-6 items-start">
-
+        <div class="items-start gap-6 lg:flex">
             <!-- ── Left column ────────────────────────────────────────────── -->
-            <div class="flex-1 min-w-0">
-
+            <div class="mb-6 min-w-0 flex-1">
                 <!-- Tabs -->
-                <div class="flex items-center gap-1 mb-5 border-b border-border-light">
+                <div class="border-border-light mb-5 flex items-center gap-1 overflow-scroll border-b">
                     <button v-for="tab in TABS" :key="tab.key" type="button" :class="[
-                        'flex items-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px',
+                        '-mb-px flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
                         activeTab === tab.key
                             ? 'border-sidebar text-sidebar'
-                            : 'border-transparent text-text-muted hover:text-text-secondary',
+                            : 'text-text-muted hover:text-text-secondary border-transparent',
                     ]" @click="switchTab(tab.key)">
                         {{ tab.label }}
-                        <span
-                            :class="['inline-flex items-center justify-center w-5 h-5 rounded-full text-white text-xs font-bold', tab.badge]">
+                        <span :class="[
+                            'inline-flex h-5 w-5 items-center justify-center rounded-full text-xs font-bold text-white',
+                            tab.badge,
+                        ]">
                             {{ tabCounts[tab.key] }}
                         </span>
                     </button>
                 </div>
 
                 <!-- Appointment list -->
-                <div class="bg-white rounded-2xl border border-border-light shadow-sm divide-y divide-border-light">
-
-                    <div v-if="appointments.length === 0" class="py-16 text-center text-sm text-text-muted">
+                <div class="border-border-light divide-border-light divide-y rounded-2xl border bg-white shadow-sm">
+                    <div v-if="appointments.length === 0" class="text-text-muted py-16 text-center text-sm">
                         No appointments in this category.
                     </div>
 
                     <div v-for="apt in appointments" :key="apt.id" class="px-6 py-5">
                         <div class="flex items-start justify-between gap-4">
-
                             <!-- Info -->
                             <div class="min-w-0">
                                 <button type="button"
-                                    class="text-sm font-semibold text-sidebar hover:underline text-left"
+                                    class="text-sidebar cursor-pointer text-left text-sm font-semibold capitalize hover:underline"
                                     @click="openProfile(apt)">
                                     {{ apt.student_name }}
                                 </button>
-                                <p class="text-sm text-text-primary mt-0.5">{{ apt.context }}</p>
-                                <p v-if="apt.note" class="text-sm text-text-muted italic mt-1">"{{ apt.note }}"</p>
-                                <p class="text-xs text-text-muted mt-2">
-                                    {{ apt.date }}&nbsp;&nbsp;{{ apt.time }}
+                                <p class="text-text-primary mt-0.5 text-sm">
+                                    {{ apt.context }}
+                                </p>
+                                <p v-if="apt.note" class="text-text-muted mt-1 text-sm italic">
+                                    "{{ apt.note }}"
+                                </p>
+                                <p class="text-text-muted mt-2">
+                                    {{
+                                        new Date(
+                                            apt.date + ' ' + apt.time,
+                                        ).toLocaleString('en-US', {
+                                            weekday: 'short',
+                                            month: 'short',
+                                            day: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            hour12: true,
+                                        })
+                                    }}
                                 </p>
                             </div>
 
                             <!-- Actions / badge -->
-                            <div class="shrink-0 flex items-center gap-2 mt-0.5">
+                            <div class="mt-0.5 flex flex-col gap-2">
                                 <template v-if="activeTab === 'requests'">
                                     <button type="button"
-                                        class="px-4 py-1.5 rounded-lg border border-green-400 text-green-600 text-xs font-semibold hover:bg-green-50 transition-colors"
+                                        class="rounded-lg border border-green-400 px-4 py-1.5 text-xs font-semibold text-green-600 transition-colors hover:bg-green-50"
                                         @click="approve(apt.id)">
                                         Approve
                                     </button>
                                     <button type="button"
-                                        class="px-4 py-1.5 rounded-lg border border-red-300 text-red-500 text-xs font-semibold hover:bg-red-50 transition-colors"
+                                        class="rounded-lg border border-red-300 px-4 py-1.5 text-xs font-semibold text-red-500 transition-colors hover:bg-red-50"
                                         @click="reject(apt.id)">
                                         Reject
                                     </button>
@@ -152,20 +189,27 @@ function deleteSlot(id: number) {
 
                                 <template v-else-if="activeTab === 'scheduled'">
                                     <span
-                                        class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                                        class="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
                                         Scheduled
                                     </span>
                                     <button type="button"
-                                        class="px-4 py-1.5 rounded-lg border border-amber-400 text-amber-600 text-xs font-semibold hover:bg-amber-50 transition-colors"
+                                        class="rounded-lg border border-amber-400 px-4 py-1.5 text-xs font-semibold text-amber-600 transition-colors hover:bg-amber-50"
                                         @click="complete(apt.id)">
                                         Mark Done
                                     </button>
                                 </template>
 
                                 <template v-else>
-                                    <span
-                                        :class="['px-3 py-1 rounded-full text-xs font-semibold', STATUS_BADGE[apt.status] ?? 'bg-gray-100 text-gray-600']">
-                                        {{ apt.status === 'Completed' ? 'Done' : apt.status }}
+                                    <span :class="[
+                                        'rounded-full px-3 py-1 text-xs font-semibold',
+                                        STATUS_BADGE[apt.status] ??
+                                        'bg-gray-100 text-gray-600',
+                                    ]">
+                                        {{
+                                            apt.status === 'Completed'
+                                                ? 'Done'
+                                                : apt.status
+                                        }}
                                     </span>
                                 </template>
                             </div>
@@ -176,33 +220,37 @@ function deleteSlot(id: number) {
 
             <!-- ── Right column: available slots ─────────────────────────── -->
             <div class="w-72 shrink-0">
-                <div class="bg-white rounded-2xl border border-border-light shadow-sm p-6 sticky top-6">
-                    <h3 class="text-sm font-semibold text-text-primary mb-4">Available Slots</h3>
+                <div class="border-border-light sticky top-6 rounded-2xl border bg-white p-6 shadow-sm">
+                    <h3 class="text-text-primary mb-4 text-sm font-semibold">
+                        Available Slots
+                    </h3>
 
-                    <div class="space-y-3 mb-6">
-                        <div v-if="availableSlots.length === 0" class="text-xs text-text-muted text-center py-4">
+                    <div class="mb-6 space-y-3">
+                        <div v-if="availableSlots.length === 0" class="text-text-muted py-4 text-center text-xs">
                             No available slots set.
                         </div>
 
                         <div v-for="slot in availableSlots" :key="slot.id"
-                            class="flex items-center justify-between group">
+                            class="group flex items-center justify-between">
                             <div>
-                                <p class="text-xs font-medium text-text-primary">
+                                <p class="text-text-primary text-xs font-medium">
                                     {{ slot.date }}
                                     <span v-if="slot.taken" class="ml-1 font-semibold text-red-500">Taken</span>
                                 </p>
-                                <p class="text-xs text-text-muted mt-0.5">{{ slot.start_time }}</p>
+                                <p class="text-text-muted mt-0.5 text-xs">
+                                    {{ slot.start_time }}
+                                </p>
                             </div>
                             <button v-if="!slot.taken" type="button"
-                                class="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded text-red-400 hover:bg-red-50"
+                                class="rounded p-1 text-red-400 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-red-50"
                                 @click="deleteSlot(slot.id)">
-                                <TrashIcon class="w-3.5 h-3.5" />
+                                <TrashIcon class="h-3.5 w-3.5" />
                             </button>
                         </div>
                     </div>
 
                     <button type="button"
-                        class="w-full py-2.5 rounded-xl bg-sidebar text-white text-sm font-semibold hover:bg-sidebar/90 transition-colors"
+                        class="bg-sidebar hover:bg-sidebar/90 w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
                         @click="openScheduleModal">
                         Set Schedule
                     </button>
@@ -218,77 +266,117 @@ function deleteSlot(id: number) {
                 <div v-if="selectedStudent" class="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div class="absolute inset-0 bg-black/30" @click="selectedStudent = null" />
 
-                    <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-
+                    <div class="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-xl">
                         <!-- Close -->
                         <button type="button"
-                            class="absolute top-4 right-4 p-1.5 rounded-full text-text-muted hover:bg-gray-100 transition-colors z-10"
+                            class="text-text-muted absolute top-4 right-4 z-10 rounded-full p-1.5 transition-colors hover:bg-gray-100"
                             @click="selectedStudent = null">
-                            <XMarkIcon class="w-4 h-4" />
+                            <XMarkIcon class="h-4 w-4" />
                         </button>
 
                         <div class="p-7">
                             <!-- Avatar + identity -->
-                            <div class="flex items-center gap-4 mb-6">
+                            <div class="mb-6 flex items-center gap-4">
                                 <div
-                                    class="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                                    class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-blue-100">
                                     <span class="text-xl font-bold text-blue-500">{{ selectedStudent.initials }}</span>
                                 </div>
                                 <div>
-                                    <p class="text-lg font-bold text-text-primary">{{ selectedStudent.name }}</p>
-                                    <p class="text-sm text-text-muted mt-0.5">
-                                        {{ selectedStudent.student_id }} &bull; {{ selectedStudent.section }} &bull; {{ selectedStudent.year_level }}
+                                    <p class="text-text-primary text-lg font-bold">
+                                        {{ selectedStudent.name }}
                                     </p>
-                                    <p class="text-sm text-text-muted">{{ selectedStudent.email }}</p>
+                                    <p class="text-text-muted mt-0.5 text-sm">
+                                        {{ selectedStudent.student_id }} &bull;
+                                        {{ selectedStudent.section }} &bull;
+                                        {{ selectedStudent.year_level }}
+                                    </p>
+                                    <p class="text-text-muted text-sm">
+                                        {{ selectedStudent.email }}
+                                    </p>
                                 </div>
                             </div>
 
                             <!-- Stats grid -->
-                            <div class="grid grid-cols-2 gap-x-8 gap-y-4 mb-6">
+                            <div class="mb-6 grid grid-cols-2 gap-x-8 gap-y-4">
                                 <div>
-                                    <p class="text-xs text-text-muted">Section</p>
-                                    <p class="text-sm font-semibold text-text-primary mt-0.5">{{
-                                        selectedStudent.section }}
+                                    <p class="text-text-muted text-xs">
+                                        Section
+                                    </p>
+                                    <p class="text-text-primary mt-0.5 text-sm font-semibold">
+                                        {{ selectedStudent.section }}
                                     </p>
                                 </div>
                                 <div>
-                                    <p class="text-xs text-text-muted">Year Level</p>
-                                    <p class="text-sm font-semibold text-text-primary mt-0.5">{{
-                                        selectedStudent.year_level }}
+                                    <p class="text-text-muted text-xs">
+                                        Year Level
+                                    </p>
+                                    <p class="text-text-primary mt-0.5 text-sm font-semibold">
+                                        {{ selectedStudent.year_level }}
                                     </p>
                                 </div>
                                 <div>
-                                    <p class="text-xs text-text-muted">Student ID</p>
-                                    <p class="text-sm font-semibold text-text-primary mt-0.5">{{
-                                        selectedStudent.student_id }}
+                                    <p class="text-text-muted text-xs">
+                                        Student ID
+                                    </p>
+                                    <p class="text-text-primary mt-0.5 text-sm font-semibold">
+                                        {{ selectedStudent.student_id }}
                                     </p>
                                 </div>
                                 <div>
-                                    <p class="text-xs text-text-muted">Total Appointments</p>
-                                    <p class="text-sm font-semibold text-text-primary mt-0.5">{{
-                                        selectedStudent.total_appointments }}</p>
+                                    <p class="text-text-muted text-xs">
+                                        Total Appointments
+                                    </p>
+                                    <p class="text-text-primary mt-0.5 text-sm font-semibold">
+                                        {{ selectedStudent.total_appointments }}
+                                    </p>
                                 </div>
                             </div>
 
                             <!-- Appointment history -->
-                            <p class="text-sm font-semibold text-text-primary mb-3">Appointment History</p>
+                            <p class="text-text-primary mb-3 text-sm font-semibold">
+                                Appointment History
+                            </p>
 
                             <div class="space-y-4">
                                 <div v-for="(h, i) in selectedStudent.history" :key="i"
                                     class="flex items-start justify-between gap-4 rounded-xl bg-gray-50 px-4 py-3">
                                     <div class="min-w-0">
-                                        <p class="text-sm font-semibold text-text-primary">{{ h.context }}</p>
-                                        <p class="text-xs text-text-muted mt-0.5">{{ h.date }} &bull; {{ h.time }}</p>
-                                        <p v-if="h.note" class="text-xs text-text-muted italic mt-1">"{{ h.note }}"</p>
+                                        <p class="text-text-primary text-sm font-semibold">
+                                            {{ h.context }}
+                                        </p>
+                                        <p class="text-text-muted mt-0.5">
+                                            {{
+                                                new Date(
+                                                    h.date + ' ' + h.time,
+                                                ).toLocaleString('en-US', {
+                                                    weekday: 'short',
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                    hour12: true,
+                                                })
+                                            }}
+                                        </p>
+                                        <p v-if="h.note" class="text-text-muted mt-1 text-xs italic">
+                                            "{{ h.note }}"
+                                        </p>
                                     </div>
-                                    <span
-                                        :class="['shrink-0 px-2.5 py-1 rounded-full text-xs font-semibold', STATUS_BADGE[h.status] ?? 'bg-gray-100 text-gray-600']">
-                                        {{ h.status === 'Completed' ? 'Done' : h.status }}
+                                    <span :class="[
+                                        'shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold',
+                                        STATUS_BADGE[h.status] ??
+                                        'bg-gray-100 text-gray-600',
+                                    ]">
+                                        {{
+                                            h.status === 'Completed'
+                                                ? 'Done'
+                                                : h.status
+                                        }}
                                     </span>
                                 </div>
 
                                 <p v-if="selectedStudent.history.length === 0"
-                                    class="text-xs text-text-muted text-center py-4">
+                                    class="text-text-muted py-4 text-center text-xs">
                                     No appointment history.
                                 </p>
                             </div>
@@ -306,42 +394,49 @@ function deleteSlot(id: number) {
                 <div v-if="showScheduleModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div class="absolute inset-0 bg-black/30" @click="showScheduleModal = false" />
 
-                    <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-sm p-7">
+                    <div class="relative w-full max-w-sm rounded-2xl bg-white p-7 shadow-xl">
                         <button type="button"
-                            class="absolute top-4 right-4 p-1 rounded-full text-text-muted hover:bg-gray-100 transition-colors"
+                            class="text-text-muted absolute top-4 right-4 rounded-full p-1 transition-colors hover:bg-gray-100"
                             @click="showScheduleModal = false">
-                            <XMarkIcon class="w-4 h-4" />
+                            <XMarkIcon class="h-4 w-4" />
                         </button>
 
-                        <h2 class="text-base font-bold text-text-primary mb-6 text-center">Set Available Schedule</h2>
+                        <h2 class="text-text-primary mb-6 text-center text-base font-bold">
+                            Set Available Schedule
+                        </h2>
 
                         <form @submit.prevent="submitSchedule" class="space-y-4">
                             <div>
-                                <label class="block text-xs font-medium text-text-secondary mb-1.5">Date</label>
+                                <label class="text-text-secondary mb-1.5 block text-xs font-medium">Date</label>
                                 <input v-model="scheduleForm.date" type="date" required
-                                    class="w-full border border-border-light rounded-xl px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-sidebar/30 focus:border-sidebar" />
-                                <p v-if="scheduleForm.errors.date" class="text-xs text-red-500 mt-1">{{
-                                    scheduleForm.errors.date
-                                }}</p>
+                                    class="border-border-light text-text-primary focus:ring-sidebar/30 focus:border-sidebar w-full rounded-xl border px-4 py-2.5 text-sm focus:ring-2 focus:outline-none" />
+                                <p v-if="scheduleForm.errors.date" class="mt-1 text-xs text-red-500">
+                                    {{ scheduleForm.errors.date }}
+                                </p>
                             </div>
 
                             <div>
-                                <label class="block text-xs font-medium text-text-secondary mb-1.5">Start time</label>
+                                <label class="text-text-secondary mb-1.5 block text-xs font-medium">Start time</label>
                                 <input v-model="scheduleForm.start_time" type="time" required
-                                    class="w-full border border-border-light rounded-xl px-4 py-2.5 text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-sidebar/30 focus:border-sidebar" />
-                                <p v-if="scheduleForm.errors.start_time" class="text-xs text-red-500 mt-1">{{
-                                    scheduleForm.errors.start_time }}</p>
+                                    class="border-border-light text-text-primary focus:ring-sidebar/30 focus:border-sidebar w-full rounded-xl border px-4 py-2.5 text-sm focus:ring-2 focus:outline-none" />
+                                <p v-if="scheduleForm.errors.start_time" class="mt-1 text-xs text-red-500">
+                                    {{ scheduleForm.errors.start_time }}
+                                </p>
                             </div>
 
                             <div class="flex items-center gap-3 pt-2">
                                 <button type="button"
-                                    class="flex-1 py-2.5 rounded-xl border border-border-light text-sm font-medium text-text-secondary hover:bg-gray-50 transition-colors"
+                                    class="border-border-light text-text-secondary flex-1 rounded-xl border py-2.5 text-sm font-medium transition-colors hover:bg-gray-50"
                                     @click="showScheduleModal = false">
                                     Cancel
                                 </button>
                                 <button type="submit" :disabled="scheduleForm.processing"
-                                    class="flex-1 py-2.5 rounded-xl bg-sidebar text-white text-sm font-semibold hover:bg-sidebar/90 transition-colors disabled:opacity-60">
-                                    {{ scheduleForm.processing ? 'Saving…' : 'Done' }}
+                                    class="bg-sidebar hover:bg-sidebar/90 flex-1 rounded-xl py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-60">
+                                    {{
+                                        scheduleForm.processing
+                                            ? 'Saving…'
+                                            : 'Done'
+                                    }}
                                 </button>
                             </div>
                         </form>

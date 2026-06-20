@@ -27,15 +27,17 @@ export interface FormErrors {
     [key: string]: string | undefined;
 }
 export interface PostFilters {
-    status:  string | null;
+    status: string | null;
     section: string | null;
-    mood:    string | null;
-    sort:    string | null;
+    mood: string | null;
+    sort: string | null;
 }
 
 export interface Post {
     id: number;
     anonymous_name: string | null;
+    last_name: string;
+    first_name: string;
     section: string;
     time: string;
     date: string;
@@ -179,8 +181,12 @@ export interface RecentMoodLog {
 
 // ── Appointments ─────────────────────────────────────────────────────────────
 
-export type AppointmentTab    = 'requests' | 'scheduled' | 'history' | 'rejected';
-export type AppointmentStatus = 'Pending' | 'Scheduled' | 'Completed' | 'Rejected';
+export type AppointmentTab = 'requests' | 'scheduled' | 'history' | 'rejected';
+export type AppointmentStatus =
+    | 'Pending'
+    | 'Scheduled'
+    | 'Completed'
+    | 'Rejected';
 
 export interface Appointment {
     id: number;

@@ -12,102 +12,149 @@ const emit = defineEmits<{
 }>();
 
 const MOOD_BADGE: Record<string, { pill: string; dot: string }> = {
-    Excited:  { pill: 'bg-amber-50 text-amber-600 border border-amber-200',    dot: 'bg-amber-400' },
-    Content:  { pill: 'bg-green-50 text-green-700 border border-green-200',    dot: 'bg-green-500' },
-    Stressed: { pill: 'bg-orange-50 text-orange-600 border border-orange-200', dot: 'bg-orange-400' },
-    Drained:  { pill: 'bg-purple-50 text-purple-600 border border-purple-200', dot: 'bg-purple-400' },
+    Excited: {
+        pill: 'bg-amber-50 text-amber-600 border border-amber-200',
+        dot: 'bg-amber-400',
+    },
+    Content: {
+        pill: 'bg-green-50 text-green-700 border border-green-200',
+        dot: 'bg-green-500',
+    },
+    Stressed: {
+        pill: 'bg-orange-50 text-orange-600 border border-orange-200',
+        dot: 'bg-orange-400',
+    },
+    Drained: {
+        pill: 'bg-purple-50 text-purple-600 border border-purple-200',
+        dot: 'bg-purple-400',
+    },
 };
 
 function moodStyle(mood: string) {
-    return MOOD_BADGE[mood] ?? { pill: 'bg-gray-100 text-gray-600 border border-gray-200', dot: 'bg-gray-400' };
+    return (
+        MOOD_BADGE[mood] ?? {
+            pill: 'bg-gray-100 text-gray-600 border border-gray-200',
+            dot: 'bg-gray-400',
+        }
+    );
 }
 </script>
 
 <template>
     <Teleport to="body">
-        <Transition
-            enter-active-class="transition ease-out duration-200"
-            enter-from-class="opacity-0"
-            enter-to-class="opacity-100"
-            leave-active-class="transition ease-in duration-150"
-            leave-from-class="opacity-100"
-            leave-to-class="opacity-0"
-        >
+        <Transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0"
+            enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150"
+            leave-from-class="opacity-100" leave-to-class="opacity-0">
             <div v-if="show && post" class="fixed inset-0 z-50 flex items-center justify-center p-4">
-
                 <!-- Overlay -->
                 <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="emit('close')" />
 
                 <!-- Modal card -->
-                <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-lg mx-auto">
-
+                <div class="relative mx-auto w-full max-w-lg rounded-2xl bg-white shadow-xl">
                     <!-- Modal header -->
-                    <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border-light">
-                        <h3 class="text-base font-bold text-text-primary">Post Detail</h3>
+                    <div class="border-border-light flex items-center justify-between border-b px-6 pt-5 pb-4">
+                        <h3 class="text-text-primary text-base font-bold">
+                            Post Detail
+                        </h3>
                         <button type="button"
-                            class="w-7 h-7 flex items-center justify-center rounded-full text-text-muted hover:bg-hover-soft transition-colors"
+                            class="text-text-muted hover:bg-hover-soft flex h-7 w-7 items-center justify-center rounded-full transition-colors"
                             @click="emit('close')">
                             <i class="fas fa-times text-sm" />
                         </button>
                     </div>
 
                     <!-- Body -->
-                    <div class="px-6 py-5 space-y-5">
-
+                    <div class="space-y-5 px-6 py-5">
                         <!-- Author row -->
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-3">
-                                <div class="w-11 h-11 rounded-full bg-sidebar flex items-center justify-center text-base font-bold text-white shrink-0">
-                                    {{ (post.anonymous_name ?? 'U').charAt(0).toUpperCase() }}
+                                <div
+                                    class="bg-sidebar flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-bold text-white">
+                                    {{
+                                        (post.anonymous_name ?? 'U')
+                                            .charAt(0)
+                                            .toUpperCase()
+                                    }}
                                 </div>
                                 <div>
-                                    <p class="text-sm font-semibold text-text-primary">
-                                        {{ post.anonymous_name ?? 'Anonymous (Not Set)' }}
+                                    <p class="text-text-primary text-sm font-semibold capitalize">
+                                        {{
+                                            post.first_name +
+                                            ' ' +
+                                            post.last_name
+                                        }}
                                     </p>
-                                    <p class="text-xs text-text-muted">Section {{ post.section }}</p>
+                                    <p class="text-text-muted text-xs">
+                                        {{ post.anonymous_name ?? 'Anonymous' }}
+                                    </p>
                                 </div>
                             </div>
 
                             <!-- Badges -->
-                            <div class="flex flex-col items-end gap-1.5 shrink-0">
-                                <span :class="['inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium', moodStyle(post.mood).pill]">
-                                    <span :class="['w-1.5 h-1.5 rounded-full', moodStyle(post.mood).dot]" />
+                            <div class="flex shrink-0 flex-col items-end gap-1.5">
+                                <span :class="[
+                                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+                                    moodStyle(post.mood).pill,
+                                ]">
+                                    <span :class="[
+                                        'h-1.5 w-1.5 rounded-full',
+                                        moodStyle(post.mood).dot,
+                                    ]" />
                                     {{ post.mood }}
                                 </span>
                                 <span :class="[
-                                    'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium',
+                                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
                                     post.status === 'flagged'
                                         ? 'bg-status-flagged-bg text-status-flagged border border-red-100'
                                         : 'bg-status-safe-bg text-status-safe border border-green-200',
                                 ]">
-                                    <i :class="['fas text-[10px]', post.status === 'flagged' ? 'fa-flag' : 'fa-check']" />
-                                    {{ post.status === 'flagged' ? 'Flagged' : 'Safe' }}
+                                    <i :class="[
+                                        'fas text-[10px]',
+                                        post.status === 'flagged'
+                                            ? 'fa-flag'
+                                            : 'fa-check',
+                                    ]" />
+                                    {{
+                                        post.status === 'flagged'
+                                            ? 'Flagged'
+                                            : 'Safe'
+                                    }}
                                 </span>
                             </div>
                         </div>
 
                         <!-- Info boxes -->
                         <div class="grid grid-cols-2 gap-3">
-                            <div class="bg-gray-50 rounded-xl px-4 py-3">
-                                <p class="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Section</p>
-                                <p class="text-sm font-bold text-text-primary">{{ post.section }}</p>
+                            <div class="rounded-xl bg-gray-50 px-4 py-3">
+                                <p class="text-text-muted mb-1 text-[10px] font-semibold tracking-wider uppercase">
+                                    Section
+                                </p>
+                                <p class="text-text-primary text-sm font-bold">
+                                    {{ post.section }}
+                                </p>
                             </div>
-                            <div class="bg-gray-50 rounded-xl px-4 py-3">
-                                <p class="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-1">Mood</p>
-                                <p class="text-sm font-bold text-text-primary">{{ post.mood }}</p>
+                            <div class="rounded-xl bg-gray-50 px-4 py-3">
+                                <p class="text-text-muted mb-1 text-[10px] font-semibold tracking-wider uppercase">
+                                    Mood
+                                </p>
+                                <p class="text-text-primary text-sm font-bold">
+                                    {{ post.mood }}
+                                </p>
                             </div>
                         </div>
 
                         <!-- Posted time -->
-                        <div class="flex items-center gap-2 text-xs text-text-muted">
+                        <div class="text-text-muted flex items-center gap-2 text-xs">
                             <i class="far fa-clock" />
                             <span>Posted {{ post.date }} at {{ post.time }}</span>
                         </div>
 
                         <!-- Post content -->
-                        <div class="bg-gray-50 rounded-xl px-4 py-4">
-                            <p class="text-[10px] font-semibold text-text-muted uppercase tracking-wider mb-2">Post Content</p>
-                            <p class="text-sm text-text-secondary leading-relaxed">
+                        <div class="rounded-xl bg-gray-50 px-4 py-4">
+                            <p class="text-text-muted mb-2 text-[10px] font-semibold tracking-wider uppercase">
+                                Post Content
+                            </p>
+                            <p class="text-text-secondary text-sm leading-relaxed">
                                 {{ post.content ?? 'No content provided.' }}
                             </p>
                         </div>
@@ -116,23 +163,31 @@ function moodStyle(mood: string) {
                     <!-- Footer -->
                     <div class="flex items-center justify-end gap-3 px-6 pb-5">
                         <button type="button" :class="[
-                            'inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold border transition-all',
+                            'inline-flex items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-semibold transition-all',
                             post.status === 'flagged'
                                 ? 'border-status-safe text-status-safe hover:bg-status-safe hover:text-white'
                                 : 'border-status-flagged text-status-flagged hover:bg-status-flagged hover:text-white',
                         ]" @click="emit('toggle-flag')">
-                            <i :class="['fas text-xs', post.status === 'flagged' ? 'fa-check' : 'fa-flag']" />
-                            {{ post.status === 'flagged' ? 'Clear Flag' : 'Flag Post' }}
+                            <i :class="[
+                                'fas text-xs',
+                                post.status === 'flagged'
+                                    ? 'fa-check'
+                                    : 'fa-flag',
+                            ]" />
+                            {{
+                                post.status === 'flagged'
+                                    ? 'Clear Flag'
+                                    : 'Flag Post'
+                            }}
                         </button>
 
                         <button type="button"
-                            class="px-4 py-2 rounded-xl text-sm font-semibold bg-sidebar text-white hover:bg-sidebar/90 transition-all"
+                            class="bg-sidebar hover:bg-sidebar/90 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all"
                             @click="emit('close')">
                             Close
                         </button>
                     </div>
                 </div>
-
             </div>
         </Transition>
     </Teleport>
