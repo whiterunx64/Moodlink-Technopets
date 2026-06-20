@@ -42,7 +42,7 @@ class RevalidateSupabaseUser
     protected function confirmUserStillValidWithSupabase(SupabaseAuthenticatable $user): bool
     {
         try {
-            $supabaseUser = $this->supabase->getUser($user->getAccessToken());
+            $supabaseUser = $this->supabase->getAuthenticatedAdminApiCall($user->getAccessToken());
         } catch (Exception $e) {
             Log::channel(config('supabase-auth.monitoring.logging.channel'))->warning('Supabase user revalidation failed', [
                 'user_id' => $user->getAuthIdentifier(),

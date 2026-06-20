@@ -6,22 +6,27 @@ namespace App\Contracts;
 
 interface SupabaseAuthInterface
 {
+    // Authentication
+    public function adminSignInApiCall(string $email, string $password): array;
 
-  public function signIn(string $email, string $password): array;
+    public function verifyAdminCredentialsApiCall(string $email, string $password): array;
 
-  public function signOut(string $accessToken): array;
+    public function refreshAdminAccessTokenApiCall(string $refreshToken): array;
 
-  public function refreshToken(string $refreshToken): array;
-  
-  public function createUser(string $email, string $password, array $data = [], bool $emailConfirm = true): array;
+    // Admin Session
+    public function getAuthenticatedAdminApiCall(string $accessToken): array;
 
-  public function getUser(string $accessToken): array;
+    public function updateAuthenticatedAdminApiCall(string $accessToken, array $data): array;
 
-  public function updateUser(string $accessToken, array $data): array;
+    public function updateAdminPasswordApiCall(string $accessToken, string $newPassword): array;
 
-  public function updatePassword(string $accessToken, string $newPassword): array;
+    public function adminSignOutApiCall(string $accessToken): array;
 
-  public function verifyToken(string $token): array;
+    // Admin User Management
+    public function createStudentAccountApiCall(string $email, string $password, array $data = [], bool $emailConfirm = true): array;
 
-  public function deleteUser(string $userId): array;
+    public function deleteAdminAccountApiCall(string $userId): array;
+
+    // Token Validation
+    public function verifyJwtTokenApiCall(string $token): array;
 }

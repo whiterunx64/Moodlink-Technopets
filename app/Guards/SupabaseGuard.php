@@ -123,7 +123,7 @@ class SupabaseGuard implements Guard, SupabaseGuardInterface
         $admin?->abortIfLocked();
 
         try {
-            $response = $this->supabase->signIn($credentials[self::FIELD_EMAIL], $credentials[self::FIELD_PASSWORD]);
+            $response = $this->supabase->adminSignInApiCall($credentials[self::FIELD_EMAIL], $credentials[self::FIELD_PASSWORD]);
         } catch (Exception) {
             $admin?->recordFailedAttempt();
             return false;
@@ -175,7 +175,7 @@ class SupabaseGuard implements Guard, SupabaseGuardInterface
 
         if ($user instanceof SupabaseAuthenticatable && $user->getAccessToken() !== null) {
             try {
-                $this->supabase->signOut($user->getAccessToken());
+                $this->supabase->adminSignOutApiCall($user->getAccessToken());
             } catch (Exception) {
             }
         }
@@ -199,7 +199,7 @@ class SupabaseGuard implements Guard, SupabaseGuardInterface
         }
 
         try {
-            $response = $this->supabase->refreshToken($refreshToken);
+            $response = $this->supabase->refreshAdminAccessTokenApiCall($refreshToken);
         } catch (Exception) {
             $this->storage->flush($this->getName()); // Remove session data after refresh token is revoked
             return false;
@@ -261,7 +261,7 @@ class SupabaseGuard implements Guard, SupabaseGuardInterface
     private function attemptSupabaseSignIn(string $email, string $password): bool
     {
         try {
-            $response = $this->supabase->signIn($email, $password);
+            $response = $this->supabase->adminSignInApiCall($email, $password);
 
             return isset($response[self::FIELD_ACCESS_TOKEN]);
         } catch (Exception) {

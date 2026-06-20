@@ -69,7 +69,7 @@ final class StudentAccountService
             'name' => $student->name,
         ];
 
-        $this->supabase->createUser(
+        $this->supabase->createStudentAccountApiCall(
             email: $email,
             password: $password,
             data: $supabaseMetadata,

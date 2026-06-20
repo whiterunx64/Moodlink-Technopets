@@ -28,10 +28,14 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
     ) {
     }
 
+    // ============================================================
+    // Admin Authentication
+    // ============================================================
+
     #[Override]
-    public function signIn(string $email, string $password): array
+    public function adminSignInApiCall(string $email, string $password): array
     {
-        $this->logger->info('User login attempt', ['email' => $this->maskEmail($email)]);
+        $this->logger->info('Admin login attempt', ['email' => $this->maskEmail($email)]);
 
         try {
             $response = $this->client->request('POST', '/auth/v1/token', [
@@ -42,7 +46,7 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
             if (isset($response['user']['id'])) {
                 $this->cache->cacheUserData($response['user']['id'], $response['user']);
 
-                $this->logger->info('User login successful', [
+                $this->logger->info('Admin login successful', [
                     'email' => $this->maskEmail($email),
                     'user_id' => $response['user']['id'],
                 ]);
@@ -56,7 +60,7 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
             return $response;
 
         } catch (Exception $e) {
-            $this->logger->error('User login failed', [
+            $this->logger->error('Admin login failed', [
                 'email' => $this->maskEmail($email),
                 'error' => $e->getMessage(),
             ]);
@@ -65,7 +69,57 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
     }
 
     #[Override]
-    public function signOut(string $accessToken): array
+    public function verifyAdminCredentialsApiCall(string $email, string $password): array
+    {
+        // Re-authenticate an admin by attempting a Supabase password login.
+        try {
+            $response = $this->client->request('POST', '/auth/v1/token', [
+                'json' => ['email' => $email, 'password' => $password],
+                'query' => ['grant_type' => 'password'],
+            ]);
+
+            $this->logger->info('Admin password verification successful', [
+                'email' => $this->maskEmail($email),
+            ]);
+
+            return $response;
+
+        } catch (Exception $e) {
+            $this->logger->warning('Admin password verification failed', [
+                'email' => $this->maskEmail($email),
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    #[Override]
+    public function refreshAdminAccessTokenApiCall(string $refreshToken): array
+    {
+        $this->logger->info('Admin token refresh attempt');
+
+        try {
+            $response = $this->client->request('POST', '/auth/v1/token', [
+                'json' => ['refresh_token' => $refreshToken],
+                'query' => ['grant_type' => 'refresh_token'],
+            ]);
+
+            if (isset($response['user']['id'])) {
+                $this->cache->cacheUserData($response['user']['id'], $response['user']);
+            }
+
+            $this->logger->info('Admin token refresh successful');
+
+            return $response;
+
+        } catch (Exception $e) {
+            $this->logger->error('Admin token refresh failed', ['error' => $e->getMessage()]);
+            throw $e;
+        }
+    }
+
+    #[Override]
+    public function adminSignOutApiCall(string $accessToken): array
     {
         try {
             $response = $this->client->request('POST', '/auth/v1/logout', [
@@ -80,57 +134,17 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
             return $response;
 
         } catch (Exception $e) {
-            $this->logger->error('User logout failed', ['error' => $e->getMessage()]);
+            $this->logger->error('Admin logout failed', ['error' => $e->getMessage()]);
             throw $e;
         }
     }
 
-    private function revokeOtherSessions(string $accessToken): void
-    {
-        try {
-            $this->client->request('POST', '/auth/v1/logout', [
-                'headers' => ['Authorization' => "Bearer {$accessToken}"],
-                'query' => ['scope' => 'others'],
-            ]);
-
-            $this->logger->info('Supabase sessions revoked after login', [
-                'action' => 'revoke_other_sessions',
-            ]);
-        } catch (Exception $e) {
-            $this->logger->warning('Failed to revoke other Supabase sessions after login', [
-                'action' => 'revoke_other_sessions',
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
+    // ============================================================
+    // Admin Account
+    // ============================================================
 
     #[Override]
-    public function refreshToken(string $refreshToken): array
-    {
-        $this->logger->info('Token refresh attempt');
-
-        try {
-            $response = $this->client->request('POST', '/auth/v1/token', [
-                'json' => ['refresh_token' => $refreshToken],
-                'query' => ['grant_type' => 'refresh_token'],
-            ]);
-
-            if (isset($response['user']['id'])) {
-                $this->cache->cacheUserData($response['user']['id'], $response['user']);
-            }
-
-            $this->logger->info('Token refresh successful');
-
-            return $response;
-
-        } catch (Exception $e) {
-            $this->logger->error('Token refresh failed', ['error' => $e->getMessage()]);
-            throw $e;
-        }
-    }
-
-    #[Override]
-    public function getUser(string $accessToken): array
+    public function getAuthenticatedAdminApiCall(string $accessToken): array
     {
         try {
             $response = $this->client->request('GET', '/auth/v1/user', [
@@ -144,15 +158,15 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
             return $response;
 
         } catch (Exception $e) {
-            $this->logger->error('Get user failed', ['error' => $e->getMessage()]);
+            $this->logger->error('Get admin failed', ['error' => $e->getMessage()]);
             throw $e;
         }
     }
 
     #[Override]
-    public function updateUser(string $accessToken, array $data): array
+    public function updateAuthenticatedAdminApiCall(string $accessToken, array $data): array
     {
-        $this->logger->info('User update attempt', ['fields' => array_keys($data)]);
+        $this->logger->info('Admin update attempt', ['fields' => array_keys($data)]);
 
         try {
             $response = $this->client->request('PUT', '/auth/v1/user', [
@@ -163,21 +177,21 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
             if (isset($response['id'])) {
                 $this->cache->invalidateUserCache($response['id']);
                 $this->cache->cacheUserData($response['id'], $response);
-                $this->logger->info('User update successful', ['user_id' => $response['id']]);
+                $this->logger->info('Admin update successful', ['user_id' => $response['id']]);
             }
 
             return $response;
 
         } catch (Exception $e) {
-            $this->logger->error('User update failed', ['error' => $e->getMessage()]);
+            $this->logger->error('Admin update failed', ['error' => $e->getMessage()]);
             throw $e;
         }
     }
 
     #[Override]
-    public function updatePassword(string $accessToken, string $newPassword): array
+    public function updateAdminPasswordApiCall(string $accessToken, string $newPassword): array
     {
-        $this->logger->info('Password update attempt');
+        $this->logger->info('Admin password update attempt');
 
         try {
             $response = $this->client->request('PUT', '/auth/v1/user', [
@@ -185,21 +199,90 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
                 'json' => ['password' => $newPassword],
             ]);
 
-            $this->logger->info('Password update successful');
+            $this->logger->info('Admin password update successful');
 
             return $response;
 
         } catch (Exception $e) {
-            $this->logger->error('Password update failed', ['error' => $e->getMessage()]);
+            $this->logger->error('Admin password update failed', ['error' => $e->getMessage()]);
             throw $e;
         }
     }
+
+    #[Override]
+    public function deleteAdminAccountApiCall(string $userId): array
+    {
+        $this->logger->info('Admin account deletion attempt', ['user_id' => $userId]);
+
+        try {
+            $response = $this->client->request('DELETE', "/auth/v1/admin/users/{$userId}", [], useServiceKey: true);
+
+            $this->cache->invalidateUserCache($userId);
+            $this->logger->info('Admin account deletion successful', ['user_id' => $userId]);
+
+            return $response;
+
+        } catch (Exception $e) {
+            $this->logger->error('Admin account deletion failed', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    // ============================================================
+    // Student Account Management
+    // ============================================================
+
+    #[Override]
+    public function createStudentAccountApiCall(string $email, string $password, array $data = [], bool $emailConfirm = true): array
+    {
+        // Create a new student account through the Supabase Admin API.
+        // Uses the service role key and bypasses normal user permissions.
+        $this->logger->info('Student account creation attempt', [
+            'email' => $this->maskEmail($email),
+            'email_confirm' => $emailConfirm,
+        ]);
+
+        try {
+            $payload = [
+                'email' => $email,
+                'password' => $password,
+                'email_confirm' => $emailConfirm,
+            ];
+
+            if (!empty($data)) {
+                $payload['user_metadata'] = $data;
+            }
+
+            $response = $this->client->request('POST', '/auth/v1/admin/users', ['json' => $payload], useServiceKey: true);
+
+            $this->logger->info('Student account creation successful', [
+                'email' => $this->maskEmail($email),
+                'user_id' => $response['id'] ?? 'unknown',
+            ]);
+
+            return $response;
+
+        } catch (Exception $e) {
+            $this->logger->error('Student account creation failed', [
+                'email' => $this->maskEmail($email),
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    // ============================================================
+    // JWT Token Validation
+    // ============================================================
 
     /**
      * @return array{valid: bool, payload?: array, error?: string, expires_at?: mixed}
      */
     #[Override]
-    public function verifyToken(string $token): array
+    public function verifyJwtTokenApiCall(string $token): array
     {
         try {
             $tokenHash = hash('sha256', $token);
@@ -237,62 +320,27 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
         }
     }
 
-    #[Override]
-    public function createUser(string $email, string $password, array $data = [], bool $emailConfirm = true): array
+    // ============================================================
+    // Private Helpers
+    // ============================================================
+
+    private function revokeOtherSessions(string $accessToken): void
     {
-        $this->logger->info('Admin user creation attempt', [
-            'email' => $this->maskEmail($email),
-            'email_confirm' => $emailConfirm,
-        ]);
-
+        // Invalidate all other active sessions while keeping the current session alive.
         try {
-            $payload = [
-                'email' => $email,
-                'password' => $password,
-                'email_confirm' => $emailConfirm,
-            ];
-
-            if (!empty($data)) {
-                $payload['user_metadata'] = $data;
-            }
-
-            $response = $this->client->request('POST', '/auth/v1/admin/users', ['json' => $payload], true); // true = use service role key
-
-            $this->logger->info('Admin user creation successful', [
-                'email' => $this->maskEmail($email),
-                'user_id' => $response['id'] ?? 'unknown',
+            $this->client->request('POST', '/auth/v1/logout', [
+                'headers' => ['Authorization' => "Bearer {$accessToken}"],
+                'query' => ['scope' => 'others'],
             ]);
 
-            return $response;
-
+            $this->logger->info('Supabase sessions revoked after login', [
+                'action' => 'revoke_other_sessions',
+            ]);
         } catch (Exception $e) {
-            $this->logger->error('Admin user creation failed', [
-                'email' => $this->maskEmail($email),
+            $this->logger->warning('Failed to revoke other Supabase sessions after login', [
+                'action' => 'revoke_other_sessions',
                 'error' => $e->getMessage(),
             ]);
-            throw $e;
-        }
-    }
-
-    #[Override]
-    public function deleteUser(string $userId): array
-    {
-        $this->logger->info('User deletion attempt', ['user_id' => $userId]);
-
-        try {
-            $response = $this->client->request('DELETE', "/auth/v1/admin/users/{$userId}", [], true);
-
-            $this->cache->invalidateUserCache($userId);
-            $this->logger->info('User deletion successful', ['user_id' => $userId]);
-
-            return $response;
-
-        } catch (Exception $e) {
-            $this->logger->error('User deletion failed', [
-                'user_id' => $userId,
-                'error' => $e->getMessage(),
-            ]);
-            throw $e;
         }
     }
 
@@ -301,6 +349,7 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
      */
     private function fetchPublicKeys(): array
     {
+        // Fetch and cache Supabase JWKS keys used to verify JWT signatures.
         $cacheKey = hash('sha256', '__supabase_jwks__'); // stable cache key for the JWKS endpoint
 
         $raw = $this->cache->getCachedJwks($cacheKey);

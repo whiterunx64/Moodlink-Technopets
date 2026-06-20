@@ -6,15 +6,16 @@ use App\Contracts\SupabaseAuthInterface;
 use Illuminate\Support\Facades\Facade;
 
 /**
- * @method static array signIn(string $email, string $password)
- * @method static array signOut(string $accessToken)
- * @method static array refreshToken(string $refreshToken)
- * @method static array createUser(string $email, string $password, array $data = [], bool $emailConfirm = true)
- * @method static array getUser(string $accessToken)
- * @method static array updateUser(string $accessToken, array $data)
- * @method static array updatePassword(string $accessToken, string $newPassword)
- * @method static array verifyToken(string $token)
- * @method static array deleteUser(string $userId)
+ * @method static array adminSignInApiCall(string $email, string $password)
+ * @method static array verifyAdminCredentialsApiCall(string $email, string $password)
+ * @method static array refreshAdminAccessTokenApiCall(string $refreshToken)
+ * @method static array getAuthenticatedAdminApiCall(string $accessToken)
+ * @method static array updateAuthenticatedAdminApiCall(string $accessToken, array $data)
+ * @method static array updateAdminPasswordApiCall(string $accessToken, string $newPassword)
+ * @method static array adminSignOutApiCall(string $accessToken)
+ * @method static array createStudentAccountApiCall(string $email, string $password, array $data = [], bool $emailConfirm = true)
+ * @method static array deleteAdminAccountApiCall(string $userId)
+ * @method static array verifyJwtTokenApiCall(string $token)
  */
 class SupabaseAuth extends Facade
 {

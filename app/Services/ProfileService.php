@@ -94,7 +94,7 @@ class ProfileService
         $admin = Admin::findByUserId($user->id);
         $admin?->deactivateAndDelete();
 
-        $this->auth->deleteUser($user->id);
+        $this->auth->deleteAdminAccountApiCall($user->id);
     }
 
     /**
@@ -167,7 +167,7 @@ class ProfileService
     {
         // Changing the password invalidates the current Supabase session.
         try {
-            $this->auth->updatePassword($accessToken, $newPassword);
+            $this->auth->updateAdminPasswordApiCall($accessToken, $newPassword);
         } catch (Throwable $exception) {
             throw new DomainException('Unable to update password. Please sign in again.', previous: $exception);
         }
@@ -176,7 +176,7 @@ class ProfileService
     private function verifyCurrentPassword(User $user, string $password): void
     {
         try {
-            $this->auth->signIn($user->email, $password);
+            $this->auth->verifyAdminCredentialsApiCall($user->email, $password);
         } catch (Throwable $exception) {
             throw new DomainException(trans('auth.password'), previous: $exception);
         }

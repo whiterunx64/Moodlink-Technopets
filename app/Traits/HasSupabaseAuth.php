@@ -24,7 +24,7 @@ trait HasSupabaseAuth
             throw new RuntimeException('No access token available for Supabase API calls.');
         }
 
-        $response = $this->getSupabaseAuth()->updateUser($this->supabaseAccessToken, $data);
+        $response = $this->getSupabaseAuth()->updateAuthenticatedAdminApiCall($this->supabaseAccessToken, $data);
 
         if (isset($response['id'])) {
             $this->supabaseData = $response;
@@ -43,7 +43,7 @@ trait HasSupabaseAuth
             throw new RuntimeException('No access token available for Supabase API calls.');
         }
 
-        return $this->getSupabaseAuth()->updatePassword($this->supabaseAccessToken, $newPassword);
+        return $this->getSupabaseAuth()->updateAdminPasswordApiCall($this->supabaseAccessToken, $newPassword);
     }
 
     public function getSupabaseUserId(): string

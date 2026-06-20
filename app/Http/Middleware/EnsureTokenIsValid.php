@@ -87,6 +87,6 @@ class EnsureTokenIsValid
 
   protected function verifyAccessToken(SupabaseAuthenticatable $user): bool
   {
-    return $this->supabase->verifyToken($user->getAccessToken())['valid'] === true;
+    return $this->supabase->verifyJwtTokenApiCall($user->getAccessToken())['valid'] === true;
   }
 }
