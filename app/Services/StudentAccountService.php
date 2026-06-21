@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Contracts\SupabaseAuthInterface;
 use App\Enums\StudentStatus;
+use App\Models\Notification;
 use App\Models\Student;
 use App\Mail\StudentCredentialsMail;
 use DomainException;
@@ -96,7 +97,10 @@ final class StudentAccountService
         $this->verifyStudent($student);
 
         // Email the crenditals to the student's personal email
-        $this->sendCrendentialsEmail($student, $email, $password);
+        $this->sendInitialPasswordToPersonalEmail($student, $email, $password);
+
+        // Prompt the student to change their initial password on first login.
+        $this->notifyStudentToChangeInitialPassword($student);
 
         return ['email' => $email, 'password' => $password];
     }
@@ -146,7 +150,7 @@ final class StudentAccountService
         }
     }
 
-    private function sendCrendentialsEmail(Student $student, string $email, string $password): void
+    private function sendInitialPasswordToPersonalEmail(Student $student, string $email, string $password): void
     {
         if (!$student->personal_email) {
             return;
@@ -158,6 +162,26 @@ final class StudentAccountService
         } catch (Throwable $e) {
             // Don't fail account creation if email delivery fails
             Log::warning('Failed to email student crendetials', [
+                'student_id' => $student->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    private function notifyStudentToChangeInitialPassword(Student $student): void
+    {
+        try {
+            Notification::create([
+                'student_id' => $student->id,
+                'title' => 'Initial Password Change Required',
+                'content' => 'Your account is currently using an initial password. For your account security, please change your password to a secure, unique one that only you know in order to protect your account. Changing your original password lowers the possibility of account compromise, credential exposure, and unauthorized access.',
+                'type' => 'security_alert',
+                'is_seen' => false,
+                'datetime' => now(),
+            ]);
+        } catch (Throwable $e) {
+            // Don't fail account creation if the notification cannot be stored.
+            Log::warning('Failed to create initial password notification', [
                 'student_id' => $student->id,
                 'error' => $e->getMessage(),
             ]);
