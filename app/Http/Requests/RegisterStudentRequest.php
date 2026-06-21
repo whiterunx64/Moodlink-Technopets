@@ -13,9 +13,7 @@ class RegisterStudentRequest extends FormRequest
 
   public function rules(): array
   {
-    return [
-      'email' => ['required', 'email'],
-      'password' => ['required', 'string', 'min:8', 'confirmed'],
-    ];
+    // Email & password are generated on the server; nothing is submitted.
+    return [];
   }
 }

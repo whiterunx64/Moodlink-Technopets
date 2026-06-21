@@ -12,7 +12,7 @@ export function usePagination<T>(
     source: MaybeRefOrGetter<T[]>,
     options: UsePaginationOptions = {},
 ) {
-    const pageSize = options.pageSize ?? 7;
+    const pageSize = options.pageSize ?? 10;
     const currentPage = ref(1);
 
     const items = computed<T[]>(() =>

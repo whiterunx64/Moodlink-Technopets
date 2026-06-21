@@ -16,7 +16,7 @@ interface BadgeMeta {
 
 export const VERIFICATION_BADGE: Record<VerificationStatus, BadgeMeta> = {
     pending: { label: 'Pending', variant: 'bg-amber-100 text-amber-600', icon: ClockIcon },
-    verified: { label: 'Verified', variant: 'bg-green-100 text-green-600', icon: CheckCircleIcon },
+    verified: { label: 'Verified', variant: 'bg-blue-100 text-blue-600', icon: CheckCircleIcon },
     unverified: { label: 'Unverified', variant: 'bg-gray-100 text-gray-500', icon: XCircleIcon },
 };
 

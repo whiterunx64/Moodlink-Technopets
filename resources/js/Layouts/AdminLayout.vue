@@ -49,19 +49,11 @@ onUnmounted(() => {
     <div class="fixed w-0 h-0 backdrop-blur-sm pointer-events-none" aria-hidden="true" />
 
     <!-- Mobile Overlay -->
-    <Transition
-      enter-active-class="transition-opacity duration-300"
-      enter-from-class="opacity-0"
-      enter-to-class="opacity-100"
-      leave-active-class="transition-opacity duration-300"
-      leave-from-class="opacity-100"
-      leave-to-class="opacity-0"
-    >
-      <div
-        v-if="sidebar_open"
-        class="fixed inset-0 z-20 bg-black/40 backdrop-blur-sm lg:hidden"
-        @click="sidebar_open = false"
-      />
+    <Transition enter-active-class="transition-opacity duration-300" enter-from-class="opacity-0"
+      enter-to-class="opacity-100" leave-active-class="transition-opacity duration-300" leave-from-class="opacity-100"
+      leave-to-class="opacity-0">
+      <div v-if="sidebar_open" class="fixed inset-0 z-20 bg-black/40 backdrop-blur-sm lg:hidden"
+        @click="sidebar_open = false" />
     </Transition>
 
     <AppSidebar :open="sidebar_open" @close="sidebar_open = false" />

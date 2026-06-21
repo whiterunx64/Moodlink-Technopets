@@ -7,6 +7,7 @@ import StudentTabs from '@/Components/Students/StudentTabs.vue';
 import StudentTable from '@/Components/Students/StudentTable.vue';
 import Pagination from '@/Components/UI/Pagination.vue';
 import VerifyStudentModal from '@/Pages/UserAccounts/Modal/VerifyStudentModal.vue';
+import ManageAccountModal from '@/Pages/UserAccounts/Modal/ManageAccountModal.vue';
 import { YEAR_LEVEL_OPTIONS } from '@/composables/useStudentFilters';
 import { usePaginatorNav } from '@/composables/usePaginatorNav';
 import type { Paginated, Student, StudentAccountFilters, StudentTab } from '@/types';
@@ -24,16 +25,22 @@ const activeTab = ref<StudentTab>((props.filters.tab as StudentTab) ?? 'All');
 
 const paginator = usePaginatorNav(toRef(props, 'students'));
 
-const modalOpen = ref(false);
+const verifyModalOpen = ref(false);
+const manageModalOpen = ref(false);
 const selectedStudent = ref<Student | null>(null);
 
-function openRegisterModal(student: Student) {
+function openModal(student: Student) {
     selectedStudent.value = student;
-    modalOpen.value = true;
+    if (student.verification_status === 'pending') {
+        verifyModalOpen.value = true;
+    } else {
+        manageModalOpen.value = true;
+    }
 }
 
 function closeModal() {
-    modalOpen.value = false;
+    verifyModalOpen.value = false;
+    manageModalOpen.value = false;
     selectedStudent.value = null;
 }
 
@@ -41,8 +48,14 @@ function onVerified() {
     router.reload({ only: ['students', 'tabCounts'] });
 }
 
+function runStudentAction(routeName: string) {
+    if (!selectedStudent.value) return;
+    router.patch(route(routeName, selectedStudent.value.id), {}, {
+        ...patchOptions,
+        onSuccess: () => closeModal(),
+    });
+}
 
-/** Push the current filter state to the server (one source of truth). */
 function reload(overrides: Record<string, unknown> = {}) {
     const yl = yearFilter.value === 'All' ? null : Number(yearFilter.value);
 
@@ -58,26 +71,17 @@ function reload(overrides: Record<string, unknown> = {}) {
     );
 }
 
-/** Search only when Enter is pressed. */
 function searchStudents() {
     reload({ page: undefined });
 }
 
-// Year / tab changes reset to page 1 immediately.
 watch([yearFilter, activeTab], () => reload({ page: undefined }));
 
 function goToPage(page: number) {
     reload({ page });
 }
 
-// ── Status actions ────────────────────────────────────────────────────────────
 const patchOptions = { preserveScroll: true, preserveState: true, only: ['students', 'tabCounts', 'flash'] };
-
-const register   = (student: Student) => openRegisterModal(student);
-const verify     = (student: Student) => router.patch(route('user-accounts.verify',     student.id), {}, patchOptions);
-const reject     = (student: Student) => router.patch(route('user-accounts.unverify',   student.id), {}, patchOptions);
-const suspend    = (student: Student) => router.patch(route('user-accounts.suspend',    student.id), {}, patchOptions);
-const reactivate = (student: Student) => router.patch(route('user-accounts.reactivate', student.id), {}, patchOptions);
 </script>
 
 <template>
@@ -86,29 +90,48 @@ const reactivate = (student: Student) => router.patch(route('user-accounts.react
 
     <AdminLayout title="User Accounts">
         <div class="space-y-4 pb-20">
-            <p class="text-sm text-text-muted -mt-2">
-                Manage student account verification and access control.
-            </p>
 
             <!-- Top bar -->
             <div class="flex items-center gap-3 flex-wrap">
-                <SearchInput v-model="search" placeholder="Search by name or student ID..."
-                    @keyup.enter="searchStudents" />
 
-                <select v-model="yearFilter"
-                    class="py-2 pl-3 pr-8 text-sm rounded-xl border border-border-light bg-white text-text-secondary focus:outline-none focus:ring-2 focus:ring-sidebar/20 focus:border-sidebar transition-colors">
-                    <option v-for="y in YEAR_LEVEL_OPTIONS" :key="y.value" :value="y.value">
-                        {{ y.label }}
-                    </option>
-                </select>
+                <!-- Search input (uses your existing SearchInput component) -->
+                <SearchInput v-model="search" placeholder="Search by name or student ID..." @search="searchStudents" />
+
+                <!-- Year level filter with icon -->
+                <div class="relative">
+                    <!-- Filter / funnel icon -->
+                    <span
+                        class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-text-secondary/60">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                        </svg>
+                    </span>
+
+                    <select v-model="yearFilter"
+                        class="appearance-none py-2.5 pl-9 pr-8 text-sm border border-border-light bg-white text-text-secondary focus:outline-none focus:ring-2 focus:ring-sidebar/20 focus:border-sidebar transition-colors cursor-pointer">
+                        <option v-for="y in YEAR_LEVEL_OPTIONS" :key="y.value" :value="y.value">
+                            {{ y.label }}
+                        </option>
+                    </select>
+
+                    <!-- Chevron-down icon -->
+                    <span
+                        class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-text-secondary/60">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                    </span>
+                </div>
             </div>
 
             <!-- Tab pills -->
             <StudentTabs v-model="activeTab" :counts="tabCounts" />
 
             <!-- Table -->
-            <StudentTable :rows="students.data" @register="register" @verify="verify" @reject="reject"
-                @suspend="suspend" @reactivate="reactivate" />
+            <StudentTable :rows="students.data" @open="openModal" />
+
         </div>
 
         <!-- Fixed pagination bar -->
@@ -117,5 +140,12 @@ const reactivate = (student: Student) => router.patch(route('user-accounts.react
             :range-end="paginator.rangeEnd.value" :total="paginator.total.value" @update:current-page="goToPage"
             @prev="goToPage(paginator.currentPage.value - 1)" @next="goToPage(paginator.currentPage.value + 1)" />
     </AdminLayout>
-    <VerifyStudentModal :show="modalOpen" :student="selectedStudent" @close="closeModal" @verified="onVerified" />
+
+    <!-- Pending students: create-account flow -->
+    <VerifyStudentModal :show="verifyModalOpen" :student="selectedStudent" @close="closeModal" @verified="onVerified" />
+
+    <!-- Verified / suspended students: manage account -->
+    <ManageAccountModal :show="manageModalOpen" :student="selectedStudent" @close="closeModal"
+        @suspend="runStudentAction('user-accounts.suspend')"
+        @reactivate="runStudentAction('user-accounts.reactivate')" />
 </template>

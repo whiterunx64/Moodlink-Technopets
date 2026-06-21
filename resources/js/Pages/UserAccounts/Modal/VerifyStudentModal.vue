@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { useForm } from '@inertiajs/vue3';
-import type { Student } from '@/types';
+import { useForm, usePage } from '@inertiajs/vue3';
+import type { Student, PageProps } from '@/types';
+import { XMarkIcon, CheckCircleIcon, UserCircleIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps<{
   student: Student | null;
@@ -13,145 +14,344 @@ const emit = defineEmits<{
   verified: [];
 }>();
 
-const showPassword = ref(false);
+const page = usePage<PageProps>();
 
-const form = useForm({
-  email: '',
-  password: '',
-  password_confirmation: '',
-});
+// No fields — email & initial password are generated on the server.
+const form = useForm({});
 
+// Holds the generated credentials after a successful creation (shown once).
+const created = ref<{ email: string; password: string } | null>(null);
+const copied = ref<'email' | 'password' | null>(null);
+
+// Password is masked by default; the admin must explicitly reveal it.
+const revealPassword = ref(false);
+
+// Inline error shown when registration fails (e.g. invalid email).
+const errorMessage = ref<string | null>(null);
+
+// Scroll hint: shown only while credentials exist and the user hasn't
+// scrolled to the bottom of the content yet.
+const contentEl = ref<HTMLElement | null>(null);
+const atBottom = ref(false);
+
+function onScroll() {
+  const el = contentEl.value;
+  if (!el) return;
+  atBottom.value = el.scrollTop + el.clientHeight >= el.scrollHeight - 8;
+}
+
+// Reset the result view each time the modal is (re)opened.
 watch(() => props.show, (open) => {
   if (open) {
-    form.reset();
-    showPassword.value = false;
+    created.value = null;
+    copied.value = null;
+    errorMessage.value = null;
+    atBottom.value = false;
+    revealPassword.value = false;
   }
 });
 
 function submit() {
-    if (!props.student) return;
+  if (!props.student) return;
 
-    console.log('submitting for student:', props.student.id);
-    console.log('form data:', form.email, form.password);
+  errorMessage.value = null;
 
-    form.post(route('user-accounts.register', props.student.id), {
-        preserveScroll: true,
-        preserveState: true,
-        onSuccess: () => {
-            console.log('success');
-            emit('verified');
-            emit('close');
-        },
-        onError: (errors) => {
-            console.log('errors:', errors);
-        },
-    });
+  form.post(route('user-accounts.register', props.student.id), {
+    preserveScroll: true,
+    preserveState: true,
+    onSuccess: () => {
+      const credentials = page.props.flash?.student_crendetials;
+      if (credentials) {
+        created.value = credentials;   // switch to the result view
+        emit('verified');              // refresh the list behind the modal
+      } else {
+        emit('verified');
+        emit('close');
+      }
+    },
+    onError: (errors) => {
+      errorMessage.value = errors.register ?? 'Account creation failed. Please try again.';
+    },
+  });
 }
 
+async function copy(field: 'email' | 'password') {
+  if (!created.value) return;
+  await navigator.clipboard.writeText(created.value[field]);
+  copied.value = field;
+  setTimeout(() => (copied.value = null), 1500);
+}
 </script>
 
 <template>
   <Transition name="modal">
-    <div v-if="show && student" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div v-if="show && student" class="fixed inset-0 z-50 flex items-center justify-center p-6" role="dialog"
+      aria-modal="true">
       <!-- Backdrop -->
-      <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="emit('close')" />
+      <div class="absolute inset-0 bg-slate-900/40" @click="emit('close')" />
 
       <!-- Panel -->
-      <div class="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6 space-y-5">
-
+      <div class="relative flex h-170 w-full max-w-3xl flex-col overflow-hidden rounded-md bg-white shadow-2xl">
         <!-- Header -->
-        <div class="space-y-1">
-          <h2 class="text-base font-semibold text-gray-900">
-            Create Supabase Account
-          </h2>
-          <p class="text-sm text-gray-500">
-            Set the login credentials for
-            <span class="font-medium text-gray-700">{{ student.name }}</span>.
-            These will be registered in Supabase Auth.
-          </p>
-        </div>
-
-        <!-- Email -->
-        <div class="space-y-1">
-          <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-            Email
-          </label>
-          <input v-model="form.email" type="email" placeholder="student@school.edu" autocomplete="off"
-            class="w-full px-3 py-2 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2" :class="form.errors.email
-              ? 'border-red-300 focus:ring-red-200'
-              : 'border-gray-200 focus:border-sidebar focus:ring-sidebar/20'" />
-          <p v-if="form.errors.email" class="text-xs text-red-500">
-            {{ form.errors.email }}
-          </p>
-        </div>
-
-        <!-- Password -->
-        <div class="space-y-1">
-          <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-            Password
-          </label>
-          <div class="relative">
-            <input v-model="form.password" :type="showPassword ? 'text' : 'password'" placeholder="Min. 8 characters"
-              autocomplete="new-password"
-              class="w-full pr-10 px-3 py-2 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2"
-              :class="form.errors.password
-                ? 'border-red-300 focus:ring-red-200'
-                : 'border-gray-200 focus:border-sidebar focus:ring-sidebar/20'" />
-            <button type="button" tabindex="-1"
-              class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600"
-              @click="showPassword = !showPassword">
-              <svg v-if="!showPassword" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none"
-                viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7
-                                       -1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7
-                                       a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243
-                                       M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29
-                                       m7.532 7.532l3.29 3.29M3 3l3.59 3.59
-                                       m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7
-                                       a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-              </svg>
-            </button>
+        <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-4">
+          <div class="flex items-center gap-3">
+            <span class="flex h-9 w-9 items-center justify-center rounded-md"
+              :class="created ? 'bg-emerald-50 text-emerald-600' : 'bg-sidebar/10 text-sidebar'">
+              <CheckCircleIcon v-if="created" class="h-5 w-5" />
+              <UserCircleIcon v-else class="h-5 w-5" />
+            </span>
+            <div>
+              <h2 class="text-base font-bold leading-tight text-slate-800">
+                {{ created ? 'Account Created' : 'Preview Account Details' }}
+              </h2>
+              <p class="text-xs text-slate-400">
+                {{ created ? 'Credentials emailed to the student' : '' }}
+              </p>
+            </div>
           </div>
-          <p v-if="form.errors.password" class="text-xs text-red-500">
-            {{ form.errors.password }}
-          </p>
-        </div>
 
-        <!-- Confirm Password -->
-        <div class="space-y-1">
-          <label class="text-xs font-medium text-gray-500 uppercase tracking-wide">
-            Confirm Password
-          </label>
-          <input v-model="form.password_confirmation" :type="showPassword ? 'text' : 'password'"
-            placeholder="Repeat password" autocomplete="new-password"
-            class="w-full px-3 py-2 rounded-xl border text-sm transition-colors focus:outline-none focus:ring-2" :class="form.errors.password_confirmation
-              ? 'border-red-300 focus:ring-red-200'
-              : 'border-gray-200 focus:border-sidebar focus:ring-sidebar/20'" />
-          <p v-if="form.errors.password_confirmation" class="text-xs text-red-500">
-            {{ form.errors.password_confirmation }}
-          </p>
-        </div>
-
-        <!-- Actions -->
-        <div class="flex items-center justify-end gap-2 pt-1">
           <button type="button"
-            class="px-4 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
-            :disabled="form.processing" @click="emit('close')">
-            Cancel
-          </button>
-          <button type="button"
-            class="px-4 py-2 rounded-xl text-sm font-semibold bg-sidebar text-white hover:bg-sidebar/90 transition-colors disabled:opacity-60"
-            :disabled="form.processing" @click="submit">
-            <span v-if="form.processing">Creating…</span>
-            <span v-else>Create & Verify</span>
+            class="inline-flex items-center justify-center rounded-sm border border-slate-200 bg-slate-200 p-2 text-slate-800 transition hover:border-red-500 hover:bg-red-100 hover:text-red-700"
+            @click="emit('close')">
+            <XMarkIcon class="h-4 w-4" />
           </button>
         </div>
+
+        <!-- Privacy notice (shown once the account is created) -->
+        <div v-if="created"
+          class="border-b border-amber-200 border-l-10 border-l-amber-400 bg-amber-50 px-8 py-3 text-center text-sm text-amber-800">
+          Initial password is hidden for privacy. Student authorization is required to view it.
+        </div>
+
+        <!-- Content -->
+        <div ref="contentEl" class="flex-1 overflow-y-auto px-8 py-6" @scroll="onScroll">
+
+          <!-- Personal Information -->
+          <section>
+            <div class="mb-6 flex items-center gap-3">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Personal Information
+              </h3>
+              <span class="h-px flex-1 bg-slate-200" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-x-10 gap-y-6">
+
+              <div>
+                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  First Name
+                </p>
+                <p class="mt-2 border-b-2 border-slate-800 pb-2 text-sm font-medium text-slate-800">
+                  {{ student.first_name }}
+                </p>
+              </div>
+
+              <div>
+                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Last Name
+                </p>
+                <p class="mt-2 border-b-2 border-slate-800 pb-2 text-sm font-medium text-slate-800">
+                  {{ student.last_name }}
+                </p>
+              </div>
+
+              <div>
+                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Personal Email
+                </p>
+                <p class="mt-2 border-b-2 border-slate-800 pb-2 text-sm font-medium text-slate-800">
+                  {{ student.personal_email || '—' }}
+                </p>
+              </div>
+
+              <div>
+                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Contact Number
+                </p>
+                <p class="mt-2 border-b-2 border-slate-800 pb-2 text-sm font-medium text-slate-800">
+                  {{ student.contact_number || '—' }}
+                </p>
+              </div>
+
+            </div>
+          </section>
+
+
+          <!-- Academic Information -->
+          <section class="mt-10">
+
+            <div class="mb-6 flex items-center gap-3">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                Academic Information
+              </h3>
+              <span class="h-px flex-1 bg-slate-200" />
+            </div>
+
+            <div class="grid grid-cols-3 gap-x-10 gap-y-6">
+
+              <div>
+                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Student ID
+                </p>
+                <p class="mt-2 border-b-2 border-slate-800 pb-2 font-mono text-sm font-medium">
+                  {{ student.student_id }}
+                </p>
+              </div>
+
+              <div>
+                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Section
+                </p>
+                <p class="mt-2 border-b-2 border-slate-800 pb-2 text-sm font-medium">
+                  {{ student.section || '—' }}
+                </p>
+              </div>
+
+              <div>
+                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Year Level
+                </p>
+                <p class="mt-2 border-b-2 border-slate-800 pb-2 text-sm font-medium">
+                  {{ student.year_level || '—' }}
+                </p>
+              </div>
+
+            </div>
+
+          </section>
+
+
+          <!-- Generated credentials -->
+          <section v-if="created" class="mt-10">
+
+            <div class="mb-4 flex items-center gap-3">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700">
+                Initial Login Credentials
+              </h3>
+              <span class="h-px flex-1 bg-slate-300" />
+            </div>
+
+
+
+
+            <div class="grid grid-cols-2 gap-x-10 gap-y-6">
+
+              <div>
+                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Email
+                </p>
+
+                <div class="mt-2 flex items-center border-b-2 border-emerald-700 pb-2">
+                  <span class="flex-1 truncate font-mono text-sm font-medium text-slate-800">
+                    {{ created.email }}
+                  </span>
+
+                  <button type="button" class="text-xs font-semibold text-sidebar hover:underline"
+                    @click="copy('email')">
+                    {{ copied === 'email' ? 'Copied' : 'Copy' }}
+                  </button>
+                </div>
+
+              </div>
+
+
+              <div>
+                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                  Initial Password
+                </p>
+
+                <div class="mt-2 flex items-center gap-3 border-b-2 border-emerald-700 pb-2">
+                  <span class="flex-1 truncate font-mono text-sm font-medium text-slate-800">
+                    {{ revealPassword ? created.password : '••••••••' }}
+                  </span>
+
+                  <button type="button" class="text-xs font-semibold text-slate-500 hover:underline"
+                    @click="revealPassword = !revealPassword">
+                    {{ revealPassword ? 'Hide' : 'Show' }}
+                  </button>
+
+                  <button type="button" class="text-xs font-semibold text-sidebar hover:underline"
+                    @click="copy('password')">
+                    {{ copied === 'password' ? 'Copied' : 'Copy' }}
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+          </section>
+
+          <!-- Scroll hint: visible pill, only when credentials exist and not yet at bottom -->
+          <div v-if="created && !atBottom" class="pointer-events-none sticky bottom-3 z-10 flex justify-center">
+            <div
+              class="flex max-w-md items-center gap-3 rounded-lg bg-slate-900/90 px-4 py-2.5 text-white shadow-lg ring-1 ring-black/5">
+              <svg class="h-5 w-5 shrink-0 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+              </svg>
+              <span class="text-xs font-medium leading-snug">
+                Scroll down to view the credential access section
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inline error (between the form and the footer / status container) -->
+        <div v-if="errorMessage"
+          class="border-l-10 border-red-500 bg-red-50 px-8 py-3 text-center text-sm text-red-700">
+          {{ errorMessage }}
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-auto bg-slate-100 px-8 py-6">
+
+          <div class="flex items-center justify-between">
+
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Account Status
+            </span>
+
+            <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="created
+              ? 'bg-emerald-100 text-emerald-700'
+              : 'bg-amber-100 text-amber-700'">
+              {{ created ? 'Account Verified' : 'Pending Verification' }}
+            </span>
+
+          </div>
+
+
+          <div class="mt-4 border-l-10 bg-white px-4 py-3 text-sm text-slate-600" :class="created
+            ? 'border-emerald-500'
+            : 'border-amber-400'">
+
+            <template v-if="created">
+              The user has been verified. Instruct them to check their personal Email to find their password so they can
+              log in.
+            </template>
+
+            <template v-else>
+              Before proceeding with verification, please ensure the student's information is correct and the personal
+              email address is valid.
+            </template>
+
+          </div>
+
+          <div v-if="!created" class="mt-4 flex gap-3">
+
+            <button type="button" class="bg-sidebar px-6 py-2 text-sm font-semibold text-white hover:bg-sidebar/90"
+              :disabled="form.processing" @click="submit">
+              {{ form.processing ? 'Creating…' : 'Create Account' }}
+            </button>
+
+
+            <button type="button" class="bg-red-600 px-6 py-2 text-sm font-semibold text-white hover:bg-red-700"
+              @click="emit('close')">
+              Reject
+            </button>
+
+          </div>
+        </div>
+
       </div>
     </div>
   </Transition>
@@ -160,12 +360,18 @@ function submit() {
 <style scoped>
 .modal-enter-active,
 .modal-leave-active {
-  transition: opacity 150ms ease, transform 150ms ease;
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
 }
 
 .modal-enter-from,
 .modal-leave-to {
   opacity: 0;
-  transform: scale(0.97);
+}
+
+.modal-enter-from>div:last-child,
+.modal-leave-to>div:last-child {
+  transform: scale(0.96) translateY(10px);
 }
 </style>

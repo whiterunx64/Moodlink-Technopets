@@ -14,6 +14,8 @@ export type PageProps<
     };
     flash: {
         error?: string;
+        success?: string;
+        student_crendetials?: { email: string; password: string } | null;
     };
 };
 
@@ -76,6 +78,10 @@ export interface Student {
     id: number;
     student_id: string;
     name: string;
+    first_name: string;
+    last_name: string;
+    personal_email: string | null;
+    contact_number: string | null;
     year_level: string;
     section: string;
     verification_status: VerificationStatus;

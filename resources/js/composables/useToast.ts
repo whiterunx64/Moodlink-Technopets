@@ -7,7 +7,8 @@ export interface ToastOptions {
 
 export function useToast() {
     function add({ type, message }: ToastOptions) {
-        toast[type](message);
+
+        toast[type](message, { id: `${type}:${message}` });
     }
 
     return { add };

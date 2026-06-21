@@ -35,6 +35,13 @@ Route::get(config('supabase-auth.monitoring.health_checks.endpoint'), [HealthCon
 //        'time_seconds' => $duration,
 //    ];
 //});
+Route::get('/test-password', function () {
+    $svc = app(App\Services\StudentAccountService::class);
+    $m = new ReflectionMethod($svc, 'generateInitialPassword');
+    $m->setAccessible(true);
+
+    return collect(range(1, 20))->map(fn() => $m->invoke($svc));
+});
 
 Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-access', 'supabase.single-session'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])

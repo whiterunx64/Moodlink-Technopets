@@ -15,7 +15,6 @@
     --color-ml-btn-hover: #587836;
     --color-auth-title: #ffffff;
     --color-login-error-text: #dc2626;
-    --color-border-light: #e3e3e3;
 
     /* Header */
     --color-header-bg: #ffffff;
@@ -34,12 +33,23 @@
     /* GLOBAL TEXT */
     --color-text-primary: #1a1a1a;
     --color-text-secondary: #4b5563;
-    --color-text-muted: #9ca3af;
+    --color-text-muted: #4b5563;
 
     /* GLOBAL UI */
-    --color-border-light: #e3e3e3;
+    --color-border-light: #b8c2cc;
     --color-hover-soft: #eceee6;
-    --color-bg-surface: #fbfbfb;
+    --color-bg-surface: #f3f4f6;
+    --color-layout-bg: #FAF8F3;
+
+    --color-table-header: #e5e7eb;
+    --color-table-body: #f9fafb;
+    --color-table-row: #f9fafb;
+    --color-table-row-hover: #f3f5f7;
+    --color-table-grid: #cbd5e1;
+
+    --color-search-button: #9333EA;
+    --color-search-button-hover: #7E22CE;
+    --color-search-button-active: #6B21A8;
 
     /* STATUS BADGES */
     --color-status-flagged: #e25858;

@@ -26,6 +26,8 @@ use Illuminate\Support\Carbon;
  * @property int $year_level
  * @property string $section
  * @property string|null $daily_result
+ * @property string|null $personal_email
+ * @property string|null $contact_number
  *
  * @property-read string $name
  * @property-read string $verification_status
@@ -58,6 +60,8 @@ class Student extends Model
         'year_level',
         'section',
         'daily_result',
+        'personal_email',
+        'contact_number',
     ];
 
     protected function casts(): array
@@ -183,12 +187,16 @@ class Student extends Model
             ->orderBy('first_name');
 
         return $query
-            ->paginate(7)
+            ->paginate(9)
             ->withQueryString()
             ->through(fn(Student $student): array => [
                 'id' => $student->id,
                 'student_id' => $student->student_number,
                 'name' => $student->name,
+                'first_name' => $student->first_name,
+                'last_name' => $student->last_name,
+                'personal_email' => $student->personal_email,
+                'contact_number' => $student->contact_number,
                 'year_level' => $student->displayYearLevel(),
                 'section' => $student->section,
                 'verification_status' => $student->displayVerificationStatus(),

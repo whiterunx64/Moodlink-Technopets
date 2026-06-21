@@ -73,6 +73,16 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Audit trail for sensitive admin actions (account creation, etc.).
+        // Kept in its own file and retained longer than the app log.
+        'audit' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/audit.log'),
+            'level' => 'info',
+            'days' => env('LOG_AUDIT_DAYS', 365),
+            'replace_placeholders' => true,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),

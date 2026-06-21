@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\CircuitBreakerException;
 use App\Http\Requests\RegisterStudentRequest;
 use App\Http\Requests\UserAccountFilterRequest;
 use App\Models\Student;
@@ -9,6 +10,8 @@ use App\Services\StudentAccountService;
 use DomainException;
 use Exception;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -52,19 +55,46 @@ class UserAccountController extends Controller
     }
 
     /**
-     * Set a pending student's status to Unverified.
+     * Reject a pending student's registration by permanently deleting it.
      */
-    public function unverify(Student $student): RedirectResponse
+    public function unverify(Request $request, Student $student): RedirectResponse
     {
         try {
-            $this->service->unverifyStudent($student);
+            $this->service->rejectStudent($student);
         } catch (DomainException $exception) {
             return back()->with('flash_error', $exception->getMessage());
         }
 
+        // Security audit log for GCU admin actions
+        $admin = $request->user();
+        Log::channel('audit')->info('student_account.rejected', [
+            'event' => 'student_account.rejected',
+            'who' => [
+                'actor_type' => 'admin',
+                'actor_id' => $admin?->id,
+                'actor_email' => $admin?->email,
+            ],
+            'what' => [
+                'description' => 'Administrator rejected student registration.',
+                'target_type' => 'student',
+                'target_id' => $student->id,
+                'student_number' => $student->student_number,
+                'student_name' => $student->name,
+            ],
+            'where' => [
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ],
+            'context' => [
+                'category' => 'student_management',
+                'status' => 'rejected',
+            ],
+            'when' => now()->toIso8601String(),
+        ]);
+
         return back()->with(
             'flash_success',
-            'Student has been set to unverified status and removed from verified listings.'
+            'Student registration has been rejected and the record removed.'
         );
     }
 
@@ -112,21 +142,53 @@ class UserAccountController extends Controller
         RegisterStudentRequest $request,
         Student $student,
     ): RedirectResponse {
-        $email = $request->validated('email');
-        $password = $request->validated('password');
-
         try {
-            $this->service->createSupabaseAccountForStudent(
-                student: $student,
-                email: $email,
-                password: $password,
+            $credentials = $this->service->createSupabaseAccountForStudent($student);
+        } catch (CircuitBreakerException $exception) {
+            return back()->with(
+                'flash_error',
+                'The account service is temporarily unavailable because of repeated connection problems. Please wait about a minute and try again. If the issue persists, contact your system administrator.'
             );
         } catch (DomainException $exception) {
-            return back()->with('flash_error', $exception->getMessage());
+            // Business-rule violation
+            return back()->withErrors(['register' => $exception->getMessage()]);
         } catch (Exception $exception) {
-            return back()->with('flash_error', 'Supabase registration failed: ' . $exception->getMessage());
+            // Most commonly an invalid/rejected email from the account provider
+            return back()->withErrors([
+                'register' => $exception->getMessage() . ' Please ask the student to provide a valid email address.',
+            ]);
         }
 
-        return back()->with('flash_success', 'Supabase account created and student verified.');
+        // Security audit log for GCU admin actions
+        $admin = $request->user();
+        Log::channel('audit')->info('student_account.created', [
+            'event' => 'student_account.created',
+            'who' => [
+                'actor_type' => 'admin',
+                'actor_id' => $admin?->id,
+                'actor_email' => $admin?->email,
+            ],
+            'what' => [
+                'description' => 'Administrator created a new student authentication account.',
+                'target_type' => 'student',
+                'target_id' => $student->id,
+                'student_number' => $student->student_number,
+                'student_name' => $student->name,
+            ],
+            'where' => [
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ],
+            'context' => [
+                'purpose' => 'Student account provisioning',
+                'provider' => 'supabase',
+                'login_email' => $credentials['email'],
+            ],
+            'when' => now()->toIso8601String(),
+        ]);
+
+        return back()
+            ->with('flash_success', 'Supabase account created and student verified.')
+            ->with('flash_student_credentials', $credentials);
     }
 }
