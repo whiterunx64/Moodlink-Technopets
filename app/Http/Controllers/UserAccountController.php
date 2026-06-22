@@ -3,17 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\CircuitBreakerException;
+use App\Exceptions\StudentAccountException;
 use App\Http\Requests\RegisterStudentRequest;
 use App\Http\Requests\UserAccountFilterRequest;
 use App\Models\Student;
 use App\Services\StudentAccountService;
-use DomainException;
-use Exception;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use Throwable;
 
 class UserAccountController extends Controller
 {
@@ -24,44 +25,81 @@ class UserAccountController extends Controller
 
     public function index(UserAccountFilterRequest $request): Response
     {
-        $filters = $request->filters();
-
-        $students = Student::paginatedListWithFilters($filters);
-
-        $tabCounts = Student::countsByTab($filters);
+        $studentFilters = $request->filters();
+        $students = Student::paginatedListWithFilters($studentFilters)
+            ->through(fn(Student $student): array => [
+                'id' => $student->id,
+                'auth_user_id' => $student->auth_user_id,
+                'student_id' => $student->student_number,
+                'name' => $student->name,
+                'first_name' => $student->first_name,
+                'last_name' => $student->last_name,
+                'personal_email' => $student->personal_email,
+                'contact_number' => $student->contact_number,
+                'year_level' => $student->year_level_label,
+                'section' => $student->section,
+                'verification_status' => $student->verification_status,
+                'account_status' => $student->account_status,
+            ]);
+        $studentStatusCounts = Student::getStudentStatusCounts($studentFilters);
 
         return Inertia::render('UserAccounts/Index', [
             'students' => $students,
-            'tabCounts' => $tabCounts,
-            'filters' => $filters,
+            'tabCounts' => $studentStatusCounts,
+            'filters' => $studentFilters,
         ]);
     }
 
     /**
-     * Verify an unverified student.
+     * Accept a pending/unverified student's registration by marking them
+     * verified, without provisioning an authentication account.
      */
-    public function verify(Student $student): RedirectResponse
+    public function acceptStudentRegistration(Request $request, Student $student): RedirectResponse
     {
         try {
             $this->service->verifyStudent($student);
-        } catch (DomainException $exception) {
+        } catch (StudentAccountException $exception) {
             return back()->with('flash_error', $exception->getMessage());
         }
 
+        // Security audit log for GCU admin actions
+        $admin = $request->user();
+        Log::channel('audit')->info('student_account.accept_registration', [
+            'event' => 'student_account.accept_registration',
+            'who' => [
+                'actor_type' => 'admin',
+                'actor_id' => $admin?->id,
+                'actor_email' => $admin?->email,
+            ],
+            'what' => [
+                'description' => 'Administrator accepted student registration.',
+                'target_type' => 'student',
+                'target_id' => $student->id,
+                'student_number' => $student->student_number,
+                'student_name' => $student->name,
+            ],
+            'where' => [
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ],
+            'context' => [
+                'category' => 'student_management',
+                'status' => 'verified',
+            ],
+            'when' => now()->toIso8601String(),
+        ]);
+
         return back()->with(
             'flash_success',
-            'Student has been verified and marked as active.'
+            'Student registration has been accepted and marked as verified.'
         );
     }
 
-    /**
-     * Reject a pending student's registration by permanently deleting it.
-     */
-    public function unverify(Request $request, Student $student): RedirectResponse
+    public function destroyStudentRegistration(Request $request, Student $student): RedirectResponse
     {
         try {
             $this->service->rejectStudent($student);
-        } catch (DomainException $exception) {
+        } catch (StudentAccountException $exception) {
             return back()->with('flash_error', $exception->getMessage());
         }
 
@@ -99,13 +137,18 @@ class UserAccountController extends Controller
     }
 
     /**
-     * Suspend a verified student's account.
+     * Restrict a verified student's access by suspending their account.
+     *
+     * Bound by the Supabase auth.users UUID (not the integer id) to avoid IDOR.
      */
-    public function suspend(Student $student): RedirectResponse
+    public function restrictStudentAccountAccess(string $authUserId): RedirectResponse
     {
         try {
+            $student = Student::findBySupabaseAuthId($authUserId)
+                ?? throw StudentAccountException::authAccountNotFound();
+
             $this->service->suspendStudent($student);
-        } catch (DomainException $exception) {
+        } catch (StudentAccountException $exception) {
             return back()->with('flash_error', $exception->getMessage());
         }
 
@@ -116,13 +159,18 @@ class UserAccountController extends Controller
     }
 
     /**
-     * Reactivate a suspended student's account.
+     * Restore a suspended student's access by reactivating their account.
+     *
+     * Bound by the Supabase auth.users UUID (not the integer id) to avoid IDOR.
      */
-    public function reactivate(Student $student): RedirectResponse
+    public function restoreStudentAccountAccess(string $authUserId): RedirectResponse
     {
         try {
+            $student = Student::findBySupabaseAuthId($authUserId)
+                ?? throw StudentAccountException::authAccountNotFound();
+
             $this->service->reactivateStudent($student);
-        } catch (DomainException $exception) {
+        } catch (StudentAccountException $exception) {
             return back()->with('flash_error', $exception->getMessage());
         }
 
@@ -133,29 +181,41 @@ class UserAccountController extends Controller
     }
 
     /**
-     * Register a Supabase account for a student.
+     * Create a Supabase authentication account for a student's registration
+     * (also marks the student verified).
      *
-     * @throws DomainException
-     * @throws Exception
+     * @throws StudentAccountException
+     * @throws CircuitBreakerException
      */
-    public function register(
-        RegisterStudentRequest $request,
-        Student $student,
-    ): RedirectResponse {
+    public function createRegistrationAccount(RegisterStudentRequest $request, Student $student): RedirectResponse
+    {
         try {
             $credentials = $this->service->createSupabaseAccountForStudent($student);
         } catch (CircuitBreakerException $exception) {
-            return back()->with(
-                'flash_error',
-                'The account service is temporarily unavailable because of repeated connection problems. Please wait about a minute and try again. If the issue persists, contact your system administrator.'
-            );
-        } catch (DomainException $exception) {
-            // Business-rule violation
-            return back()->withErrors(['register' => $exception->getMessage()]);
-        } catch (Exception $exception) {
-            // Most commonly an invalid/rejected email from the account provider
             return back()->withErrors([
-                'register' => $exception->getMessage() . ' Please ask the student to provide a valid email address.',
+                'register' => 'The account service is temporarily unavailable because of repeated connection problems. Please wait about a minute and try again. If the issue persists, contact your system administrator.',
+            ]);
+        } catch (StudentAccountException $exception) {
+            // Business-rule violation or a provider rejection — the message is curated and safe to show.
+            return back()->withErrors(['register' => $exception->getMessage()]);
+        } catch (QueryException $exception) {
+            Log::error('Failed to persist student account during registration.', [
+                'student_id' => $student->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return back()->withErrors([
+                'register' => 'The account could not be saved because of a server error. The account may have been partially created — please contact your system administrator before retrying.',
+            ]);
+        } catch (Throwable $exception) {
+            // Never leak raw internal errors to the admin; log and show a safe message.
+            Log::error('Unexpected error during student account registration.', [
+                'student_id' => $student->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return back()->withErrors([
+                'register' => 'An unexpected error occurred while creating the account. Please try again, or contact your system administrator if the problem persists.',
             ]);
         }
 
@@ -174,6 +234,8 @@ class UserAccountController extends Controller
                 'target_id' => $student->id,
                 'student_number' => $student->student_number,
                 'student_name' => $student->name,
+                // UUID of the student's record in Supabase auth.users.
+                'supabase_user_id' => $credentials['supabase_user_id'],
             ],
             'where' => [
                 'ip_address' => $request->ip(),
@@ -189,6 +251,9 @@ class UserAccountController extends Controller
 
         return back()
             ->with('flash_success', 'Supabase account created and student verified.')
-            ->with('flash_student_credentials', $credentials);
+            ->with('flash_student_credentials', [
+                'email' => $credentials['email'],
+                'password' => $credentials['password'],
+            ]);
     }
 }

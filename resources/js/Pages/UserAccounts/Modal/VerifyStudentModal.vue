@@ -1,8 +1,21 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
 import type { Student, PageProps } from '@/types';
-import { XMarkIcon, CheckCircleIcon, UserCircleIcon } from '@heroicons/vue/24/outline';
+import {
+  XMarkIcon, CheckCircleIcon, UserCircleIcon, UserPlusIcon, XCircleIcon,
+  EnvelopeIcon,
+  KeyIcon,
+  DevicePhoneMobileIcon,
+  ExclamationTriangleIcon,
+  ChevronDownIcon,
+  AtSymbolIcon,
+  ClipboardDocumentIcon,
+  ArrowPathIcon,
+  InboxArrowDownIcon,
+  NoSymbolIcon,
+  ShieldCheckIcon,
+} from '@heroicons/vue/24/outline';
 
 const props = defineProps<{
   student: Student | null;
@@ -15,48 +28,91 @@ const emit = defineEmits<{
 }>();
 
 const page = usePage<PageProps>();
-
-// No fields — email & initial password are generated on the server.
 const form = useForm({});
-
-// Holds the generated credentials after a successful creation (shown once).
+const rejectForm = useForm({});
+const busy = computed(() => form.processing || rejectForm.processing);
 const created = ref<{ email: string; password: string } | null>(null);
 const copied = ref<'email' | 'password' | null>(null);
-
-// Password is masked by default; the admin must explicitly reveal it.
 const revealPassword = ref(false);
-
-// Inline error shown when registration fails (e.g. invalid email).
 const errorMessage = ref<string | null>(null);
+const errorPopup = ref<HTMLElement | null>(null);
+let errorTimer: ReturnType<typeof setTimeout> | null = null;
 
-// Scroll hint: shown only while credentials exist and the user hasn't
-// scrolled to the bottom of the content yet.
+// Scroll gate: the admin must scroll through the reminders before the action
+// buttons appear. atBottom becomes true once they reach the end (or if the
+// content already fits without scrolling).
 const contentEl = ref<HTMLElement | null>(null);
 const atBottom = ref(false);
 
-function onScroll() {
+function updateAtBottom() {
   const el = contentEl.value;
   if (!el) return;
-  atBottom.value = el.scrollTop + el.clientHeight >= el.scrollHeight - 8;
+  atBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight <= 8;
 }
+
+function scrollToBottom() {
+  contentEl.value?.scrollTo({ top: contentEl.value.scrollHeight, behavior: 'smooth' });
+}
+
+function clearErrorTimer() {
+  if (errorTimer) {
+    clearTimeout(errorTimer);
+    errorTimer = null;
+  }
+}
+
+function dismissError() {
+  clearErrorTimer();
+  errorMessage.value = null;
+}
+
+function showError(message: string) {
+  errorMessage.value = message;
+  clearErrorTimer();
+  errorTimer = setTimeout(dismissError, 10000);
+}
+
+function onDocumentPointerDown(event: MouseEvent) {
+  const el = errorPopup.value;
+  if (el && !el.contains(event.target as Node)) {
+    dismissError();
+  }
+}
+
+// Manage the click-outside listener only while the popup is visible.
+watch(errorMessage, (message) => {
+  if (message) {
+    document.addEventListener('mousedown', onDocumentPointerDown);
+  } else {
+    document.removeEventListener('mousedown', onDocumentPointerDown);
+  }
+});
+
+onBeforeUnmount(() => {
+  clearErrorTimer();
+  document.removeEventListener('mousedown', onDocumentPointerDown);
+});
 
 // Reset the result view each time the modal is (re)opened.
 watch(() => props.show, (open) => {
   if (open) {
     created.value = null;
     copied.value = null;
-    errorMessage.value = null;
-    atBottom.value = false;
+    dismissError();
     revealPassword.value = false;
+    atBottom.value = false;
+    // Re-check after the modal renders: if the content already fits, the gate
+    // opens immediately so the admin isn't stuck with no buttons.
+    nextTick(updateAtBottom);
   }
 });
 
 function submit() {
   if (!props.student) return;
 
-  errorMessage.value = null;
+  dismissError();
 
-  form.post(route('user-accounts.register', props.student.id), {
+  form.post(route('student-accounts.registration.store', props.student.id), {
     preserveScroll: true,
     preserveState: true,
     onSuccess: () => {
@@ -70,7 +126,25 @@ function submit() {
       }
     },
     onError: (errors) => {
-      errorMessage.value = errors.register ?? 'Account creation failed. Please try again.';
+      showError(errors.register ?? 'Account creation failed. Please try again.');
+    },
+  });
+}
+
+function reject() {
+  if (!props.student) return;
+
+  dismissError();
+
+  rejectForm.delete(route('student-accounts.registration.destroy', props.student.id), {
+    preserveScroll: true,
+    preserveState: true,
+    onSuccess: () => {
+      emit('verified');
+      emit('close');
+    },
+    onError: (errors) => {
+      showError(errors.reject ?? 'Failed to reject the student. Please try again.');
     },
   });
 }
@@ -85,15 +159,18 @@ async function copy(field: 'email' | 'password') {
 
 <template>
   <Transition name="modal">
-    <div v-if="show && student" class="fixed inset-0 z-50 flex items-center justify-center p-6" role="dialog"
+    <div v-if="show && student" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6" role="dialog"
       aria-modal="true">
       <!-- Backdrop -->
       <div class="absolute inset-0 bg-slate-900/40" @click="emit('close')" />
 
-      <!-- Panel -->
-      <div class="relative flex h-170 w-full max-w-3xl flex-col overflow-hidden rounded-md bg-white shadow-2xl">
+      <!-- Panel: fixed size per breakpoint, never shrinks or collapses -->
+      <div class="relative flex h-[90vh] w-full shrink-0 flex-col overflow-hidden rounded-md bg-white shadow-2xl
+               sm:h-144 sm:w-160
+               md:h-160 md:w-3xl
+               lg:h-176 lg:w-4xl">
         <!-- Header -->
-        <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-4">
+        <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-4 sm:px-6">
           <div class="flex items-center gap-3">
             <span class="flex h-9 w-9 items-center justify-center rounded-md"
               :class="created ? 'bg-emerald-50 text-emerald-600' : 'bg-sidebar/10 text-sidebar'">
@@ -119,26 +196,26 @@ async function copy(field: 'email' | 'password') {
 
         <!-- Privacy notice (shown once the account is created) -->
         <div v-if="created"
-          class="border-b border-amber-200 border-l-10 border-l-amber-400 bg-amber-50 px-8 py-3 text-center text-sm text-amber-800">
+          class="border-b border-amber-200 border-l-10 border-l-amber-400 bg-amber-50 px-4 py-3 text-center text-sm text-amber-800 sm:px-8">
           Initial password is hidden for privacy. Student authorization is required to view it.
         </div>
 
         <!-- Content -->
-        <div ref="contentEl" class="flex-1 overflow-y-auto px-8 py-6" @scroll="onScroll">
+        <div ref="contentEl" class="flex-1 overflow-y-auto px-4 py-5 sm:px-8 sm:py-6" @scroll="updateAtBottom">
 
           <!-- Personal Information -->
           <section>
             <div class="mb-6 flex items-center gap-3">
-              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800">
                 Personal Information
               </h3>
               <span class="h-px flex-1 bg-slate-200" />
             </div>
 
-            <div class="grid grid-cols-2 gap-x-10 gap-y-6">
+            <div class="grid grid-cols-1 gap-x-10 gap-y-6 sm:grid-cols-2">
 
               <div>
-                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                <p class="text-xs font-bold uppercase tracking-wide text-sky-700">
                   First Name
                 </p>
                 <p class="mt-2 border-b-2 border-slate-800 pb-2 text-sm font-medium text-slate-800">
@@ -147,7 +224,7 @@ async function copy(field: 'email' | 'password') {
               </div>
 
               <div>
-                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                <p class="text-xs font-bold uppercase tracking-wide text-sky-700">
                   Last Name
                 </p>
                 <p class="mt-2 border-b-2 border-slate-800 pb-2 text-sm font-medium text-slate-800">
@@ -156,20 +233,20 @@ async function copy(field: 'email' | 'password') {
               </div>
 
               <div>
-                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                <p class="text-xs font-bold uppercase tracking-wide text-sky-700">
                   Personal Email
                 </p>
                 <p class="mt-2 border-b-2 border-slate-800 pb-2 text-sm font-medium text-slate-800">
-                  {{ student.personal_email || '—' }}
+                  {{ student.personal_email || 'No email provided' }}
                 </p>
               </div>
 
               <div>
-                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                <p class="text-xs font-bold uppercase tracking-wide text-sky-700">
                   Contact Number
                 </p>
                 <p class="mt-2 border-b-2 border-slate-800 pb-2 text-sm font-medium text-slate-800">
-                  {{ student.contact_number || '—' }}
+                  {{ student.contact_number || 'No contact number provided' }}
                 </p>
               </div>
 
@@ -181,16 +258,16 @@ async function copy(field: 'email' | 'password') {
           <section class="mt-10">
 
             <div class="mb-6 flex items-center gap-3">
-              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-800">
                 Academic Information
               </h3>
               <span class="h-px flex-1 bg-slate-200" />
             </div>
 
-            <div class="grid grid-cols-3 gap-x-10 gap-y-6">
+            <div class="grid grid-cols-1 gap-x-10 gap-y-6 sm:grid-cols-3">
 
               <div>
-                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                <p class="text-xs font-bold uppercase tracking-wide text-sky-700">
                   Student ID
                 </p>
                 <p class="mt-2 border-b-2 border-slate-800 pb-2 font-mono text-sm font-medium">
@@ -199,7 +276,7 @@ async function copy(field: 'email' | 'password') {
               </div>
 
               <div>
-                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                <p class="text-xs font-bold uppercase tracking-wide text-sky-700">
                   Section
                 </p>
                 <p class="mt-2 border-b-2 border-slate-800 pb-2 text-sm font-medium">
@@ -208,7 +285,7 @@ async function copy(field: 'email' | 'password') {
               </div>
 
               <div>
-                <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
+                <p class="text-xs font-bold uppercase tracking-wide text-sky-700">
                   Year Level
                 </p>
                 <p class="mt-2 border-b-2 border-slate-800 pb-2 text-sm font-medium">
@@ -217,6 +294,136 @@ async function copy(field: 'email' | 'password') {
               </div>
 
             </div>
+
+          </section>
+
+
+          <!-- Reminders (shown while previewing, before the account is created) -->
+          <section v-if="!created" class="mt-10">
+
+            <div class="mb-5 flex items-center gap-3">
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-900">
+                Before Creating This Account
+              </h3>
+              <span class="h-px flex-1 bg-slate-200" />
+            </div>
+
+            <ul class="space-y-6 text-sm leading-7 text-slate-700">
+              <li class="flex gap-4">
+                <ExclamationTriangleIcon class="mt-0.5 h-9 w-9 shrink-0 text-red-600" />
+                <span class="text-red-700">
+                  <strong class="font-semibold">
+                    Rejecting this registration is permanent.
+                  </strong>
+                  The pending registration request will be deleted and cannot be recovered.
+                </span>
+              </li>
+
+              <li class="flex gap-4">
+                <CheckCircleIcon class="mt-0.5 h-9 w-9 shrink-0 text-blue-500" />
+                <span>
+                  Verify that the student's
+                  <strong class="font-semibold text-slate-900">
+                    full name, ID number, section, and year level
+                  </strong>
+                  exactly match the official enrollment records before proceeding.
+                </span>
+              </li>
+
+              <li class="flex gap-4">
+                <AtSymbolIcon class="mt-0.5 h-9 w-9 shrink-0 text-blue-500" />
+                <span>
+                  The student's
+                  <strong class="font-semibold text-slate-900">login email is generated automatically</strong>
+                  from their student number (e.g. <span class="font-mono">studentnumber@moodlink.com</span>). The
+                  personal email is only used to deliver the credentials.
+                </span>
+              </li>
+
+              <li class="flex gap-4">
+                <EnvelopeIcon class="mt-0.5 h-9 w-9 shrink-0 text-blue-500" />
+                <span>
+                  A
+                  <strong class="font-semibold text-slate-900">
+                    valid personal email address
+                  </strong>
+                  is required because login credentials are delivered there. The account cannot be created if this
+                  information is missing or invalid.
+                </span>
+              </li>
+
+              <li class="flex gap-4">
+                <KeyIcon class="mt-0.5 h-9 w-9 shrink-0 text-amber-500" />
+                <span>
+                  The student will
+                  <strong class="font-semibold text-slate-900">receive their initial password through their personal
+                    email</strong>. Advise them to change it immediately after their first login to keep the account
+                  secure.
+                </span>
+              </li>
+
+              <li class="flex gap-4">
+                <ClipboardDocumentIcon class="mt-0.5 h-9 w-9 shrink-0 text-amber-500" />
+                <span>
+                  The initial password is
+                  <strong class="font-semibold text-slate-900">shown only once</strong>
+                  on the next screen. Copy it before closing the dialog if needed — for privacy it cannot be retrieved
+                  again later.
+                </span>
+              </li>
+
+              <li class="flex gap-4">
+                <InboxArrowDownIcon class="mt-0.5 h-9 w-9 shrink-0 text-blue-500" />
+                <span>
+                  Remind the student to check their
+                  <strong class="font-semibold text-slate-900">inbox and spam / junk folder</strong>
+                  for the credentials email if it does not appear right away.
+                </span>
+              </li>
+
+              <li class="flex gap-4">
+                <ArrowPathIcon class="mt-0.5 h-9 w-9 shrink-0 text-amber-500" />
+                <span>
+                  There is
+                  <strong class="font-semibold text-slate-900">no self-service password reset</strong>
+                  in the mobile app. If a student forgets or loses their password, they must request a reset through the
+                  GCU administrator.
+                </span>
+              </li>
+
+              <li class="flex gap-4">
+                <NoSymbolIcon class="mt-0.5 h-9 w-9 shrink-0 text-blue-500" />
+                <span>
+                  To revoke access without deleting data, use
+                  <strong class="font-semibold text-slate-900">Suspend</strong> — suspended accounts keep all records
+                  and
+                  can be reactivated anytime. Rejection is only for pending registrations and is permanent.
+                </span>
+              </li>
+
+              <li class="flex gap-4">
+                <DevicePhoneMobileIcon class="mt-0.5 h-9 w-9 shrink-0 text-blue-500" />
+                <span>
+                  Creating this account grants the student
+                  <strong class="font-semibold text-slate-900">
+                    access to the MoodLink mobile application
+                  </strong>
+                  and its available features.
+                </span>
+              </li>
+
+              <li class="flex gap-4">
+                <ShieldCheckIcon class="mt-0.5 h-9 w-9 shrink-0 text-blue-500" />
+                <span>
+                  Student mood entries and posts are
+                  <strong class="font-semibold text-slate-900">confidential</strong>. Only perform account actions that
+                  are necessary and authorized, and never share a student's credentials with anyone else.
+                </span>
+              </li>
+
+
+
+            </ul>
 
           </section>
 
@@ -234,7 +441,7 @@ async function copy(field: 'email' | 'password') {
 
 
 
-            <div class="grid grid-cols-2 gap-x-10 gap-y-6">
+            <div class="grid grid-cols-1 gap-x-10 gap-y-6 sm:grid-cols-2">
 
               <div>
                 <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -280,73 +487,42 @@ async function copy(field: 'email' | 'password') {
             </div>
 
           </section>
+        </div>
 
-          <!-- Scroll hint: visible pill, only when credentials exist and not yet at bottom -->
-          <div v-if="created && !atBottom" class="pointer-events-none sticky bottom-3 z-10 flex justify-center">
-            <div
-              class="flex max-w-md items-center gap-3 rounded-lg bg-slate-900/90 px-4 py-2.5 text-white shadow-lg ring-1 ring-black/5">
-              <svg class="h-5 w-5 shrink-0 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
-              <span class="text-xs font-medium leading-snug">
-                Scroll down to view the credential access section
-              </span>
+        <!-- Footer: only the action buttons (shown while previewing) -->
+        <div v-if="!created" class="relative mt-auto bg-slate-100 px-4 py-5 sm:px-8 sm:py-6">
+
+          <!-- Floating error: overlays above the footer so it never expands the modal -->
+          <Transition name="modal">
+            <div v-if="errorMessage" ref="errorPopup"
+              class="absolute inset-x-4 bottom-full z-10 mb-2 rounded-md border-l-10 border-r-10 border-red-500 bg-red-50 px-4 py-3 text-center text-sm text-red-700 shadow-lg sm:inset-x-8">
+              {{ errorMessage }}
             </div>
-          </div>
-        </div>
+          </Transition>
 
-        <!-- Inline error (between the form and the footer / status container) -->
-        <div v-if="errorMessage"
-          class="border-l-10 border-red-500 bg-red-50 px-8 py-3 text-center text-sm text-red-700">
-          {{ errorMessage }}
-        </div>
+          <!-- Scroll gate: prompt the admin to read the reminders first -->
+          <button v-if="!atBottom" type="button" @click="scrollToBottom"
+            class="flex w-full items-center justify-center gap-2 rounded-sm border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+            <ChevronDownIcon class="h-5 w-5 animate-bounce text-blue-600" />
+            Scroll down and review the reminders to continue
+          </button>
 
-        <!-- Footer -->
-        <div class="mt-auto bg-slate-100 px-8 py-6">
+          <!-- Buttons appear only after the reminders have been scrolled through -->
+          <div v-else class="flex flex-col gap-3 sm:flex-row">
 
-          <div class="flex items-center justify-between">
-
-            <span class="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Account Status
-            </span>
-
-            <span class="rounded-full px-3 py-1 text-xs font-semibold" :class="created
-              ? 'bg-emerald-100 text-emerald-700'
-              : 'bg-amber-100 text-amber-700'">
-              {{ created ? 'Account Verified' : 'Pending Verification' }}
-            </span>
-
-          </div>
-
-
-          <div class="mt-4 border-l-10 bg-white px-4 py-3 text-sm text-slate-600" :class="created
-            ? 'border-emerald-500'
-            : 'border-amber-400'">
-
-            <template v-if="created">
-              The user has been verified. Instruct them to check their personal Email to find their password so they can
-              log in.
-            </template>
-
-            <template v-else>
-              Before proceeding with verification, please ensure the student's information is correct and the personal
-              email address is valid.
-            </template>
-
-          </div>
-
-          <div v-if="!created" class="mt-4 flex gap-3">
-
-            <button type="button" class="bg-sidebar px-6 py-2 text-sm font-semibold text-white hover:bg-sidebar/90"
-              :disabled="form.processing" @click="submit">
-              {{ form.processing ? 'Creating…' : 'Create Account' }}
+            <button type="button"
+              class="flex items-center justify-center gap-2 bg-sidebar px-6 py-2 text-sm rounded-sm font-semibold text-white transition hover:bg-sidebar/90 disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="busy" @click="submit">
+              <UserPlusIcon class="h-5 w-5" />
+              {{ form.processing ? 'Create Account' : 'Create Account' }}
             </button>
 
 
-            <button type="button" class="bg-red-600 px-6 py-2 text-sm font-semibold text-white hover:bg-red-700"
-              @click="emit('close')">
-              Reject
+            <button type="button"
+              class="flex items-center justify-center gap-2 bg-red-600 px-6 py-2 text-sm rounded-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="busy" @click="reject">
+              <XCircleIcon class="h-5 w-5" />
+              {{ rejectForm.processing ? 'Reject' : 'Reject' }}
             </button>
 
           </div>

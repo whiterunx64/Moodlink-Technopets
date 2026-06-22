@@ -1,19 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
 use App\Contracts\SupabaseAuthInterface;
 use App\Enums\StudentStatus;
+use App\Exceptions\CircuitBreakerException;
+use App\Exceptions\StudentAccountException;
 use App\Models\Notification;
 use App\Models\Student;
 use App\Mail\StudentCredentialsMail;
-use DomainException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
-use function strlen;
 use function count;
+use function is_string;
+use function str_contains;
+use function strlen;
 
 final class StudentAccountService
 {
@@ -23,7 +29,7 @@ final class StudentAccountService
     }
 
     /**
-     * @throws DomainException when the student is not Pending or Unverified.
+     * @throws StudentAccountException when the student is not Pending or Unverified.
      */
     public function verifyStudent(Student $student): void
     {
@@ -33,13 +39,7 @@ final class StudentAccountService
     }
 
     /**
-     * Reject a student's registration by permanently deleting their record.
-     *
-     * Only students still awaiting verification (Pending) may be rejected.
-     * Verified or suspended students have active accounts and must be
-     * suspended instead, never deleted.
-     *
-     * @throws DomainException when the student is not in a rejectable state.
+     * @throws StudentAccountException when the student is not in a rejectable state.
      */
     public function rejectStudent(Student $student): void
     {
@@ -49,7 +49,7 @@ final class StudentAccountService
     }
 
     /**
-     * @throws DomainException when the student is not Verified.
+     * @throws StudentAccountException when the student is not Verified.
      */
     public function suspendStudent(Student $student): void
     {
@@ -59,7 +59,7 @@ final class StudentAccountService
     }
 
     /**
-     * @throws DomainException when the student is not Suspended.
+     * @throws StudentAccountException when the student is not Suspended.
      */
     public function reactivateStudent(Student $student): void
     {
@@ -69,31 +69,24 @@ final class StudentAccountService
     }
 
     /**
-     * @return array{email: string, password: string}
+     * @return array{email: string, password: string, supabase_user_id: string}
      *
-     * @throws DomainException when the student is not Pending.
-     * @throws \Exception when Supabase signup fails.
+     * @throws StudentAccountException when a business rule is violated or the
+     *         account provider rejects the request.
+     * @throws CircuitBreakerException when the account provider is unavailable.
      */
     public function createSupabaseAccountForStudent(Student $student): array
     {
+        // Ensure the student meets all requirements before account creation.
         $this->ensureStudentIsEligibleForRegistration($student);
+        $this->ensureStudentNumberUsesRequiredLength($student);
+        $this->ensureStudentHasValidPersonalEmail($student);
 
         $email = "{$student->student_number}@moodlink.com";
         $password = $this->generateInitialPassword();
+        $supabaseUserId = $this->createSupabaseAuthAccountAndReturnUserId($student, $email, $password); // UUID from Supabase auth.users.
 
-        $response = $this->supabase->createStudentAccountApiCall(
-            email: $email,
-            password: $password,
-            data: [
-                'student_id' => $student->id,
-                'name' => $student->name,
-            ],
-            emailConfirm: true,
-        );
-
-        // Persist the Supabase user id so the account can be deleted later.
-        $student->update(['user_id' => $response['id'] ?? null]);
-
+        // Automatically verify the student to allow mobile app access.
         $this->verifyStudent($student);
 
         // Email the crenditals to the student's personal email
@@ -102,7 +95,61 @@ final class StudentAccountService
         // Prompt the student to change their initial password on first login.
         $this->notifyStudentToChangeInitialPassword($student);
 
-        return ['email' => $email, 'password' => $password];
+        return [
+            'email' => $email,
+            'password' => $password,
+            'supabase_user_id' => $supabaseUserId,
+        ];
+    }
+
+    /**
+     * Create the Supabase auth account and return the auth.users UUID,
+     * translating provider failures into typed, user-safe domain exceptions
+     * instead of leaking raw API errors.
+     *
+     * @throws StudentAccountException
+     * @throws CircuitBreakerException
+     */
+    private function createSupabaseAuthAccountAndReturnUserId(Student $student, string $email, string $password): string
+    {
+        try {
+            $response = $this->supabase->createStudentAccountApiCall(
+                email: $email,
+                password: $password,
+                data: [
+                    'student_id' => $student->id,
+                    'name' => $student->name,
+                ],
+                emailConfirm: true,
+            );
+        } catch (CircuitBreakerException $e) {
+            // Infrastructure-level failure: let the controller surface it.
+            throw $e;
+        } catch (Throwable $e) {
+            Log::channel('auth')->error('Supabase student account provisioning failed.', [
+                'student_id' => $student->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            if (str_contains(strtolower($e->getMessage()), 'already been registered')) {
+                throw StudentAccountException::loginEmailAlreadyRegistered($e);
+            }
+
+            throw StudentAccountException::accountCreationRejectedByAuthService($e);
+        }
+
+        // The Supabase admin API returns the new auth.users row, whose id is the
+        $supabaseUserId = $response['id'] ?? null; // student's authentication UUID.
+
+        if (!is_string($supabaseUserId) || $supabaseUserId === '') {
+            Log::channel('auth')->error('Supabase account created but no auth.users id was returned.', [
+                'student_id' => $student->id,
+            ]);
+
+            throw StudentAccountException::accountCreationRejectedByAuthService();
+        }
+
+        return $supabaseUserId;
     }
 
     // ── Private Guards ────────────────────────────────────────────────────────
@@ -113,7 +160,7 @@ final class StudentAccountService
             || $student->status === StudentStatus::Unverified;
 
         if (!$isEligible) {
-            throw new DomainException('Only pending or unverified students can be verified.');
+            throw StudentAccountException::studentMustBePendingOrUnverifiedToBeVerified();
         }
     }
 
@@ -121,47 +168,79 @@ final class StudentAccountService
     private function ensureStudentCanBeSuspended(Student $student): void
     {
         if ($student->status !== StudentStatus::Verified) {
-            throw new DomainException('Only verified students can be suspended.');
+            throw StudentAccountException::studentMustBeVerifiedToBeSuspended();
         }
     }
 
     private function ensureStudentCanBeReactivated(Student $student): void
     {
         if ($student->status !== StudentStatus::Suspended) {
-            throw new DomainException('Only suspended students can be reactivate.');
+            throw StudentAccountException::studentMustBeSuspendedToBeReactivated();
         }
     }
 
     private function ensureStudentIsEligibleForRegistration(Student $student): void
     {
         if ($student->status !== StudentStatus::Pending) {
-            throw new DomainException('Only pending students can be registered.');
+            throw StudentAccountException::studentMustBePendingToRegisterAccount();
+        }
+    }
+
+    private function ensureStudentNumberUsesRequiredLength(Student $student): void
+    {
+        $studentNumber = trim((string) $student->student_number);
+
+        if (preg_match('/^\d{9}$/', $studentNumber) !== 1) {
+            throw StudentAccountException::studentIdentifierMustBeNineDigits();
+        }
+    }
+    private function ensureStudentHasValidPersonalEmail(Student $student): void
+    {
+        $email = trim((string) $student->personal_email);
+
+        if ($email === '') {
+            throw StudentAccountException::personalEmailRequiredBeforeAccountCreation();
+        }
+
+        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+            throw StudentAccountException::personalEmailFormatIsInvalid($email);
         }
     }
 
     private function ensureStudentCanBeRejected(Student $student): void
     {
         if ($student->user_id !== null) {
-            throw new DomainException('This student has an active account and cannot be rejected. Suspend it instead.');
+            throw StudentAccountException::cannotRejectStudentWithActiveAccount();
         }
 
         if ($student->status !== StudentStatus::Pending) {
-            throw new DomainException('Only pending students can be rejected.');
+            throw StudentAccountException::studentMustBePendingToBeRejected();
         }
     }
 
     private function sendInitialPasswordToPersonalEmail(Student $student, string $email, string $password): void
     {
         if (!$student->personal_email) {
+            Log::channel('mail')->warning('Unable to send initial password email: student has no personal email address', [
+                'student_id' => $student->id,
+            ]);
+
             return;
         }
 
         try {
             Mail::to($student->personal_email)
                 ->send(new StudentCredentialsMail($student, $email, $password));
+
+            Log::channel('mail')->info('Student initial password notification successfully processed and delivered', [
+                'student_id' => $student->id,
+                'recipient_email' => $student->personal_email,
+                'mail_event' => 'initial_password_delivery_success',
+            ]);
+
         } catch (Throwable $e) {
             // Don't fail account creation if email delivery fails
-            Log::warning('Failed to email student crendetials', [
+            Log::channel('mail')->warning('Failed to email student crendetials', [
                 'student_id' => $student->id,
                 'error' => $e->getMessage(),
             ]);
@@ -176,7 +255,7 @@ final class StudentAccountService
                 'title' => 'Initial Password Change Required',
                 'content' => 'Your account is currently using an initial password. For your account security, please change your password to a secure, unique one that only you know in order to protect your account. Changing your original password lowers the possibility of account compromise, credential exposure, and unauthorized access.',
                 'type' => 'security_alert',
-                'is_seen' => false,
+                'is_seen' => DB::raw('false'),
                 'datetime' => now(),
             ]);
         } catch (Throwable $e) {

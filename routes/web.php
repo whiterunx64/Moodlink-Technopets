@@ -47,20 +47,18 @@ Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-acce
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
-    Route::get('/user-accounts', [UserAccountController::class, 'index'])
-        ->name('user-accounts.index');
-    Route::get('/user-accounts/{student}/auth-details', [UserAccountController::class, 'authDetails'])
-        ->name('user-accounts.auth-details');
-    Route::post('/user-accounts/{student}/register', [UserAccountController::class, 'register'])
-        ->name('user-accounts.register');
-    Route::patch('/user-accounts/{student}/verify', [UserAccountController::class, 'verify'])
-        ->name('user-accounts.verify');
-    Route::patch('/user-accounts/{student}/unverify', [UserAccountController::class, 'unverify'])
-        ->name('user-accounts.unverify');
-    Route::patch('/user-accounts/{student}/suspend', [UserAccountController::class, 'suspend'])
-        ->name('user-accounts.suspend');
-    Route::patch('/user-accounts/{student}/reactivate', [UserAccountController::class, 'reactivate'])
-        ->name('user-accounts.reactivate');
+    Route::get('/student-accounts', [UserAccountController::class, 'index'])
+        ->name('student-accounts.index');
+    Route::post('/student-accounts/{student}/registration', [UserAccountController::class, 'createRegistrationAccount'])
+        ->name('student-accounts.registration.store');
+    Route::patch('/student-accounts/{student}/registration/accept', [UserAccountController::class, 'acceptStudentRegistration'])
+        ->name('student-accounts.registration.accept');
+    Route::delete('/student-accounts/{student}/registration', [UserAccountController::class, 'destroyStudentRegistration'])
+        ->name('student-accounts.registration.destroy');
+    Route::patch('/student-accounts/{authUserId}/restrict-access', [UserAccountController::class, 'restrictStudentAccountAccess'])
+        ->name('student-accounts.restrict-access');
+    Route::patch('/student-accounts/{authUserId}/restore-access', [UserAccountController::class, 'restoreStudentAccountAccess'])
+        ->name('student-accounts.restore-access');
 
     Route::get('/post-management', [PostManagementController::class, 'index'])
         ->name('post-management.index');

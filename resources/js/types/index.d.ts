@@ -76,6 +76,8 @@ export type StudentTab = 'All' | 'Pending' | 'Verified' | 'Suspended';
 
 export interface Student {
     id: number;
+    /** Supabase auth.users UUID; null while the student is still pending. */
+    auth_user_id: string | null;
     student_id: string;
     name: string;
     first_name: string;

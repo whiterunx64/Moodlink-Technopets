@@ -136,12 +136,29 @@ return [
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],
-        // Supabase logging
+        // Supabase admin authentication (login, token, logout, JWT).
         'auth' => [
             'driver' => 'daily',
             'path' => storage_path('logs/supabase-auth.log'),
             'level' => env('LOG_AUTH_LEVEL', 'debug'),
             'days' => env('LOG_AUTH_DAYS', 30),
+            'replace_placeholders' => true,
+        ],
+
+        // Supabase admin actions via the service-role API (create/delete/update users).
+        'supabase-admin' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/supabase-admin.log'),
+            'level' => env('LOG_SUPABASE_ADMIN_LEVEL', 'debug'),
+            'days' => env('LOG_SUPABASE_ADMIN_DAYS', 365),
+            'replace_placeholders' => true,
+        ],
+
+        'mail' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/mail.log'),
+            'level' => env('LOG_MAIL_LEVEL', 'debug'),
+            'days' => env('LOG_MAIL_DAYS', 30),
             'replace_placeholders' => true,
         ],
 

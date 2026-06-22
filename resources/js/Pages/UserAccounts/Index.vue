@@ -48,19 +48,11 @@ function onVerified() {
     router.reload({ only: ['students', 'tabCounts'] });
 }
 
-function runStudentAction(routeName: string) {
-    if (!selectedStudent.value) return;
-    router.patch(route(routeName, selectedStudent.value.id), {}, {
-        ...patchOptions,
-        onSuccess: () => closeModal(),
-    });
-}
-
 function reload(overrides: Record<string, unknown> = {}) {
     const yl = yearFilter.value === 'All' ? null : Number(yearFilter.value);
 
     router.get(
-        route('user-accounts.index'),
+        route('student-accounts.index'),
         {
             search: search.value || undefined,
             year_level: yl ?? undefined,
@@ -80,8 +72,6 @@ watch([yearFilter, activeTab], () => reload({ page: undefined }));
 function goToPage(page: number) {
     reload({ page });
 }
-
-const patchOptions = { preserveScroll: true, preserveState: true, only: ['students', 'tabCounts', 'flash'] };
 </script>
 
 <template>
@@ -146,6 +136,5 @@ const patchOptions = { preserveScroll: true, preserveState: true, only: ['studen
 
     <!-- Verified / suspended students: manage account -->
     <ManageAccountModal :show="manageModalOpen" :student="selectedStudent" @close="closeModal"
-        @suspend="runStudentAction('user-accounts.suspend')"
-        @reactivate="runStudentAction('user-accounts.reactivate')" />
+        @updated="onVerified" />
 </template>

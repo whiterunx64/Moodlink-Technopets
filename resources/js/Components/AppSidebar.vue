@@ -23,7 +23,7 @@ const emit = defineEmits<{
 
 const nav_items: NavItem[] = [
   { label: 'Dashboard',       icon: Squares2X2Icon,   href: route('dashboard') },
-  { label: 'Users', icon: UserGroupIcon, href: route('user-accounts.index') }, 
+  { label: 'Users', icon: UserGroupIcon, href: route('student-accounts.index') },
   { label: 'Post Management',  icon: DocumentTextIcon, href: route('post-management.index') },
   { label: 'Summary Reports', icon: ChartBarIcon,     href: route('summary-reports.index') },
   { label: 'Appointments',    icon: CalendarDaysIcon, href: route('appointments.index') },

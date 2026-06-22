@@ -49,6 +49,7 @@ class AppServiceProvider extends ServiceProvider
             $app->make(SupabaseClient::class),
             $app->make(CacheManager::class),
             $app['log']->channel(config('supabase-auth.monitoring.logging.channel')),
+            $app['log']->channel(config('supabase-auth.monitoring.logging.admin_channel')),
         ));
 
         $this->app->singleton(AvatarStorageInterface::class, fn($app) => new AvatarStorage(

@@ -162,6 +162,7 @@ return [
     'enabled' => env('SUPABASE_MONITORING_ENABLED', true),
     'logging' => [
       'channel' => env('SUPABASE_LOG_CHANNEL', 'stack'),
+      'admin_channel' => env('SUPABASE_ADMIN_LOG_CHANNEL', 'stack'),
       'level' => env('SUPABASE_LOG_LEVEL', 'info'),
       'sensitive_fields' => ['password', 'token', 'secret', 'key'],
     ],

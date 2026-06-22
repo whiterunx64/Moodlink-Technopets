@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\StudentStatus;
+use App\Enums\YearLevel;
 use App\Traits\HasFilters;
-use App\Traits\HasStudentStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * @property int $id
@@ -29,7 +31,10 @@ use Illuminate\Support\Carbon;
  * @property string|null $personal_email
  * @property string|null $contact_number
  *
+ * @property-read string|null $auth_user_id
  * @property-read string $name
+ * @property-read string $year_level_label
+ * @property-read string $account_status
  * @property-read string $verification_status
  * @property-read Collection<int, \App\Models\Appointment> $appointments
  *
@@ -38,14 +43,11 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Student matchingSearch(string $search)
  * @method static Builder|Student byYearLevel(int $yearLevel)
  * @method static Builder|Student byTab(string $tab)
- *
- * @mixin HasStudentStatus
  */
 
 class Student extends Model
 {
     use HasFilters;
-    use HasStudentStatus;
 
     protected $table = 'students';
     public $timestamps = false;
@@ -72,6 +74,26 @@ class Student extends Model
         ];
     }
 
+    /**
+     * Resolve the student from a Supabase auth.users UUID via the auth user's
+     * email ("{student_number}@moodlink.com"). Lets routes be addressed by the
+     * non-enumerable auth UUID (IDOR-safe) instead of the integer id.
+     */
+    public static function findBySupabaseAuthId(string $authUserId): ?self
+    {
+        $email = DB::table('auth.users')
+            ->where('id', $authUserId)
+            ->value('email');
+
+        if ($email === null) {
+            return null;
+        }
+
+        return static::query()
+            ->where('student_number', Str::before((string) $email, '@'))
+            ->first();
+    }
+
     protected function name(): Attribute
     {
         return Attribute::make(
@@ -81,9 +103,46 @@ class Student extends Model
         );
     }
 
+
+    protected function yearLevelLabel(): Attribute
+    {
+        return Attribute::make(get: function (): string {
+            $label = YearLevel::tryFrom($this->year_level)?->toOrdinal();
+
+            if ($label !== null) {
+                return $label;
+            }
+
+            return 'Not Set';
+        });
+    }
+
+    protected function accountStatus(): Attribute
+    {
+        return Attribute::make(get: function (): string {
+            if ($this->status === StudentStatus::Verified) {
+                return 'active';
+            }
+
+            return 'suspended';
+        });
+    }
+
+    protected function verificationStatus(): Attribute
+    {
+        return Attribute::make(get: function (): string {
+            if ($this->status === StudentStatus::Suspended) {
+                return StudentStatus::Verified->value;
+            }
+
+            return $this->status->value;
+        });
+    }
+
     /**
      * @return HasMany<Appointment, $this>
      */
+
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class, 'student_id');
@@ -92,6 +151,7 @@ class Student extends Model
     /**
      * @return HasMany<Post, $this>
      */
+
     public function posts(): HasMany
     {
         return $this->hasMany(Post::class, 'student_id');
@@ -162,7 +222,7 @@ class Student extends Model
             );
     }
 
-    public static function countsByTab(array $filters): array
+    public static function getStudentStatusCounts(array $filters): array
     {
         $base = static::queryFilteredBySearchAndYearLevel($filters);
 
@@ -181,27 +241,21 @@ class Student extends Model
 
     public static function paginatedListWithFilters(array $filters): LengthAwarePaginator
     {
-        $query = static::queryFilteredBySearchAndYearLevel($filters)
-            ->byTab($filters['tab'] ?? 'All')
-            ->orderBy('last_name')
-            ->orderBy('first_name');
+        // Correlated subquery: the Supabase auth.users UUID for this student,
+        // matched on the deterministic login email (null while still pending).
+        $authUserId = DB::table('auth.users')
+            ->select('id')
+            ->whereRaw("email = students.student_number || '@moodlink.com'")
+            ->limit(1);
 
-        return $query
+        return static::queryFilteredBySearchAndYearLevel($filters)
+            ->byTab($filters['tab'] ?? 'All')
+            ->select('students.*')
+            ->selectSub($authUserId, 'auth_user_id')
+            ->orderBy('last_name')
+            ->orderBy('first_name')
             ->paginate(9)
-            ->withQueryString()
-            ->through(fn(Student $student): array => [
-                'id' => $student->id,
-                'student_id' => $student->student_number,
-                'name' => $student->name,
-                'first_name' => $student->first_name,
-                'last_name' => $student->last_name,
-                'personal_email' => $student->personal_email,
-                'contact_number' => $student->contact_number,
-                'year_level' => $student->displayYearLevel(),
-                'section' => $student->section,
-                'verification_status' => $student->displayVerificationStatus(),
-                'account_status' => $student->displayAccountStatus(),
-            ]);
+            ->withQueryString();
     }
 
     public static function getAtRiskCount(string $period): int

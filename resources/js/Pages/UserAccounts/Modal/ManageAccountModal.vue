@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { Student } from '@/types';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { useForm, usePage } from '@inertiajs/vue3';
+import type { Student, PageProps } from '@/types';
 import { XMarkIcon, UserCircleIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps<{
@@ -10,24 +11,130 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: [];
-  suspend: [];
-  reactivate: [];
+  updated: [];
 }>();
 
-const isSuspended = computed(() => props.student?.account_status === 'suspended');
+const page = usePage<PageProps>();
+
+// Separate forms so each action tracks its own in-flight state.
+const suspendForm = useForm({});
+const reactivateForm = useForm({});
+
+// True while either action is processing — used to disable both buttons.
+const busy = computed(() => suspendForm.processing || reactivateForm.processing);
+
+// Local copy of the status so the modal can stay open and flip between
+// suspend ⇄ reactivate without closing.
+const accountStatus = ref<Student['account_status']>(props.student?.account_status ?? 'active');
+const isSuspended = computed(() => accountStatus.value === 'suspended');
+
+// Floating error shown when an action fails. Auto-dismisses after 10s and can
+// be dismissed by clicking outside it.
+const errorMessage = ref<string | null>(null);
+const errorPopup = ref<HTMLElement | null>(null);
+let errorTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearErrorTimer() {
+  if (errorTimer) {
+    clearTimeout(errorTimer);
+    errorTimer = null;
+  }
+}
+
+function dismissError() {
+  clearErrorTimer();
+  errorMessage.value = null;
+}
+
+function showError(message: string) {
+  errorMessage.value = message;
+  clearErrorTimer();
+  errorTimer = setTimeout(dismissError, 10000);
+}
+
+function onDocumentPointerDown(event: MouseEvent) {
+  const el = errorPopup.value;
+  if (el && !el.contains(event.target as Node)) {
+    dismissError();
+  }
+}
+
+// Manage the click-outside listener only while the popup is visible.
+watch(errorMessage, (message) => {
+  if (message) {
+    document.addEventListener('mousedown', onDocumentPointerDown);
+  } else {
+    document.removeEventListener('mousedown', onDocumentPointerDown);
+  }
+});
+
+onBeforeUnmount(() => {
+  clearErrorTimer();
+  document.removeEventListener('mousedown', onDocumentPointerDown);
+});
+
+// Seed the local status whenever a (new) student is shown.
+watch(() => props.show, (open) => {
+  if (open) {
+    accountStatus.value = props.student?.account_status ?? 'active';
+    dismissError();
+  }
+});
+
+function runAction(
+  formObj: typeof suspendForm,
+  routeName: string,
+  nextStatus: Student['account_status'],
+  failureMessage: string,
+) {
+  if (!props.student) return;
+
+  // Routes are bound by the Supabase auth.users UUID. A student with no auth
+  if (!props.student.auth_user_id) {
+    showError('This student does not have an authentication account yet, so it cannot be managed.');
+    return;
+  }
+
+  dismissError();
+
+  formObj.patch(route(routeName, props.student.auth_user_id), {
+    preserveScroll: true,
+    preserveState: true,
+    onSuccess: () => {
+      // Domain failures come back as a flash message, not a validation error.
+      const flashError = page.props.flash?.error;
+      if (flashError) {
+        showError(flashError);
+        return;
+      }
+
+      accountStatus.value = nextStatus;   // flip the view in place
+      emit('updated');                    // refresh the list behind the modal
+    },
+    onError: () => showError(failureMessage),
+  });
+}
+
+function suspend() {
+  runAction(suspendForm, 'student-accounts.restrict-access', 'suspended', 'Failed to suspend the account. Please try again.');
+}
+
+function reactivate() {
+  runAction(reactivateForm, 'student-accounts.restore-access', 'active', 'Failed to reactivate the account. Please try again.');
+}
 </script>
 
 <template>
   <Transition name="modal">
-    <div v-if="show && student" class="fixed inset-0 z-50 flex items-center justify-center p-6" role="dialog"
+    <div v-if="show && student" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6" role="dialog"
       aria-modal="true">
       <!-- Backdrop -->
       <div class="absolute inset-0 bg-slate-900/40" @click="emit('close')" />
 
       <!-- Panel -->
-      <div class="relative flex w-full max-w-3xl flex-col overflow-hidden rounded-md bg-white shadow-2xl">
+      <div class="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-md bg-white shadow-2xl">
         <!-- Header -->
-        <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-4">
+        <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-4 sm:px-6">
           <div class="flex items-center gap-3">
             <span class="flex h-9 w-9 items-center justify-center rounded-md bg-sidebar/10 text-sidebar">
               <UserCircleIcon class="h-5 w-5" />
@@ -50,7 +157,7 @@ const isSuspended = computed(() => props.student?.account_status === 'suspended'
         </div>
 
         <!-- Content -->
-        <div class="flex-1 overflow-y-auto px-8 py-6">
+        <div class="flex-1 overflow-y-auto px-4 py-5 sm:px-8 sm:py-6">
 
           <!-- Personal Information -->
           <section>
@@ -61,7 +168,7 @@ const isSuspended = computed(() => props.student?.account_status === 'suspended'
               <span class="h-px flex-1 bg-slate-200" />
             </div>
 
-            <div class="grid grid-cols-2 gap-x-10 gap-y-6">
+            <div class="grid grid-cols-1 gap-x-10 gap-y-6 sm:grid-cols-2">
 
               <div>
                 <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -113,7 +220,7 @@ const isSuspended = computed(() => props.student?.account_status === 'suspended'
               <span class="h-px flex-1 bg-slate-200" />
             </div>
 
-            <div class="grid grid-cols-3 gap-x-10 gap-y-6">
+            <div class="grid grid-cols-1 gap-x-10 gap-y-6 sm:grid-cols-3">
 
               <div>
                 <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
@@ -149,7 +256,15 @@ const isSuspended = computed(() => props.student?.account_status === 'suspended'
         </div>
 
         <!-- Footer -->
-        <div class="mt-auto bg-slate-100 px-8 py-6">
+        <div class="relative mt-auto bg-slate-100 px-4 py-5 sm:px-8 sm:py-6">
+
+          <!-- Floating error: overlays above the footer so it never expands the modal -->
+          <Transition name="modal">
+            <div v-if="errorMessage" ref="errorPopup"
+              class="absolute inset-x-4 bottom-full z-10 mb-2 rounded-md border-l-10 border-red-500 bg-red-50 px-4 py-3 text-center text-sm text-red-700 shadow-lg sm:inset-x-8">
+              {{ errorMessage }}
+            </div>
+          </Transition>
 
           <div class="flex items-center justify-between">
 
@@ -185,18 +300,20 @@ const isSuspended = computed(() => props.student?.account_status === 'suspended'
           </div>
 
           <!-- Suspended: reactivate -->
-          <div v-if="isSuspended" class="mt-4 flex gap-3">
-            <button type="button" class="bg-sidebar px-6 py-2 text-sm font-semibold text-white hover:bg-sidebar/90"
-              @click="emit('reactivate')">
-              Reactivate Account
+          <div v-if="isSuspended" class="mt-4 flex flex-col gap-3 sm:flex-row">
+            <button type="button"
+              class="flex items-center justify-center bg-sidebar px-6 py-2 text-sm font-semibold text-white transition hover:bg-sidebar/90 disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="busy" @click="reactivate">
+              {{ reactivateForm.processing ? 'Reactivate Account' : 'Reactivate Account' }}
             </button>
           </div>
 
           <!-- Active: suspend -->
-          <div v-else class="mt-4 flex gap-3">
-            <button type="button" class="bg-orange-500 px-6 py-2 text-sm font-semibold text-white hover:bg-orange-600"
-              @click="emit('suspend')">
-              Suspend Account
+          <div v-else class="mt-4 flex flex-col gap-3 sm:flex-row">
+            <button type="button"
+              class="flex items-center justify-center bg-orange-500 px-6 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="busy" @click="suspend">
+              {{ suspendForm.processing ? 'Suspend Account' : 'Suspend Account' }}
             </button>
           </div>
 
