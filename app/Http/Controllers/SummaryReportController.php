@@ -109,20 +109,24 @@ class SummaryReportController extends Controller
         $summaries = $this->atRiskSummaries($studentIds, $period); // Load mood summaries.
         $consultationIds = Appointment::activeConsultationStudentIds($studentIds); // Load active consultations.
 
-        return $students->map(function (Student $student) use ($summaries, $consultationIds): array {
-            $summary = $summaries[$student->id] ?? ['moods' => [], 'daysAtRisk' => 0, 'lastLog' => null];
+        return $students
+            ->reject(fn(Student $student) => in_array($student->id, $consultationIds, true))
+            ->map(function (Student $student) use ($summaries): array {
+                $summary = $summaries[$student->id] ?? ['moods' => [], 'daysAtRisk' => 0, 'lastLog' => null];
 
-            return [
-                'id' => $student->id,
-                'name' => $student->name,
-                'studentNumber' => $student->student_number,
-                'section' => $student->section,
-                'moods' => $summary['moods'],
-                'daysAtRisk' => $summary['daysAtRisk'],
-                'lastLog' => $summary['lastLog'],
-                'hasConsultation' => in_array($student->id, $consultationIds, true),
-            ];
-        })->all();
+                return [
+                    'id' => $student->id,
+                    'name' => $student->name,
+                    'studentNumber' => $student->student_number,
+                    'section' => $student->section,
+                    'moods' => $summary['moods'],
+                    'daysAtRisk' => $summary['daysAtRisk'],
+                    'lastLog' => $summary['lastLog'],
+                    'hasConsultation' => false,
+                ];
+            })
+            ->values()
+            ->all();
     }
 
     private function sectionMoodAndStudents(string $section, string $period): array

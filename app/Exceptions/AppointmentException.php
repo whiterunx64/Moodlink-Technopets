@@ -84,4 +84,20 @@ final class AppointmentException extends DomainException
             Response::HTTP_CONFLICT,
         );
     }
+
+    public static function slotDateIsInThePast(): self
+    {
+        return new self(
+            'Appointments can only be scheduled for the present or future dates.',
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+        );
+    }
+
+    public static function slotTimeOutsideWorkingHours(): self
+    {
+        return new self(
+            'Appointment slots must be within GCU operating hours (8:00 AM – 6:00 PM).',
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+        );
+    }
 }

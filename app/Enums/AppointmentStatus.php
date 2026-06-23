@@ -10,6 +10,7 @@ enum AppointmentStatus: string
     case Scheduled = 'Scheduled';
     case Completed = 'Completed';
     case Rejected = 'Rejected';
+    case Missed = 'Missed';
 
     /**
      * UI tab keys this status counts toward. A status may appear under
@@ -24,6 +25,7 @@ enum AppointmentStatus: string
             self::Scheduled => ['scheduled'],
             self::Completed => ['history'],
             self::Rejected => ['history', 'rejected'],
+            self::Missed => ['missed'],
         };
     }
 

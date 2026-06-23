@@ -103,7 +103,7 @@ class AppointmentService
     $appointment = DB::transaction(function () use ($student, $datetime): Appointment {
       $appointment = Appointment::create([
         'student_id' => $student->id,
-        'context' => 'At-risk follow-up',
+        'context' => '🚨At-risk follow-up',
         'status' => AppointmentStatus::Scheduled->value,
         'datetime' => $datetime,
       ]);
@@ -122,12 +122,16 @@ class AppointmentService
   // ─────────────────────────────────────────────────────────────
 
   /**
-   * @throws AppointmentException when a slot already exists at the same datetime.
+   * @throws AppointmentException when a slot already exists at the same datetime,
+   * the datetime is in the past, or falls outside GCU operating hours.
    */
   public function addSlot(string $datetime): void
   {
     $slotAt = PhTime::toUtc($datetime);
+    $phTime = PhTime::fromUtc($slotAt);
 
+    $this->ensureSlotIsNotInThePast($phTime);
+    $this->ensureSlotIsWithinWorkingHours($phTime);
     $this->ensureNoSlotExistsAtSameTime($slotAt);
 
     AvailableSchedule::create(['datetime' => $slotAt]);
@@ -271,6 +275,11 @@ class AppointmentService
     if ($appointment->status !== AppointmentStatus::Pending) {
       throw AppointmentException::appointmentMustBePendingToApprove();
     }
+
+    $phTime = PhTime::fromUtc($appointment->datetime);
+
+    $this->ensureSlotIsNotInThePast($phTime);
+    $this->ensureSlotIsWithinWorkingHours($phTime);
   }
 
   private function ensureAppointmentCanBeRejected(Appointment $appointment): void
@@ -326,6 +335,23 @@ class AppointmentService
 
     if ($holdsAnotherSlot) {
       throw AppointmentException::studentAlreadyHasBookedSlot();
+    }
+  }
+
+  private function ensureSlotIsNotInThePast(Carbon $phTime): void
+  {
+    if ($phTime->isPast()) {
+      throw AppointmentException::slotDateIsInThePast();
+    }
+  }
+
+  private function ensureSlotIsWithinWorkingHours(Carbon $phTime): void
+  {
+    $minutes = $phTime->hour * 60 + $phTime->minute;
+
+    // 8:00 AM = 480 min, 6:00 PM = 1080 min
+    if ($minutes < 480 || $minutes > 1080) {
+      throw AppointmentException::slotTimeOutsideWorkingHours();
     }
   }
 }

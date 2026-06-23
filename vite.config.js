@@ -1,16 +1,16 @@
-import { defineConfig } from 'vite';
-import laravel from 'laravel-vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
+import laravel from 'laravel-vite-plugin';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
-   server: {
-    host: '0.0.0.0',
-    cors: true,
-    hmr: {
-        host: '192.168.0.124',
+    server: {
+        host: '0.0.0.0',
+        cors: true,
+        hmr: {
+            host: '192.168.0.119',
+        },
     },
-},
 
     plugins: [
         tailwindcss(),

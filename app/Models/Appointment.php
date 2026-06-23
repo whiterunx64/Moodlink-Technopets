@@ -32,6 +32,7 @@ use Illuminate\Support\Collection;
  * 
  * @method static Builder|Appointment pending()
  * @method static Builder|Appointment scheduled()
+ * @method static Builder|Appointment missed()
  * @method static Builder|Appointment history()
  * @method static Builder|Appointment rejected()
  * @method static Builder|Appointment scheduledOrCompleted()
@@ -112,11 +113,17 @@ class Appointment extends Model
         return $query->where('status', AppointmentStatus::Scheduled->value);
     }
 
+    public function scopeMissed(Builder $query): Builder
+    {
+        return $query
+            ->where('status', AppointmentStatus::Missed->value)
+            ->where('datetime', '<', Carbon::now());
+    }
+
     public function scopeHistory(Builder $query): Builder
     {
         return $query->whereIn('status', [
             AppointmentStatus::Completed->value,
-            AppointmentStatus::Rejected->value,
         ]);
     }
 
@@ -144,7 +151,11 @@ class Appointment extends Model
     public function scopeForAppointmentTab(Builder $query, string $tab): Builder
     {
         if ($tab === 'scheduled') {
-            return $query->scheduled();
+            return $query->scheduled()->where('datetime', '>=', Carbon::now());
+        }
+
+        if ($tab === 'missed') {
+            return $query->missed();
         }
 
         if ($tab === 'history') {

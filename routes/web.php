@@ -112,6 +112,8 @@ Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-acce
         ->name('student-accounts.restrict-access');
     Route::patch('/student-accounts/{authUserId}/restore-access', [UserAccountController::class, 'restoreStudentAccountAccess'])
         ->name('student-accounts.restore-access');
+    Route::delete('/student-accounts/{student}', [UserAccountController::class, 'destroyStudentAccount'])
+        ->name('student-accounts.destroy');
 
     Route::get('/post-management', [PostManagementController::class, 'index'])
         ->name('post-management.index');

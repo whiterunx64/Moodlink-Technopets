@@ -189,6 +189,42 @@ class UserAccountController extends Controller
     }
 
     /**
+     * Permanently delete a student record and their Supabase auth account.
+     */
+    public function destroyStudentAccount(Request $request, Student $student): RedirectResponse
+    {
+        $this->service->deleteStudent($student);
+
+        $admin = $request->user();
+        Log::channel('audit')->info('student_account.deleted', [
+            'event' => 'student_account.deleted',
+            'who' => [
+                'actor_type' => 'admin',
+                'actor_id' => $admin?->id,
+                'actor_email' => $admin?->email,
+            ],
+            'what' => [
+                'description' => 'Administrator permanently deleted a student account.',
+                'target_type' => 'student',
+                'target_id' => $student->id,
+                'student_number' => $student->student_number,
+                'student_name' => $student->name,
+            ],
+            'where' => [
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ],
+            'context' => [
+                'category' => 'student_management',
+                'status' => 'deleted',
+            ],
+            'when' => now()->toIso8601String(),
+        ]);
+
+        return back()->with('flash_success', 'Student account has been permanently deleted.');
+    }
+
+    /**
      * Create a Supabase authentication account for a student's registration
      * (also marks the student verified).
      *

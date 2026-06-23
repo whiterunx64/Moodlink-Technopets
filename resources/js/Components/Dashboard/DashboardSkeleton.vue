@@ -1,6 +1,15 @@
 <template>
     <div class="space-y-6 animate-pulse">
 
+        <!-- Welcome Banner -->
+        <div class="flex items-center gap-4 rounded-2xl border border-border-light bg-white px-6 py-4 shadow-sm">
+            <div class="h-11 w-11 shrink-0 rounded-full bg-gray-200" />
+            <div class="space-y-2">
+                <div class="h-4 bg-gray-200 rounded w-48" />
+                <div class="h-3 bg-gray-100 rounded w-64" />
+            </div>
+        </div>
+
         <!-- Stat Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <div v-for="i in 4" :key="i" class="rounded-2xl p-5 bg-gray-200 h-28" />
