@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
 import type { Student, PageProps } from '@/types';
+import { useDismissibleError } from '@/composables/useDismissibleError';
+import { useScrollGate } from '@/composables/useScrollGate';
 import {
   XMarkIcon, CheckCircleIcon, UserCircleIcon, UserPlusIcon, XCircleIcon,
   EnvelopeIcon,
@@ -34,64 +36,12 @@ const busy = computed(() => form.processing || rejectForm.processing);
 const created = ref<{ email: string; password: string } | null>(null);
 const copied = ref<'email' | 'password' | null>(null);
 const revealPassword = ref(false);
-const errorMessage = ref<string | null>(null);
-const errorPopup = ref<HTMLElement | null>(null);
-let errorTimer: ReturnType<typeof setTimeout> | null = null;
 
-// Scroll gate: the admin must scroll through the reminders before the action
-// buttons appear. atBottom becomes true once they reach the end (or if the
-// content already fits without scrolling).
-const contentEl = ref<HTMLElement | null>(null);
-const atBottom = ref(false);
+const { errorMessage, errorPopup, showError, dismissError } = useDismissibleError();
 
-function updateAtBottom() {
-  const el = contentEl.value;
-  if (!el) return;
-  atBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight <= 8;
-}
-
-function scrollToBottom() {
-  contentEl.value?.scrollTo({ top: contentEl.value.scrollHeight, behavior: 'smooth' });
-}
-
-function clearErrorTimer() {
-  if (errorTimer) {
-    clearTimeout(errorTimer);
-    errorTimer = null;
-  }
-}
-
-function dismissError() {
-  clearErrorTimer();
-  errorMessage.value = null;
-}
-
-function showError(message: string) {
-  errorMessage.value = message;
-  clearErrorTimer();
-  errorTimer = setTimeout(dismissError, 10000);
-}
-
-function onDocumentPointerDown(event: MouseEvent) {
-  const el = errorPopup.value;
-  if (el && !el.contains(event.target as Node)) {
-    dismissError();
-  }
-}
-
-// Manage the click-outside listener only while the popup is visible.
-watch(errorMessage, (message) => {
-  if (message) {
-    document.addEventListener('mousedown', onDocumentPointerDown);
-  } else {
-    document.removeEventListener('mousedown', onDocumentPointerDown);
-  }
-});
-
-onBeforeUnmount(() => {
-  clearErrorTimer();
-  document.removeEventListener('mousedown', onDocumentPointerDown);
-});
+// Make the admin scroll through the reminders before the action buttons appear.
+const { contentEl, atBottom, updateAtBottom, scrollToBottom, reset: resetScrollGate } =
+  useScrollGate();
 
 // Reset the result view each time the modal is (re)opened.
 watch(() => props.show, (open) => {
@@ -100,10 +50,7 @@ watch(() => props.show, (open) => {
     copied.value = null;
     dismissError();
     revealPassword.value = false;
-    atBottom.value = false;
-    // Re-check after the modal renders: if the content already fits, the gate
-    // opens immediately so the admin isn't stuck with no buttons.
-    nextTick(updateAtBottom);
+    resetScrollGate();
   }
 });
 
@@ -164,7 +111,7 @@ async function copy(field: 'email' | 'password') {
       <!-- Backdrop -->
       <div class="absolute inset-0 bg-slate-900/40" @click="emit('close')" />
 
-      <!-- Panel: fixed size per breakpoint, never shrinks or collapses -->
+      <!-- Panel -->
       <div class="relative flex h-[90vh] w-full shrink-0 flex-col overflow-hidden rounded-md bg-white shadow-2xl
                sm:h-144 sm:w-160
                md:h-160 md:w-3xl
@@ -194,7 +141,7 @@ async function copy(field: 'email' | 'password') {
           </button>
         </div>
 
-        <!-- Privacy notice (shown once the account is created) -->
+        <!-- Privacy notice -->
         <div v-if="created"
           class="border-b border-amber-200 border-l-10 border-l-amber-400 bg-amber-50 px-4 py-3 text-center text-sm text-amber-800 sm:px-8">
           Initial password is hidden for privacy. Student authorization is required to view it.
@@ -298,7 +245,7 @@ async function copy(field: 'email' | 'password') {
           </section>
 
 
-          <!-- Reminders (shown while previewing, before the account is created) -->
+          <!-- Reminders -->
           <section v-if="!created" class="mt-10">
 
             <div class="mb-5 flex items-center gap-3">
@@ -489,10 +436,10 @@ async function copy(field: 'email' | 'password') {
           </section>
         </div>
 
-        <!-- Footer: only the action buttons (shown while previewing) -->
+        <!-- Footer: only the action buttons -->
         <div v-if="!created" class="relative mt-auto bg-slate-100 px-4 py-5 sm:px-8 sm:py-6">
 
-          <!-- Floating error: overlays above the footer so it never expands the modal -->
+          <!-- Floating error -->
           <Transition name="modal">
             <div v-if="errorMessage" ref="errorPopup"
               class="absolute inset-x-4 bottom-full z-10 mb-2 rounded-md border-l-10 border-r-10 border-red-500 bg-red-50 px-4 py-3 text-center text-sm text-red-700 shadow-lg sm:inset-x-8">
@@ -500,7 +447,7 @@ async function copy(field: 'email' | 'password') {
             </div>
           </Transition>
 
-          <!-- Scroll gate: prompt the admin to read the reminders first -->
+          <!-- Scroll gate -->
           <button v-if="!atBottom" type="button" @click="scrollToBottom"
             class="flex w-full items-center justify-center gap-2 rounded-sm border border-slate-300 bg-white px-6 py-2.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
             <ChevronDownIcon class="h-5 w-5 animate-bounce text-blue-600" />

@@ -11,19 +11,14 @@ import DeleteAdminModal from '@/Pages/Profile/Modal/DeleteAdminModal.vue';
 import ConfirmPasswordChangeModal from '@/Pages/Profile/Modal/ConfirmPasswordChangeModal.vue';
 import ConfirmProfileUpdateModal from '@/Pages/Profile/Modal/ConfirmProfileUpdateModal.vue';
 import { useToast } from '@/composables/useToast';
-import type { AdminProfile, NotificationPreferences, PasswordForm } from '@/types';
+import type {
+    AdminProfile,
+    NotificationPreferences,
+    PasswordForm,
+    ProfileSettingsPageProps,
+} from '@/types';
 
-const props = defineProps<{
-    admin: {
-        firstName: string;
-        lastName: string;
-        phone: string | null;
-        avatar: string | null;
-        role: string;
-        status: string;
-    } | null;
-    notifications?: Partial<NotificationPreferences>;
-}>();
+const props = defineProps<ProfileSettingsPageProps>();
 
 const { add } = useToast();
 

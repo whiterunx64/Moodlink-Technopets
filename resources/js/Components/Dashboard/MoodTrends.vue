@@ -1,20 +1,7 @@
 <script setup lang="ts">
 import { router } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
-
-interface DistributionItem {
-    label: string;
-    pct: number;
-    color: string;
-}
-
-export interface MoodTrendsData {
-    period: 'Today' | 'Weekly' | 'Monthly';
-    section: string;
-    sections: string[];
-    total: number;
-    distribution: DistributionItem[];
-}
+import type { MoodTrendsData } from '@/types';
 
 const props = defineProps<{
     /** Mood-distribution aggregate from AdminDashboardService, server-rendered. */

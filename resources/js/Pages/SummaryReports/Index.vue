@@ -45,7 +45,6 @@ const MOOD_STYLE: Record<string, { bar: string; text: string; dot: string; tag: 
     Drained: { bar: 'bg-red-400', text: 'text-red-500', dot: 'bg-red-400', tag: 'bg-red-100 text-red-700' },
 };
 
-// ── Period filter ─────────────────────────────────────────────────────────────
 function onPeriodChange(p: SummaryPeriod) {
     router.get(route('summary-reports.index'), { period: p, tab: activeTab.value }, {
         preserveState: true,
@@ -54,7 +53,6 @@ function onPeriodChange(p: SummaryPeriod) {
     });
 }
 
-// ── Tabs (server-rendered: each tab fetches its own data) ───────────────────────
 const activeTab = computed<string>(() => props.filters.tab ?? 'overview');
 
 const tabs: Array<{ key: string; label: string; icon: Component }> = [
@@ -75,12 +73,10 @@ function changeTab(tab: string) {
     });
 }
 
-// ── Section navigation ────────────────────────────────────────────────────────
 function openSection(section: string) {
     router.get(route('summary-reports.section-aggregated-report', section), { period: props.filters.period });
 }
 
-// ── Consult / set schedule modal ───────────────────────────────────────────────
 const showConsultModal = ref(false);
 const consultStudent = ref<AtRiskStudent | null>(null);
 const consultForm = useForm({ date: '', start_time: '' });
@@ -106,7 +102,6 @@ function submitConsult() {
     });
 }
 
-// ── Mini bar helper ───────────────────────────────────────────────────────────
 function miniBarWidth(count: number, total: number): string {
     return total > 0 ? `${Math.round((count / total) * 100)}%` : '0%';
 }
@@ -119,10 +114,8 @@ function miniBarWidth(count: number, total: number): string {
     <AdminLayout title="Summary Reports">
         <div class="space-y-5">
 
-            <!-- Period filter + Export PDF -->
             <PeriodFilter :model-value="filters.period" @update:model-value="onPeriodChange" />
 
-            <!-- Tab navigation -->
             <div class="flex items-center gap-1 bg-gray-100 rounded-xl p-1 w-fit">
                 <button v-for="tab in tabs" :key="tab.key" type="button" :class="[
                     'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all',
@@ -135,10 +128,8 @@ function miniBarWidth(count: number, total: number): string {
                 </button>
             </div>
 
-            <!-- ── Overview tab ──────────────────────────────────────────── -->
             <template v-if="activeTab === 'overview'">
 
-                <!-- Stat cards -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                     <div class="bg-white rounded-2xl border border-border-light shadow-sm p-5 flex items-center gap-4">
                         <div class="w-11 h-11 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
@@ -181,11 +172,9 @@ function miniBarWidth(count: number, total: number): string {
                     </div>
                 </div>
 
-                <!-- Mood Distribution -->
                 <MoodDistributionCard :distribution="overview.distribution" :period="filters.period" />
             </template>
 
-            <!-- ── Section Reports tab ───────────────────────────────────── -->
             <template v-else-if="activeTab === 'sections'">
                 <div class="bg-white rounded-2xl border border-border-light shadow-sm">
                     <div class="px-6 py-4 border-b border-border-light">
@@ -248,7 +237,6 @@ function miniBarWidth(count: number, total: number): string {
                 </div>
             </template>
 
-            <!-- ── At-Risk Students tab ──────────────────────────────────── -->
             <template v-else-if="activeTab === 'at-risk'">
                 <div class="bg-white rounded-2xl border border-border-light shadow-sm">
                     <div class="px-6 py-4 border-b border-border-light flex items-center justify-between">
@@ -315,7 +303,6 @@ function miniBarWidth(count: number, total: number): string {
 
         </div>
 
-        <!-- ── Set Consultation Schedule Modal ────────────────────────────── -->
         <Teleport to="body">
             <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0"
                 enter-to-class="opacity-100" leave-active-class="transition duration-150" leave-from-class="opacity-100"

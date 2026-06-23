@@ -10,6 +10,7 @@ import VerifyStudentModal from '@/Pages/UserAccounts/Modal/VerifyStudentModal.vu
 import ManageAccountModal from '@/Pages/UserAccounts/Modal/ManageAccountModal.vue';
 import { YEAR_LEVEL_OPTIONS } from '@/composables/useStudentFilters';
 import { usePaginatorNav } from '@/composables/usePaginatorNav';
+import { usePollingReload } from '@/composables/usePolling';
 import type { Paginated, Student, StudentAccountFilters, StudentTab } from '@/types';
 
 const props = defineProps<{
@@ -24,6 +25,8 @@ const yearFilter = ref(props.filters.year_level ? String(props.filters.year_leve
 const activeTab = ref<StudentTab>((props.filters.tab as StudentTab) ?? 'All');
 
 const paginator = usePaginatorNav(toRef(props, 'students'));
+
+usePollingReload(['students', 'tabCounts']);
 
 const verifyModalOpen = ref(false);
 const manageModalOpen = ref(false);

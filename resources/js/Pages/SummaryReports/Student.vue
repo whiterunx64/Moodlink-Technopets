@@ -12,7 +12,7 @@ const props = defineProps<{
     filters: { period: SummaryPeriod; trendDays: number };
 }>();
 
-// ── Mood styles (student-report palette) ─────────────────────────────────────
+// Bar and dot colors for the mood summary chart.
 const MOOD_STYLE: Record<string, { bar: string; dot: string }> = {
     Excited: { bar: 'bg-amber-400', dot: 'bg-amber-400' },
     Content: { bar: 'bg-green-500', dot: 'bg-green-500' },
@@ -20,7 +20,7 @@ const MOOD_STYLE: Record<string, { bar: string; dot: string }> = {
     Drained: { bar: 'bg-slate-400', dot: 'bg-slate-400' },
 };
 
-// Mood log tag colors (overview palette for the log list)
+// Tag colors for the recent mood log list.
 const LOG_TAG: Record<string, string> = {
     Excited: 'bg-green-100 text-green-700',
     Content: 'bg-blue-100 text-blue-700',
@@ -28,7 +28,6 @@ const LOG_TAG: Record<string, string> = {
     Drained: 'bg-red-100 text-red-700',
 };
 
-// ── Mood bars ─────────────────────────────────────────────────────────────────
 const MOOD_ORDER = ['Excited', 'Content', 'Stressed', 'Drained'] as const;
 
 const moodBars = computed(() => {
@@ -47,7 +46,6 @@ const moodBars = computed(() => {
     }));
 });
 
-// ── Navigation & actions ──────────────────────────────────────────────────────
 function onPeriodChange(p: SummaryPeriod) {
     router.get(
         route('summary-reports.student-mood-report', props.studentReport.id),
@@ -79,10 +77,8 @@ function goBack() {
     <AdminLayout title="Student Mood Report">
         <div class="space-y-5">
 
-            <!-- Period filter + Export PDF -->
             <PeriodFilter :model-value="filters.period" @update:model-value="onPeriodChange" />
 
-            <!-- Back + Title -->
             <div class="flex items-center gap-3">
                 <button type="button"
                     class="w-8 h-8 rounded-full border border-border-light bg-white flex items-center justify-center hover:bg-gray-50 transition-colors"
@@ -97,7 +93,6 @@ function goBack() {
                 </div>
             </div>
 
-            <!-- Student profile card -->
             <div class="bg-white rounded-2xl border border-border-light shadow-sm p-6">
                 <div class="flex items-center gap-5 flex-wrap">
                     <div

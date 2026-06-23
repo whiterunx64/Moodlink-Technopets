@@ -12,6 +12,9 @@ export type PageProps<
     auth: {
         user: User;
     };
+    assets: {
+        logo: string;
+    };
     flash: {
         error?: string;
         success?: string;
@@ -19,7 +22,7 @@ export type PageProps<
     };
 };
 
-export type Mood = 'Drianed' | 'Stressed' | 'Content' | 'Excited';
+export type Mood = 'Drained' | 'Stressed' | 'Content' | 'Excited';
 export type PostStatus = 'flagged' | 'safe';
 export type PostFilter = 'All' | 'Flagged' | 'Safe';
 
@@ -47,13 +50,34 @@ export interface Post {
     status: 'flagged' | 'safe';
     content: string | null;
 }
-
 export interface AdminProfile {
     firstName: string;
     lastName: string;
     phone: string;
     role: string;
     department: string;
+}
+
+export interface AdminSummary {
+    firstName: string;
+    lastName: string;
+    phone: string | null;
+    avatar: string | null;
+    role: string;
+    status: string;
+}
+
+// ── Auth ───────────────────────────────────────────────────────────────────────
+
+export interface LoginPageProps {
+    canResetPassword?: boolean;
+    status?: string;
+}
+
+export interface ProfileSettingsPageProps {
+    admin: AdminSummary | null;
+    notifications?: Partial<NotificationPreferences>;
+    status?: string;
 }
 
 export interface PasswordForm {
@@ -76,7 +100,6 @@ export type StudentTab = 'All' | 'Pending' | 'Verified' | 'Suspended';
 
 export interface Student {
     id: number;
-    /** Supabase auth.users UUID; null while the student is still pending. */
     auth_user_id: string | null;
     student_id: string;
     name: string;
@@ -90,17 +113,12 @@ export interface Student {
     account_status: AccountStatus;
 }
 
-/** Server-side filter state echoed back by the controller. */
 export interface StudentAccountFilters {
     search: string | null;
     year_level: number | null;
     tab: string;
 }
 
-/**
- * Laravel's default length-aware paginator (flat shape, as serialized by
- * Inertia when returning `->paginate()` directly — no API Resource wrapper).
- */
 export interface Paginated<T> {
     data: T[];
     current_page: number;
@@ -263,4 +281,49 @@ export interface StudentMoodReport {
     trend: 'Declining' | 'Stable' | 'Improving';
     trendData: MoodTrendPoint[];
     recentLogs: RecentMoodLog[];
+}
+
+// ── Dashboard ────────────────────────────────────────────────────────────────
+
+export interface DashboardMoodEntry {
+    id: number;
+    mood: Mood;
+    message: string | null;
+    time: string;
+    name: string;
+    flagged: boolean;
+}
+
+export interface DashboardAppointment {
+    id: number;
+    name: string;
+    time: string;
+    date: string;
+    label: 'Urgent' | 'Consultation';
+    style: string;
+}
+
+export interface MoodDistributionBar {
+    label: string;
+    pct: number;
+    color: string;
+}
+
+export interface MoodTrendsData {
+    period: 'Today' | 'Weekly' | 'Monthly';
+    section: string;
+    sections: string[];
+    total: number;
+    distribution: MoodDistributionBar[];
+}
+
+/** Props for the Dashboard page. */
+export interface DashboardPageProps {
+    moodLogsToday: number;
+    activeStudents: number;
+    flaggedPosts: number;
+    escalationRequests: number;
+    moodEntries: DashboardMoodEntry[];
+    appointments: DashboardAppointment[];
+    moodTrends: MoodTrendsData;
 }

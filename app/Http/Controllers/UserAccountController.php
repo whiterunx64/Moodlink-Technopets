@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\CircuitBreakerException;
 use App\Exceptions\StudentAccountException;
+use App\Enums\StudentStatus;
 use App\Http\Requests\RegisterStudentRequest;
 use App\Http\Requests\UserAccountFilterRequest;
 use App\Models\Student;
@@ -41,11 +42,18 @@ class UserAccountController extends Controller
                 'verification_status' => $student->verification_status,
                 'account_status' => $student->account_status,
             ]);
-        $studentStatusCounts = Student::getStudentStatusCounts($studentFilters);
+        $statusCounts = Student::statusCountsForFilters($studentFilters);
+
+        $tabCounts = [
+            'All' => $statusCounts->get('All', 0),
+            'Pending' => $statusCounts->get(StudentStatus::Pending->value, 0),
+            'Verified' => $statusCounts->get(StudentStatus::Verified->value, 0),
+            'Suspended' => $statusCounts->get(StudentStatus::Suspended->value, 0),
+        ];
 
         return Inertia::render('UserAccounts/Index', [
             'students' => $students,
-            'tabCounts' => $studentStatusCounts,
+            'tabCounts' => $tabCounts,
             'filters' => $studentFilters,
         ]);
     }

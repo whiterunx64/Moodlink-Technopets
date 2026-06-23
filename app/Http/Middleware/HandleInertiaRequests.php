@@ -35,6 +35,9 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...parent::share($request),
+            'assets' => [
+                'logo' => config('supabase-auth.url') . '/storage/v1/object/public/assets/MailLogo.svg',
+            ],
             'auth' => [
                 'user' => $user ? [
                     'id' => $user->id,
