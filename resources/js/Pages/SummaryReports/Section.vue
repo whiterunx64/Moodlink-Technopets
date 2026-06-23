@@ -119,36 +119,38 @@ function openStudent(studentId: number) {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                    <button v-for="student in filteredStudents" :key="student.id" type="button"
-                        class="text-left border border-border-light rounded-xl p-4 hover:bg-gray-50 hover:border-sidebar/30 transition-all"
-                        @click="openStudent(student.id)">
-                        <div class="flex items-center gap-3 mb-3">
-                            <div
-                                class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-text-primary shrink-0">
-                                {{ student.initials }}
+                <div class="max-h-140 overflow-y-auto pr-1">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                        <button v-for="student in filteredStudents" :key="student.id" type="button"
+                            class="text-left border border-border-light rounded-xl p-4 hover:bg-gray-50 hover:border-sidebar/30 transition-all"
+                            @click="openStudent(student.id)">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div
+                                    class="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-text-primary shrink-0">
+                                    {{ student.initials }}
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-sm font-semibold text-text-primary truncate">{{ student.name }}</p>
+                                    <p class="text-xs text-text-muted">{{ student.studentNumber }}</p>
+                                </div>
                             </div>
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-text-primary truncate">{{ student.name }}</p>
-                                <p class="text-xs text-text-muted">{{ student.studentNumber }}</p>
+
+                            <div class="flex items-center justify-between">
+                                <span class="px-2.5 py-1 rounded-full bg-gray-100 text-text-muted text-xs font-medium">
+                                    {{ student.yearLevel }}
+                                </span>
+                                <span
+                                    :class="['inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium', TREND_STYLE[student.trend]?.cls]">
+                                    <component :is="TREND_STYLE[student.trend]?.icon" class="w-3 h-3" />
+                                    {{ student.trend }}
+                                </span>
                             </div>
-                        </div>
+                        </button>
+                    </div>
 
-                        <div class="flex items-center justify-between">
-                            <span class="px-2.5 py-1 rounded-full bg-gray-100 text-text-muted text-xs font-medium">
-                                {{ student.yearLevel }}
-                            </span>
-                            <span
-                                :class="['inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium', TREND_STYLE[student.trend]?.cls]">
-                                <component :is="TREND_STYLE[student.trend]?.icon" class="w-3 h-3" />
-                                {{ student.trend }}
-                            </span>
-                        </div>
-                    </button>
-                </div>
-
-                <div v-if="filteredStudents.length === 0" class="py-16 text-center text-sm text-text-muted">
-                    No students match your search.
+                    <div v-if="filteredStudents.length === 0" class="py-16 text-center text-sm text-text-muted">
+                        No students match your search.
+                    </div>
                 </div>
             </div>
 

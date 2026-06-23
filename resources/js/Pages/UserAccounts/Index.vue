@@ -87,30 +87,24 @@ function goToPage(page: number) {
             <!-- Top bar -->
             <div class="flex items-center gap-3 flex-wrap">
 
-                <!-- Search input (uses your existing SearchInput component) -->
+                <!-- Search -->
                 <SearchInput v-model="search" placeholder="Search by name or student ID..." @search="searchStudents" />
 
-                <!-- Year level filter with icon -->
+                <!-- Year level filter -->
                 <div class="relative">
-                    <!-- Filter / funnel icon -->
-                    <span
-                        class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-text-secondary/60">
+                    <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
                         </svg>
                     </span>
-
                     <select v-model="yearFilter"
-                        class="appearance-none py-2.5 pl-9 pr-8 text-sm border border-border-light bg-white text-text-secondary focus:outline-none focus:ring-2 focus:ring-sidebar/20 focus:border-sidebar transition-colors cursor-pointer">
+                        class="appearance-none rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-8 text-sm text-text-secondary transition-colors focus:border-sidebar focus:ring-2 focus:ring-sidebar/20 focus:outline-none cursor-pointer">
                         <option v-for="y in YEAR_LEVEL_OPTIONS" :key="y.value" :value="y.value">
                             {{ y.label }}
                         </option>
                     </select>
-
-                    <!-- Chevron-down icon -->
-                    <span
-                        class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-text-secondary/60">
+                    <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="6 9 12 15 18 9" />
@@ -119,7 +113,7 @@ function goToPage(page: number) {
                 </div>
             </div>
 
-            <!-- Tab pills -->
+            <!-- Tabs -->
             <StudentTabs v-model="activeTab" :counts="tabCounts" />
 
             <!-- Table -->

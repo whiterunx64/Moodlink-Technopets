@@ -11,11 +11,18 @@ import {
     HeartIcon,
 } from '@heroicons/vue/24/outline';
 import { usePollingReload } from '@/composables/usePolling';
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref, type Component } from 'vue';
+import type { PageProps } from '@/types';
 import type { DashboardPageProps } from '@/types';
 
 const props = defineProps<DashboardPageProps>();
+
+const page = usePage<PageProps>();
+const adminName = computed(() => {
+    const full = page.props.auth?.user?.name ?? '';
+    return full.split(' ')[0] || full;
+});
 
 type StatKey =
     | 'moodLogsToday'
@@ -97,6 +104,22 @@ onMounted(() => {
             <DashboardSkeleton v-if="loading" />
 
             <div v-else class="space-y-6">
+
+                <!-- Welcome banner -->
+                <div class="flex items-center gap-4 rounded-2xl border border-border-light bg-white px-6 py-4 shadow-sm">
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sidebar text-lg font-bold text-white">
+                        {{ adminName.charAt(0).toUpperCase() }}
+                    </div>
+                    <div>
+                        <p class="text-xl font-bold text-text-primary">
+                            Welcome back, {{ adminName }}!
+                        </p>
+                        <p class="mt-0.5 text-sm text-text-muted">
+                            Here's what's happening on MoodLink today.
+                        </p>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <StatCard v-for="card in statCards" :key="card.key" :title="card.title" :value="card.value"
                         :icon="card.icon" :color="card.color" :change="card.change" :change-up="card.changeUp" />

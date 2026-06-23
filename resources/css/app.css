@@ -41,15 +41,15 @@
     --color-bg-surface: #f3f4f6;
     --color-layout-bg: #FAF8F3;
 
-    --color-table-header: #e5e7eb;
-    --color-table-body: #f9fafb;
-    --color-table-row: #f9fafb;
-    --color-table-row-hover: #f3f5f7;
-    --color-table-grid: #cbd5e1;
+    --color-table-header: #eef2e7;
+    --color-table-body: #ffffff;
+    --color-table-row: #ffffff;
+    --color-table-row-hover: #f7f9f3;
+    --color-table-grid: #e5e9de;
 
-    --color-search-button: #9333EA;
-    --color-search-button-hover: #7E22CE;
-    --color-search-button-active: #6B21A8;
+    --color-search-button: #4a5e28;
+    --color-search-button-hover: #3a4e1e;
+    --color-search-button-active: #2d3e17;
 
     /* STATUS BADGES */
     --color-status-flagged: #e25858;

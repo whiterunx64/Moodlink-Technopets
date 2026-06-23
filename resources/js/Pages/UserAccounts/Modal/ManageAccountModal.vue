@@ -3,7 +3,8 @@ import { computed, ref, watch } from 'vue';
 import { useForm, usePage } from '@inertiajs/vue3';
 import type { Student, PageProps } from '@/types';
 import { useDismissibleError } from '@/composables/useDismissibleError';
-import { XMarkIcon, UserCircleIcon } from '@heroicons/vue/24/outline';
+import { XMarkIcon, UserCircleIcon, TrashIcon } from '@heroicons/vue/24/outline';
+import DeleteAccountModal from '@/Pages/UserAccounts/Modal/DeleteAccountModal.vue';
 
 const props = defineProps<{
   student: Student | null;
@@ -24,12 +25,16 @@ const busy = computed(() => suspendForm.processing || reactivateForm.processing)
 const accountStatus = ref<Student['account_status']>(props.student?.account_status ?? 'active');
 const isSuspended = computed(() => accountStatus.value === 'suspended');
 
+const deleteModalOpen = ref(false);
+
 const { errorMessage, errorPopup, showError, dismissError } = useDismissibleError();
+void errorPopup; // bound via ref="errorPopup" in the template
 
 // Reset the local status whenever a (new) student is shown.
 watch(() => props.show, (open) => {
   if (open) {
     accountStatus.value = props.student?.account_status ?? 'active';
+    deleteModalOpen.value = false;
     dismissError();
   }
 });
@@ -71,6 +76,12 @@ function suspend() {
 
 function reactivate() {
   runAction(reactivateForm, 'student-accounts.restore-access', 'active', 'Failed to reactivate the account. Please try again.');
+}
+
+function onDeleted() {
+  deleteModalOpen.value = false;
+  emit('close');
+  emit('updated');
 }
 </script>
 
@@ -246,7 +257,13 @@ function reactivate() {
             <button type="button"
               class="flex items-center justify-center bg-sidebar px-6 py-2 text-sm font-semibold text-white transition hover:bg-sidebar/90 disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="busy" @click="reactivate">
-              {{ reactivateForm.processing ? 'Reactivate Account' : 'Reactivate Account' }}
+              {{ reactivateForm.processing ? 'Reactivating…' : 'Reactivate Account' }}
+            </button>
+            <button type="button"
+              class="flex items-center justify-center gap-2 border border-red-300 bg-white px-6 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="busy" @click="deleteModalOpen = true">
+              <TrashIcon class="h-4 w-4" />
+              Delete Account
             </button>
           </div>
 
@@ -254,7 +271,13 @@ function reactivate() {
             <button type="button"
               class="flex items-center justify-center bg-orange-500 px-6 py-2 text-sm font-semibold text-white transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
               :disabled="busy" @click="suspend">
-              {{ suspendForm.processing ? 'Suspend Account' : 'Suspend Account' }}
+              {{ suspendForm.processing ? 'Suspending…' : 'Suspend Account' }}
+            </button>
+            <button type="button"
+              class="flex items-center justify-center gap-2 border border-red-300 bg-white px-6 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="busy" @click="deleteModalOpen = true">
+              <TrashIcon class="h-4 w-4" />
+              Delete Account
             </button>
           </div>
 
@@ -263,6 +286,10 @@ function reactivate() {
       </div>
     </div>
   </Transition>
+
+  <!-- Delete confirmation sub-modal -->
+  <DeleteAccountModal :show="deleteModalOpen" :student="student" @close="deleteModalOpen = false"
+    @deleted="onDeleted" />
 </template>
 
 <style scoped>

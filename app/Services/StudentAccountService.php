@@ -69,6 +69,26 @@ final class StudentAccountService
     }
 
     /**
+     * Permanently delete a student record and their Supabase auth account (if one exists).
+     */
+    public function deleteStudent(Student $student): void
+    {
+        if ($student->auth_user_id !== null) {
+            try {
+                $this->supabase->deleteAdminAccountApiCall($student->auth_user_id);
+            } catch (Throwable $e) {
+                Log::channel('auth')->error('Failed to delete Supabase auth account for student.', [
+                    'student_id' => $student->id,
+                    'auth_user_id' => $student->auth_user_id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $student->delete();
+    }
+
+    /**
      * @return array{email: string, password: string, supabase_user_id: string}
      *
      * @throws StudentAccountException when a business rule is violated or the

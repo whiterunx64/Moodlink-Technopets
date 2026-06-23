@@ -43,10 +43,10 @@ class AppointmentController extends Controller
 
         $tabCounts = [
             'requests' => $counts[AppointmentStatus::Pending->value] ?? 0,
-            'scheduled' => $counts[AppointmentStatus::Scheduled->value] ?? 0,
-            'history' => ($counts[AppointmentStatus::Completed->value] ?? 0)
-                + ($counts[AppointmentStatus::Rejected->value] ?? 0),
+            'scheduled' => Appointment::scheduled()->where('datetime', '>=', now())->count(),
+            'history' => ($counts[AppointmentStatus::Completed->value] ?? 0),
             'rejected' => $counts[AppointmentStatus::Rejected->value] ?? 0,
+            'missed' => $counts[AppointmentStatus::Missed->value] ?? 0,
         ];
 
         $availableSlots = AvailableSchedule::getAvailableSlotsList()

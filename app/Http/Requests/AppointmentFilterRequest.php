@@ -14,7 +14,7 @@ class AppointmentFilterRequest extends FormRequest
   public function rules(): array
   {
     return [
-      'tab' => ['nullable', 'string', 'in:requests,scheduled,history,rejected'],
+      'tab' => ['nullable', 'string', 'in:requests,scheduled,history,rejected,missed'],
     ];
   }
 

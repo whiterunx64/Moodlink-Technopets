@@ -262,7 +262,7 @@ class Student extends Model
             ->selectSub($authUserId, 'auth_user_id')
             ->orderBy('last_name')
             ->orderBy('first_name')
-            ->paginate(9)
+            ->paginate(8)
             ->withQueryString();
     }
 

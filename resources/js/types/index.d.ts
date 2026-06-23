@@ -207,7 +207,7 @@ export interface RecentMoodLog {
 
 // ── Appointments ─────────────────────────────────────────────────────────────
 
-export type AppointmentTab = 'requests' | 'scheduled' | 'history' | 'rejected';
+export type AppointmentTab = 'requests' | 'scheduled' | 'history' | 'rejected' | 'missed';
 export type AppointmentStatus =
     | 'Pending'
     | 'Scheduled'
@@ -253,6 +253,7 @@ export interface AppointmentTabCounts {
     scheduled: number;
     history: number;
     rejected: number;
+    missed: number;
 }
 
 export interface AppointmentFilters {
