@@ -10,7 +10,7 @@ use App\Http\Controllers\UserAccountController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', fn() => redirect()->route('login'));
+Route::get('/', fn() => Inertia::render('Landing'))->name('landing');
 
 Route::get(config('supabase-auth.monitoring.health_checks.endpoint'), [HealthController::class, 'check'])
     ->name('health');
@@ -35,9 +35,6 @@ Route::get(config('supabase-auth.monitoring.health_checks.endpoint'), [HealthCon
 //        'time_seconds' => $duration,
 //    ];
 //});
-// Local-only preview of the appointment-approved email. No DB writes, no mail sent.
-// Renders the classic-letter template end to end: letterhead, details block,
-// sign-off, and the contact footer (email + phone with underline rules).
 Route::get('/preview/approve-appointment-mail', function () {
     abort_unless(app()->environment('local'), 403);
 

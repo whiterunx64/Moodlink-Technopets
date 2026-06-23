@@ -4,12 +4,21 @@ declare(strict_types=1);
 
 namespace App\Traits;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 
 
 trait HasFilters
 {
-    private static function summaryReportPeriodStart(string $period): ?Carbon
+    public function scopeRecordedOnOrAfter(Builder $query, ?Carbon $startDate): Builder
+    {
+        return $query->when(
+            $startDate,
+            fn (Builder $q) => $q->where('status_days.date', '>=', $startDate)
+        );
+    }
+
+    public static function summaryReportPeriodStart(string $period): ?Carbon
     {
         if ($period === 'this_week') {
             return Carbon::now()->startOfWeek();
@@ -20,7 +29,7 @@ trait HasFilters
         }
     }
 
-    private static function summaryReportPeriodDays(string $period): int
+    public static function summaryReportPeriodDays(string $period): int
     {
         if ($period === 'this_week') {
             return 7;

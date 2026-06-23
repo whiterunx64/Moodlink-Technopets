@@ -39,7 +39,7 @@ use Illuminate\Support\Str;
  * @property-read string $verification_status
  * @property-read Collection<int, \App\Models\Appointment> $appointments
  *
- * @method static Builder|Student verified()
+ * @method static Builder|Student whereStatusIsVerified()
  * @method static Builder|Student whereStatus(\App\Enums\StudentStatus $status)
  * @method static Builder|Student matchingSearch(string $search)
  * @method static Builder|Student byYearLevel(int $yearLevel)
@@ -168,7 +168,7 @@ class Student extends Model
         return $this->hasMany(Post::class, 'student_id');
     }
 
-    public function scopeVerified(Builder $query): Builder
+    public function scopeWhereStatusIsVerified(Builder $query): Builder
     {
         return $query->where('status', StudentStatus::Verified->value);
     }
@@ -214,7 +214,7 @@ class Student extends Model
             ->startingFrom($from);
 
         return $query
-            ->verified()
+            ->whereStatusIsVerified()
             ->whereHas('posts', $atRiskPosts, '>=', 1);
     }
 
@@ -233,21 +233,18 @@ class Student extends Model
             );
     }
 
-    public static function getStudentStatusCounts(array $filters): array
+    /**
+     * @return \Illuminate\Support\Collection<string, int>
+     */
+    public static function statusCountsForFilters(array $filters): \Illuminate\Support\Collection
     {
         $base = static::queryFilteredBySearchAndYearLevel($filters);
 
-        $countsPerStatus = (clone $base)
+        return (clone $base)
             ->selectRaw('status, count(*) as aggregate')
             ->groupBy('status')
-            ->pluck('aggregate', 'status');
-
-        return [
-            'All' => (clone $base)->count(),
-            'Pending' => $countsPerStatus->get(StudentStatus::Pending->value, 0),
-            'Verified' => $countsPerStatus->get(StudentStatus::Verified->value, 0),
-            'Suspended' => $countsPerStatus->get(StudentStatus::Suspended->value, 0),
-        ];
+            ->pluck('aggregate', 'status')
+            ->put('All', (clone $base)->count());
     }
 
     public static function paginatedListWithFilters(array $filters): LengthAwarePaginator

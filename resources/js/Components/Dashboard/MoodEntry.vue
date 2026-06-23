@@ -1,10 +1,10 @@
 <script setup lang="ts">
-type Mood = 'happy' | 'sad' | 'anxious' | 'neutral';
+import type { Mood } from '@/types';
 
 withDefaults(defineProps<{
   name?: string;
   time?: string;
-  message?: string;
+  message?: string | null;
   flagged?: boolean;
   mood?: Mood | null;
 }>(), {
@@ -13,10 +13,10 @@ withDefaults(defineProps<{
 });
 
 const moodEmoji: Record<Mood, string> = {
-  happy: '😊',
-  sad: '😢',
-  anxious: '😰',
-  neutral: '😐',
+  Excited: '🤩',
+  Content: '😊',
+  Stressed: '😰',
+  Drained: '😩',
 };
 </script>
 

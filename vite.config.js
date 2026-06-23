@@ -4,6 +4,14 @@ import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
+   server: {
+    host: '0.0.0.0',
+    cors: true,
+    hmr: {
+        host: '192.168.0.124',
+    },
+},
+
     plugins: [
         tailwindcss(),
         laravel({

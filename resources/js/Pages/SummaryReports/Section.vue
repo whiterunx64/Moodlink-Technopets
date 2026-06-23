@@ -17,7 +17,6 @@ const props = defineProps<{
     filters: { period: SummaryPeriod; search: string | null };
 }>();
 
-// ── Mood overview items ───────────────────────────────────────────────────────
 const OVERVIEW_ITEMS = computed(() => [
     { label: 'Total', value: props.detail.total, color: 'text-text-primary', bg: 'bg-gray-50' },
     { label: 'Excited', value: props.detail.excited, color: 'text-green-600', bg: 'bg-green-50' },
@@ -27,7 +26,6 @@ const OVERVIEW_ITEMS = computed(() => [
     { label: 'At-Risk', value: props.detail.atRisk, color: 'text-red-600', bg: 'bg-red-50' },
 ]);
 
-// ── Client-side student search ────────────────────────────────────────────────
 const search = ref('');
 
 const filteredStudents = computed(() => {
@@ -38,19 +36,16 @@ const filteredStudents = computed(() => {
     );
 });
 
-// ── Trend badge styles ────────────────────────────────────────────────────────
 const TREND_STYLE: Record<string, { icon: Component; cls: string }> = {
     Declining: { icon: ArrowDownIcon, cls: 'bg-red-50 text-red-500 border border-red-100' },
     Stable: { icon: MinusIcon, cls: 'bg-gray-50 text-text-muted border border-border-light' },
     Improving: { icon: ArrowUpIcon, cls: 'bg-green-50 text-green-600 border border-green-100' },
 };
 
-// ── Distribution bar width helper ─────────────────────────────────────────────
 function barPct(count: number): string {
     return props.detail.total > 0 ? `${Math.round((count / props.detail.total) * 100)}%` : '0%';
 }
 
-// ── Navigation ────────────────────────────────────────────────────────────────
 function onPeriodChange(p: SummaryPeriod) {
     router.get(route('summary-reports.section-aggregated-report', props.detail.section), { period: p }, {
         preserveState: true,
@@ -74,10 +69,8 @@ function openStudent(studentId: number) {
     <AdminLayout :title="`Section ${detail.section}`">
         <div class="space-y-5">
 
-            <!-- Period filter + Export PDF -->
             <PeriodFilter :model-value="filters.period" @update:model-value="onPeriodChange" />
 
-            <!-- Back + Title -->
             <div class="flex items-center gap-3">
                 <button type="button"
                     class="w-8 h-8 rounded-full border border-border-light bg-white flex items-center justify-center hover:bg-gray-50 transition-colors"
@@ -90,7 +83,6 @@ function openStudent(studentId: number) {
                 </div>
             </div>
 
-            <!-- Mood Overview -->
             <div class="bg-white rounded-2xl border border-border-light shadow-sm p-6">
                 <h3 class="text-sm font-semibold text-text-primary mb-4">Mood Overview</h3>
 
@@ -102,7 +94,6 @@ function openStudent(studentId: number) {
                     </div>
                 </div>
 
-                <!-- Distribution bar -->
                 <div class="flex h-3 rounded-full overflow-hidden">
                     <div class="bg-green-500 h-full" :style="{ width: barPct(detail.excited) }" />
                     <div class="bg-blue-500 h-full" :style="{ width: barPct(detail.content) }" />
@@ -111,7 +102,6 @@ function openStudent(studentId: number) {
                 </div>
             </div>
 
-            <!-- Students list -->
             <div class="bg-white rounded-2xl border border-border-light shadow-sm p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div>
@@ -129,7 +119,6 @@ function openStudent(studentId: number) {
                     </div>
                 </div>
 
-                <!-- Student cards -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                     <button v-for="student in filteredStudents" :key="student.id" type="button"
                         class="text-left border border-border-light rounded-xl p-4 hover:bg-gray-50 hover:border-sidebar/30 transition-all"

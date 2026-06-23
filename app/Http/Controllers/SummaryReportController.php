@@ -7,11 +7,14 @@ namespace App\Http\Controllers;
 use App\Exceptions\AppointmentException;
 use App\Http\Requests\StoreConsultationRequest;
 use App\Http\Requests\SummaryReportFilterRequest;
+use App\Enums\PostMood;
 use App\Models\Appointment;
 use App\Models\Post;
 use App\Models\Student;
 use App\Services\AppointmentService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 use function in_array;
@@ -77,12 +80,12 @@ class SummaryReportController extends Controller
 
     private function overviewMoodStatistics(string $period): array
     {
-        $moodDistribution = Post::getMoodDistribution($period); // Retrieve mood breakdown.
+        $moodDistribution = $this->moodDistribution($period); // Retrieve mood breakdown.
         $totalMoodLogs = array_sum(array_column($moodDistribution, 'count')); // Calculate total mood entries.
 
         return [
             'totalMoodLogs' => $totalMoodLogs,
-            'avgDailyLogs' => Post::getAvgDailyLogs($period, $totalMoodLogs),
+            'avgDailyLogs' => $this->avgDailyLogs($period, $totalMoodLogs),
             'atRiskStudents' => Student::getAtRiskCount($period),
             'appointmentsSet' => Appointment::getScheduledCount($period),
             'distribution' => $moodDistribution,
@@ -103,7 +106,7 @@ class SummaryReportController extends Controller
         $students = Student::atRiskList($period); // Find at-risk students.
         $studentIds = $students->pluck('id')->all(); // Collect student IDs.
 
-        $summaries = Post::getAtRiskSummary($studentIds, $period); // Load mood summaries.
+        $summaries = $this->atRiskSummaries($studentIds, $period); // Load mood summaries.
         $consultationIds = Appointment::activeConsultationStudentIds($studentIds); // Load active consultations.
 
         return $students->map(function (Student $student) use ($summaries, $consultationIds): array {
@@ -173,5 +176,93 @@ class SummaryReportController extends Controller
                 ['id' => 5, 'mood' => 'Drained', 'content' => 'Tired after a long day of classes', 'date' => 'Mar 5, 2026'],
             ],
         ];
+    }
+
+    /**
+     * Shape mood counts into label/count/pct rows for every mood case.
+     *
+     * @return array<int, array{label: string, count: int, pct: int}>
+     */
+    private function moodDistribution(string $period): array
+    {
+        $counts = Post::getMoodCounts($period);
+        $grand = $counts->sum();
+
+        return collect(PostMood::cases())
+            ->map(function (PostMood $mood) use ($counts, $grand): array {
+                $count = (int) $counts->get($mood->value, 0);
+
+                return [
+                    'label' => $mood->value,
+                    'count' => $count,
+                    'pct' => $grand > 0 ? (int) round($count / $grand * 100) : 0,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Build per-student at-risk summaries keyed by student id.
+     *
+     * @param  array<int>  $studentIds
+     * @return array<int, array{moods: array<int, string>, daysAtRisk: int, lastLog: string|null}>
+     */
+    private function atRiskSummaries(array $studentIds, string $period): array
+    {
+        if (empty($studentIds)) {
+            return [];
+        }
+
+        $from = Post::summaryReportPeriodStart($period);
+
+        return Post::getPostsForStudents($studentIds)
+            ->map(function (Collection $posts) use ($from): array {
+                $atRiskPosts = $posts->filter(
+                    fn(Post $post): bool => $this->isAtRiskPost($post, $from)
+                );
+
+                // Posts are date-desc, so the last at-risk post is the earliest at-risk log.
+                $firstAtRiskPost = $atRiskPosts->last();
+
+                return [
+                    'moods' => $atRiskPosts
+                        ->groupBy(fn(Post $post): string => $post->mood->value)
+                        ->map(fn(Collection $group): int => $group->count())
+                        ->sortDesc()
+                        ->keys()
+                        ->all(),
+
+                    'daysAtRisk' => $this->daysAtRisk($firstAtRiskPost),
+
+                    'lastLog' => $posts->first()?->datetime?->diffForHumans(),
+                ];
+            })
+            ->all();
+    }
+
+    private function avgDailyLogs(string $period, int $totalMoodLogs): int
+    {
+        $days = Post::summaryReportPeriodDays($period);
+
+        return (int) round($totalMoodLogs / $days);
+    }
+
+    private function isAtRiskPost(Post $post, ?Carbon $from): bool
+    {
+        return in_array($post->mood, [PostMood::Stressed, PostMood::Drained], true)
+            && ($from === null || $post->datetime->greaterThanOrEqualTo($from));
+    }
+
+    private function daysAtRisk(?Post $post): int
+    {
+        if ($post === null) {
+            return 0;
+        }
+
+        return (int) $post->datetime
+            ->copy()
+            ->startOfDay()
+            ->diffInDays(Carbon::now()->startOfDay()) + 1;
     }
 }

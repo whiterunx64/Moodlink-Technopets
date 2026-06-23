@@ -8,6 +8,7 @@ import type {
     AppointmentTabCounts,
     AvailableSlot,
 } from '@/types';
+import { usePollingReload } from '@/composables/usePolling';
 import { TrashIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
@@ -19,14 +20,14 @@ const props = defineProps<{
     filters: AppointmentFilters;
 }>();
 
-// ── Tabs ──────────────────────────────────────────────────────────────────────
-
 const TABS: { key: AppointmentTab; label: string; badge: string }[] = [
     { key: 'requests', label: 'Requests', badge: 'bg-red-500' },
     { key: 'scheduled', label: 'Scheduled', badge: 'bg-green-500' },
     { key: 'history', label: 'History', badge: 'bg-gray-400' },
     { key: 'rejected', label: 'Rejected', badge: 'bg-orange-400' },
 ];
+
+usePollingReload(['appointments', 'tabCounts', 'availableSlots']);
 
 const activeTab = computed(() => props.filters.tab ?? 'requests');
 
@@ -37,8 +38,6 @@ function switchTab(tab: AppointmentTab) {
         { preserveState: true, replace: true },
     );
 }
-
-// ── Appointment actions ───────────────────────────────────────────────────────
 
 function approve(id: number) {
     router.patch(
@@ -62,16 +61,12 @@ function complete(id: number) {
     );
 }
 
-// ── Status badge map ──────────────────────────────────────────────────────────
-
 const STATUS_BADGE: Record<string, string> = {
     Scheduled: 'bg-green-100 text-green-700',
     Completed: 'bg-amber-100 text-amber-700',
     Rejected: 'bg-red-100 text-red-600',
     Pending: 'bg-amber-50 text-amber-600',
 };
-
-// ── Student profile modal ─────────────────────────────────────────────────────
 
 const selectedStudent = ref<
     (AppointmentStudentProfile & { name: string }) | null
@@ -80,8 +75,6 @@ const selectedStudent = ref<
 function openProfile(apt: Appointment) {
     selectedStudent.value = { ...apt.student_profile, name: apt.student_name };
 }
-
-// ── Set Schedule modal ────────────────────────────────────────────────────────
 
 const showScheduleModal = ref(false);
 
@@ -115,9 +108,7 @@ function deleteSlot(id: number) {
 
     <AdminLayout title="Appointments">
         <div class="items-start gap-6 lg:flex">
-            <!-- ── Left column ────────────────────────────────────────────── -->
             <div class="mb-6 min-w-0 flex-1">
-                <!-- Tabs -->
                 <div class="border-border-light mb-5 flex items-center gap-1 overflow-scroll border-b">
                     <button v-for="tab in TABS" :key="tab.key" type="button" :class="[
                         '-mb-px flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
@@ -135,7 +126,6 @@ function deleteSlot(id: number) {
                     </button>
                 </div>
 
-                <!-- Appointment list -->
                 <div class="border-border-light divide-border-light divide-y rounded-2xl border bg-white shadow-sm">
                     <div v-if="appointments.length === 0" class="text-text-muted py-16 text-center text-sm">
                         No appointments in this category.
@@ -143,7 +133,6 @@ function deleteSlot(id: number) {
 
                     <div v-for="apt in appointments" :key="apt.id" class="px-6 py-5">
                         <div class="flex items-start justify-between gap-4">
-                            <!-- Info -->
                             <div class="min-w-0">
                                 <button type="button"
                                     class="text-sidebar cursor-pointer text-left text-sm font-semibold capitalize hover:underline"
@@ -172,7 +161,6 @@ function deleteSlot(id: number) {
                                 </p>
                             </div>
 
-                            <!-- Actions / badge -->
                             <div class="mt-0.5 flex flex-col gap-2">
                                 <template v-if="activeTab === 'requests'">
                                     <button type="button"
@@ -218,7 +206,6 @@ function deleteSlot(id: number) {
                 </div>
             </div>
 
-            <!-- ── Right column: available slots ─────────────────────────── -->
             <div class="w-72 shrink-0">
                 <div class="border-border-light sticky top-6 rounded-2xl border bg-white p-6 shadow-sm">
                     <h3 class="text-text-primary mb-4 text-sm font-semibold">
@@ -258,7 +245,6 @@ function deleteSlot(id: number) {
             </div>
         </div>
 
-        <!-- ── Student Profile Modal ──────────────────────────────────────── -->
         <Teleport to="body">
             <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0"
                 enter-to-class="opacity-100" leave-active-class="transition duration-150" leave-from-class="opacity-100"
@@ -267,7 +253,6 @@ function deleteSlot(id: number) {
                     <div class="absolute inset-0 bg-black/30" @click="selectedStudent = null" />
 
                     <div class="relative max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-xl">
-                        <!-- Close -->
                         <button type="button"
                             class="text-text-muted absolute top-4 right-4 z-10 rounded-full p-1.5 transition-colors hover:bg-gray-100"
                             @click="selectedStudent = null">
@@ -275,7 +260,6 @@ function deleteSlot(id: number) {
                         </button>
 
                         <div class="p-7">
-                            <!-- Avatar + identity -->
                             <div class="mb-6 flex items-center gap-4">
                                 <div
                                     class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-blue-100">
@@ -296,7 +280,6 @@ function deleteSlot(id: number) {
                                 </div>
                             </div>
 
-                            <!-- Stats grid -->
                             <div class="mb-6 grid grid-cols-2 gap-x-8 gap-y-4">
                                 <div>
                                     <p class="text-text-muted text-xs">
@@ -332,7 +315,6 @@ function deleteSlot(id: number) {
                                 </div>
                             </div>
 
-                            <!-- Appointment history -->
                             <p class="text-text-primary mb-3 text-sm font-semibold">
                                 Appointment History
                             </p>
@@ -386,7 +368,6 @@ function deleteSlot(id: number) {
             </Transition>
         </Teleport>
 
-        <!-- ── Set Schedule Modal ─────────────────────────────────────────── -->
         <Teleport to="body">
             <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0"
                 enter-to-class="opacity-100" leave-active-class="transition duration-150" leave-from-class="opacity-100"

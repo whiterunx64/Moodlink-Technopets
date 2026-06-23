@@ -21,7 +21,19 @@ class PostManagementController extends Controller
     {
         $filters = $request->filters();
 
-        $posts = Post::paginatedListWithFilters($filters);
+        $posts = Post::paginatedListWithFilters($filters)
+            ->through(fn(Post $post): array => [
+                'id' => $post->id,
+                'content' => $post->content,
+                'mood' => $post->mood?->value,
+                'status' => $post->status?->value,
+                'date' => $post->display_date,
+                'time' => $post->display_time,
+                'section' => $post->student?->section ?? '',
+                'anonymous_name' => $post->student?->anonymous_name,
+                'last_name' => $post->student?->last_name,
+                'first_name' => $post->student?->first_name,
+            ]);
 
         return Inertia::render('PostManagement/Index', [
             'posts' => $posts,

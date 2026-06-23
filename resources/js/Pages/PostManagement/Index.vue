@@ -5,16 +5,19 @@ import PostCard from '@/Components/Posts/PostCard.vue';
 import PostDetailModal from '@/Components/Posts/PostDetailModal.vue';
 import Pagination from '@/Components/UI/Pagination.vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import { usePaginatorNav } from '@/composables/usePaginatorNav';
+import { usePollingReload } from '@/composables/usePolling';
 import type { Paginated, Post, PostFilters } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
-import { computed, ref } from 'vue';
+import { computed, ref, toRef } from 'vue';
 
 const props = defineProps<{
     posts: Paginated<Post>;
     filters: PostFilters;
 }>();
 
-// ── Sort toggle ───────────────────────────────────────────────────────────────
+usePollingReload(['posts']);
+
 const currentSort = computed(() => props.filters.sort ?? 'latest');
 const currentSortLabel = computed(() =>
     currentSort.value === 'oldest' ? 'Oldest first' : 'Latest first',
@@ -32,7 +35,6 @@ function toggleSort() {
     );
 }
 
-// ── Filter tabs ───────────────────────────────────────────────────────────────
 const activeFilter = computed<string>(() => {
     const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
     if (props.filters.status) return cap(props.filters.status);
@@ -88,22 +90,7 @@ function setFilter(filter: string) {
     );
 }
 
-// ── Pagination ────────────────────────────────────────────────────────────────
-const pageNumbers = computed<(number | '…')[]>(() => {
-    const total = props.posts.last_page;
-    const cur = props.posts.current_page;
-    if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
-    const show = new Set(
-        [1, total, cur, cur - 1, cur + 1].filter((p) => p >= 1 && p <= total),
-    );
-    const sorted = [...show].sort((a, b) => a - b);
-    const result: (number | '…')[] = [];
-    for (let i = 0; i < sorted.length; i++) {
-        if (i > 0 && sorted[i] - sorted[i - 1] > 1) result.push('…');
-        result.push(sorted[i]);
-    }
-    return result;
-});
+const { pageNumbers } = usePaginatorNav(toRef(props, 'posts'));
 
 function goToPage(page: number) {
     router.get(route('post-management.index'), filterParams({ page }), {
@@ -112,7 +99,6 @@ function goToPage(page: number) {
     });
 }
 
-// ── Flag / unflag ─────────────────────────────────────────────────────────────
 function toggleFlag(post: Post) {
     const routeName =
         post.status === 'flagged'
@@ -139,7 +125,6 @@ function toggleFlag(post: Post) {
     );
 }
 
-// ── Post detail modal ─────────────────────────────────────────────────────────
 const selectedPost = ref<Post | null>(null);
 
 function openModal(post: Post) {
@@ -160,13 +145,11 @@ function toggleFlagFromModal() {
     <Head title="Posts" />
 
     <AdminLayout title="Posts">
-        <!-- Extra bottom padding so the fixed pagination bar never overlaps cards -->
+        <!-- Bottom padding keeps the fixed pagination bar from covering cards -->
         <div class="space-y-5 pb-20">
-            <!-- Filter tabs + Latest first label -->
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <FilterTabs :model-value="activeFilter" :tabs="tabs" @update:model-value="setFilter" />
 
-                <!-- Sort toggle -->
                 <div class="bg-bg-surface border-border-light flex items-center rounded-xl border p-1">
                     <button type="button"
                         class="text-filter-inactive-text hover:text-filter-inactive-hover-text hover:bg-filter-inactive-hover-bg flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-medium transition-all duration-150 select-none"
@@ -182,7 +165,6 @@ function toggleFlagFromModal() {
                 </div>
             </div>
 
-            <!-- Post grid -->
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <PostCard v-for="post in posts.data" :key="post.id" :post="post" @toggle-flag="toggleFlag(post)"
                     @view="openModal(post)" />
@@ -194,13 +176,11 @@ function toggleFlagFromModal() {
             </div>
         </div>
 
-        <!-- Fixed pagination bar -->
         <Pagination :fixed="true" :current-page="posts.current_page" :total-pages="posts.last_page"
             :page-numbers="pageNumbers" :range-start="posts.from ?? 0" :range-end="posts.to ?? 0" :total="posts.total"
             @update:current-page="goToPage" @prev="goToPage(posts.current_page - 1)"
             @next="goToPage(posts.current_page + 1)" />
 
-        <!-- Post detail modal -->
         <PostDetailModal :post="selectedPost" :show="selectedPost !== null" @close="closeModal"
             @toggle-flag="toggleFlagFromModal" />
     </AdminLayout>
