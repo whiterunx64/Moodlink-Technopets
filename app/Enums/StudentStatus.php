@@ -2,8 +2,6 @@
 
 namespace App\Enums;
 
-use App\Traits\EnumValues;
-
 /**
  * A student account's lifecycle state.
  *
@@ -12,8 +10,6 @@ use App\Traits\EnumValues;
  */
 enum StudentStatus: string
 {
-    use EnumValues;
-
     case Pending = 'pending';
     case Verified = 'verified';
     case Unverified = 'unverified';

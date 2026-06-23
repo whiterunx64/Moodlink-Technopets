@@ -2,12 +2,8 @@
 
 namespace App\Enums;
 
-use App\Traits\EnumValues;
-
 enum YearLevel: int
 {
-    use EnumValues;
-
     case Unknown = 0;
     case First = 1;
     case Second = 2;

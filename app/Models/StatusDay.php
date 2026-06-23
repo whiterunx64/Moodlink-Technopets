@@ -47,12 +47,6 @@ class StatusDay extends Model
         ];
     }
 
-    public function scopeWhereStudentIsVerified(Builder $query): Builder
-    {
-        return $query->whereHas('student', function (Builder $studentQuery) {
-            $studentQuery->where('status', StudentStatus::Verified->value);
-        });
-    }
     /**
      * @return BelongsTo<Student, StatusDay>
      */
@@ -61,4 +55,42 @@ class StatusDay extends Model
         return $this->belongsTo(Student::class, 'account_id', 'id');
     }
 
+    public function scopeWhereStudentIsVerified(Builder $query): Builder
+    {
+        return $query->whereHas('student', function (Builder $studentQuery) {
+            $studentQuery->where('status', StudentStatus::Verified->value);
+        });
+    }
+
+    public function scopeWhereStudentAtRisk(Builder $query): Builder
+    {
+        return $query->whereIn('mood', [PostMood::Stressed->value, PostMood::Drained->value, PostMood::Content->value]);
+    }
+
+    public static function avgDailyLogs(string $period): int
+    {
+        $stats = static::query()
+            ->whereStudentIsVerified()
+            ->recordedOnOrAfter(static::summaryReportPeriodStart($period))
+            ->selectRaw('count(*) as total, count(distinct date) as active_days')
+            ->first();
+
+        $activeDays = (int) $stats->active_days;
+
+        return $activeDays > 0 ? (int) round((int) $stats->total / $activeDays) : 0;
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<string, int>
+     */
+    public static function getMoodCounts(string $period): \Illuminate\Support\Collection
+    {
+        return static::query()
+            ->whereStudentIsVerified()
+            ->recordedOnOrAfter(static::summaryReportPeriodStart($period))
+            ->whereNotNull('mood')
+            ->selectRaw('mood, count(*) as total')
+            ->groupBy('mood')
+            ->pluck('total', 'mood');
+    }
 }

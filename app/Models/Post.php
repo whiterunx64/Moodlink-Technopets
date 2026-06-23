@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
+use function in_array;
 
 /**
  * @property int $id
@@ -151,6 +152,20 @@ class Post extends Model
     public static function paginatedListWithFilters(array $filters): LengthAwarePaginator
     {
         return static::paginateForAdmin(static::queryVerifiedPostsWithFilters($filters));
+    }
+
+    public function isAtRisk(?Carbon $from = null): bool
+    {
+        return in_array($this->mood, [PostMood::Stressed, PostMood::Drained], true)
+            && ($from === null || $this->datetime->greaterThanOrEqualTo($from));
+    }
+
+    public function daysAtRisk(): int
+    {
+        return (int) $this->datetime
+            ->copy()
+            ->startOfDay()
+            ->diffInDays(Carbon::now()->startOfDay()) + 1;
     }
 
     /**
