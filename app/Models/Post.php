@@ -10,6 +10,7 @@ use App\Traits\HasAdminPagination;
 use App\Traits\HasDateTimeDisplay;
 use App\Traits\HasFilters;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -71,6 +72,20 @@ class Post extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class, 'student_id');
+    }
+
+    protected function displayDate(): Attribute
+    {
+        return Attribute::make(
+            get: fn(): string => $this->phFormat('M d, Y'),
+        );
+    }
+
+    protected function displayTime(): Attribute
+    {
+        return Attribute::make(
+            get: fn(): string => $this->phFormat('h:i A'),
+        );
     }
 
     public function scopeFromVerifiedStudents(Builder $query): Builder
@@ -143,8 +158,8 @@ class Post extends Model
                 'content' => $post->content,
                 'mood' => $post->mood?->value,
                 'status' => $post->status?->value,
-                'date' => $post->displayDate(),
-                'time' => $post->displayTime(),
+                'date' => $post->display_date,
+                'time' => $post->display_time,
                 'section' => $post->student?->section ?? '',
                 'anonymous_name' => $post->student?->anonymous_name,
                 'last_name' => $post->student?->last_name,

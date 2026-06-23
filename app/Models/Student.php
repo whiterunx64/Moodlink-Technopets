@@ -33,6 +33,7 @@ use Illuminate\Support\Str;
  *
  * @property-read string|null $auth_user_id
  * @property-read string $name
+ * @property-read string $studentNameInitials
  * @property-read string $year_level_label
  * @property-read string $account_status
  * @property-read string $verification_status
@@ -103,6 +104,16 @@ class Student extends Model
         );
     }
 
+    protected function studentNameInitials(): Attribute
+    {
+        return Attribute::make(
+            get: fn(): string => collect(explode(' ', trim($this->name)))
+                ->filter()
+                ->map(fn(string $word): string => strtoupper($word[0] ?? ''))
+                ->take(2)
+                ->implode(''),
+        );
+    }
 
     protected function yearLevelLabel(): Attribute
     {

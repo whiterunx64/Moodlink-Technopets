@@ -42,21 +42,21 @@ function switchTab(tab: AppointmentTab) {
 
 function approve(id: number) {
     router.patch(
-        route('appointments.approve', id),
+        route('appointments.approve-request', id),
         {},
         { preserveScroll: true },
     );
 }
 function reject(id: number) {
     router.patch(
-        route('appointments.reject', id),
+        route('appointments.reject-request', id),
         {},
         { preserveScroll: true },
     );
 }
 function complete(id: number) {
     router.patch(
-        route('appointments.complete', id),
+        route('appointments.mark-completed', id),
         {},
         { preserveScroll: true },
     );
@@ -93,7 +93,7 @@ function openScheduleModal() {
 }
 
 function submitSchedule() {
-    scheduleForm.post(route('appointments.schedules.store'), {
+    scheduleForm.post(route('appointments.schedule-slots.store'), {
         preserveScroll: true,
         onSuccess: () => {
             showScheduleModal.value = false;
@@ -103,7 +103,7 @@ function submitSchedule() {
 }
 
 function deleteSlot(id: number) {
-    router.delete(route('appointments.schedules.destroy', id), {
+    router.delete(route('appointments.schedule-slots.destroy', id), {
         preserveScroll: true,
     });
 }

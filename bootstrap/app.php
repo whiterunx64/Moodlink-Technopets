@@ -1,10 +1,13 @@
 <?php
 
+use App\Exceptions\InfrastructureException;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -38,4 +41,46 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return redirect()->route('login')->with('flash_error', $e->getMessage());
         });
+
+        // Translate raw Supabase Postgres connectivity failures into a typed
+        // infrastructure exception carrying the right HTTP status and a safe
+        // user message, then re-throw it so Laravel renders it with that
+        // status (503/502) and the matching errors/{status}.blade.php — which
+        // Inertia shows in its built-in modal. Genuine query bugs (constraint
+        // violations, bad SQL) return null here and surface normally.
+        $exceptions->render(function (QueryException|\PDOException $e, Request $request) {
+            $infra = InfrastructureException::fromDatabaseError($e);
+
+            if ($infra === null) {
+                return null;
+            }
+
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return infrastructureJsonResponse($infra);
+            }
+
+            throw $infra;
+        });
+
+        $exceptions->render(function (InfrastructureException $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return infrastructureJsonResponse($e);
+            }
+
+            // Let Laravel render the matching errors/{status} view; the typed
+            // exception's getStatusCode() drives both the status and the view.
+            return null;
+        });
     })->create();
+
+/**
+ * JSON body describing an infrastructure failure for API clients.
+ */
+function infrastructureJsonResponse(InfrastructureException $e): Response
+{
+    return response()->json([
+        'message'   => $e->getMessage(),
+        'code'      => $e->errorCode,
+        'retryable' => $e->isRetryable(),
+    ], $e->getStatusCode());
+}

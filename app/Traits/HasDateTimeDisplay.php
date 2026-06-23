@@ -6,18 +6,10 @@ namespace App\Traits;
 
 trait HasDateTimeDisplay
 {
-  private function displayPhDate(): string
-  {
-    return $this->datetime->setTimezone(config('app.timezone'))->format('M d, Y');
-  }
+  public const DISPLAY_TIMEZONE = 'Asia/Manila';
 
-  private function displayDate(): string
+  protected function phFormat(string $format): string
   {
-    return $this->datetime->setTimezone(config('app.timezone'))->toDateString();
-  }
-
-  private function displayTime(): string
-  {
-    return $this->datetime->setTimezone(config('app.timezone'))->format('h:i A');
+    return $this->datetime->copy()->setTimezone(self::DISPLAY_TIMEZONE)->format($format);
   }
 }

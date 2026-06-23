@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PostMood;
+use App\Support\PhTime;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +25,7 @@ final class AdminDashboardService
 
   public function getDashboardData(): array
   {
-    $todayStart = Carbon::today('Asia/Manila')->utc();
+    $todayStart = PhTime::todayStartUtc();
 
     $moodLogsToday = DB::table('posts')
       ->join('students', 'posts.student_id', '=', 'students.id')
@@ -68,8 +69,7 @@ final class AdminDashboardService
       )
       ->get()
       ->map(function ($row) {
-        $time = Carbon::parse($row->datetime)
-          ->setTimezone('Asia/Manila');
+        $time = PhTime::fromUtc($row->datetime);
 
         return [
           'id' => $row->id,
@@ -100,8 +100,7 @@ final class AdminDashboardService
       )
       ->get()
       ->map(function ($row) {
-        $date = Carbon::parse($row->datetime)
-          ->setTimezone('Asia/Manila');
+        $date = PhTime::fromUtc($row->datetime);
 
         // Always ensure name is not null
         $name = $row->anonymous_name ?: trim(($row->first_name ?? '') . ' ' . ($row->last_name ?? ''));
@@ -190,7 +189,7 @@ final class AdminDashboardService
 
   private function periodStart(string $period): Carbon
   {
-    $now = Carbon::now('Asia/Manila');
+    $now = PhTime::now();
 
     $start = match ($period) {
       'Weekly' => $now->copy()->subDays(6)->startOfDay(),

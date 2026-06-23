@@ -7,8 +7,8 @@ namespace App\Models;
 use App\Enums\AppointmentStatus;
 use App\Traits\HasDateTimeDisplay;
 use App\Traits\HasFilters;
-use App\Traits\HasStudentDisplay;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -25,7 +25,11 @@ use Illuminate\Support\Collection;
  * @property Carbon $datetime
  *
  * @property-read \App\Models\Student|null $student
- *
+ * @property-read string $student_name
+ * @property-read string $student_section
+ * @property-read string $display_date
+ * @property-read string $display_time
+ * 
  * @method static Builder|Appointment pending()
  * @method static Builder|Appointment scheduled()
  * @method static Builder|Appointment history()
@@ -36,12 +40,11 @@ use Illuminate\Support\Collection;
  * @method static Builder|Appointment forStudent(int $studentId)
  *
  * @mixin HasDateTimeDisplay
- * @mixin HasStudentDisplay
  */
 
 class Appointment extends Model
 {
-    use HasDateTimeDisplay, HasStudentDisplay, HasFilters;
+    use HasDateTimeDisplay, HasFilters;
 
     protected $table = 'appointments';
     public $timestamps = false;
@@ -68,6 +71,35 @@ class Appointment extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class, 'student_id');
+    }
+
+    protected function studentName(): Attribute
+    {
+        return Attribute::make(
+            get: fn(): string => $this->student?->name ?? 'Unknown',
+        );
+    }
+
+    protected function studentSection(): Attribute
+    {
+        return Attribute::make(
+            get: fn(): string => $this->student?->section ?? '',
+        );
+    }
+
+
+    protected function displayDate(): Attribute
+    {
+        return Attribute::make(
+            get: fn(): string => $this->phFormat('M d, Y'),
+        );
+    }
+
+    protected function displayTime(): Attribute
+    {
+        return Attribute::make(
+            get: fn(): string => $this->phFormat('h:i A'),
+        );
     }
 
     public function scopePending(Builder $query): Builder
@@ -137,38 +169,20 @@ class Appointment extends Model
             ->with('student.appointments')
             ->forAppointmentTab($tab)
             ->orderBy('datetime')
-            ->get()
-            ->map(fn(Appointment $appointment): array => [
-                'id' => $appointment->id,
-                'student_id' => $appointment->student_id,
-                'context' => $appointment->context,
-                'note' => $appointment->note,
-                'status' => $appointment->status->value,
-                'date' => $appointment->displayDate(),
-                'time' => $appointment->displayTime(),
-                'student_name' => $appointment->displayStudentName(),
-                'section' => $appointment->displayStudentSection(),
-                'student_profile' => $appointment->studentProfile(),
-            ]);
+            ->get();
     }
 
-    public static function getCountsPerStatusTab(): array
+    /**
+     * Raw appointment totals keyed by status value.
+     *
+     * @return array<string, int>
+     */
+    public static function countsByStatus(): array
     {
-        // Get appointment totals grouped by status.
-        $appointmentCounts = static::selectRaw('status, count(*) as total')
+        return static::selectRaw('status, count(*) as total')
             ->groupBy('status')
-            ->pluck('total', 'status');
-
-        return [
-            'requests' => $appointmentCounts->get(AppointmentStatus::Pending->value, 0),
-            'scheduled' => $appointmentCounts->get(AppointmentStatus::Scheduled->value, 0),
-
-            // History includes completed and rejected appointments.
-            'history' => $appointmentCounts->get(AppointmentStatus::Completed->value, 0)
-                + $appointmentCounts->get(AppointmentStatus::Rejected->value, 0),
-
-            'rejected' => $appointmentCounts->get(AppointmentStatus::Rejected->value, 0),
-        ];
+            ->pluck('total', 'status')
+            ->all();
     }
 
     public static function activeConsultationStudentIds(array $studentIds): array

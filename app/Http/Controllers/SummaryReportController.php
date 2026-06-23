@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\AppointmentException;
 use App\Http\Requests\StoreConsultationRequest;
 use App\Http\Requests\SummaryReportFilterRequest;
 use App\Models\Appointment;
 use App\Models\Post;
 use App\Models\Student;
 use App\Services\AppointmentService;
-use DomainException;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -65,8 +65,8 @@ class SummaryReportController extends Controller
     public function consult(StoreConsultationRequest $request, Student $student): RedirectResponse
     {
         try {
-            $this->service->openConsultation($student, $request->scheduledAt());
-        } catch (DomainException $exception) {
+            $this->service->scheduleConsultationForStudent($student, $request->scheduledAt());
+        } catch (AppointmentException $exception) {
             return back()->with('flash_error', $exception->getMessage());
         }
 

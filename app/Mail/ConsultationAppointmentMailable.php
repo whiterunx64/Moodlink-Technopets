@@ -2,16 +2,16 @@
 
 namespace App\Mail;
 
+use App\Models\Appointment;
 use App\Models\Student;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class StudentCredentialsMail extends Mailable
+class ConsultationAppointmentMailable extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -20,9 +20,9 @@ class StudentCredentialsMail extends Mailable
      */
     public function __construct(
         public readonly Student $student,
-        public readonly string $loginEmail,
-        public readonly string $initialPassword
+        public readonly Appointment $appointment,
     ) {
+        //
     }
 
     /**
@@ -31,7 +31,7 @@ class StudentCredentialsMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your Moodlink account is ready',
+            subject: 'The Guidance Office Has Scheduled a Consultation With You',
         );
     }
 
@@ -41,10 +41,10 @@ class StudentCredentialsMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'mail.student-account-password',
+            view: 'mail.consultation-appointment-mail',
             with: [
                 'logoData' => @file_get_contents(
-                    config('supabase-auth.url') . '/storage/v1/object/public/assets/MailLogo.png'
+                    config('supabase-auth.url').'/storage/v1/object/public/assets/MailLogo.png'
                 ) ?: null,
             ],
         );

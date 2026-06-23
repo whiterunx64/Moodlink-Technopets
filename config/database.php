@@ -96,6 +96,10 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
+            // Read/write timestamps in UTC regardless of the column type, so app
+            // code can rely on Carbon instances always being UTC and convert to
+            // the display timezone explicitly.
+            'timezone' => 'UTC',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
             'options' => [
                 PDO::ATTR_EMULATE_PREPARES => true,

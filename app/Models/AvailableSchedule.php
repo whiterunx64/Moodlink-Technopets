@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\HasDateTimeDisplay;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
@@ -13,6 +14,9 @@ use Illuminate\Support\Collection;
  * @property int|null $takenBy
  * @property \Illuminate\Support\Carbon $datetime
  *
+ * @property-read string $display_date
+ * @property-read string $display_time
+ * 
  * @mixin HasDateTimeDisplay
  */
 
@@ -35,16 +39,24 @@ class AvailableSchedule extends Model
         ];
     }
 
+    protected function displayDate(): Attribute
+    {
+        return Attribute::make(
+            get: fn(): string => $this->phFormat('M d, Y'),
+        );
+    }
+
+    protected function displayTime(): Attribute
+    {
+        return Attribute::make(
+            get: fn(): string => $this->phFormat('h:i A'),
+        );
+    }
+
     public static function getAvailableSlotsList(): Collection
     {
         return static::query()
             ->orderBy('datetime')
-            ->get()
-            ->map(fn(AvailableSchedule $schedule): array => [
-                'id' => $schedule->id,
-                'date' => $schedule->displayPhDate(),
-                'start_time' => $schedule->displayTime(),
-                'taken' => $schedule->takenBy !== null,
-            ]);
+            ->get();
     }
 }

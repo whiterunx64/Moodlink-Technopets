@@ -35,6 +35,62 @@ Route::get(config('supabase-auth.monitoring.health_checks.endpoint'), [HealthCon
 //        'time_seconds' => $duration,
 //    ];
 //});
+// Local-only preview of the appointment-approved email. No DB writes, no mail sent.
+// Renders the classic-letter template end to end: letterhead, details block,
+// sign-off, and the contact footer (email + phone with underline rules).
+Route::get('/preview/approve-appointment-mail', function () {
+    abort_unless(app()->environment('local'), 403);
+
+    $student = new App\Models\Student([
+        'first_name' => 'Maria',
+        'last_name' => 'Santos',
+    ]);
+
+    $appointment = new App\Models\Appointment([
+        'context' => 'Academic stress',
+        'datetime' => now()->addDays(3)->setTime(10, 30),
+    ]);
+    $appointment->id = 42;
+    $appointment->setRelation('student', $student);
+
+    return new App\Mail\ApproveAppointmentMailable($student, $appointment);
+})->name('preview.approve-appointment-mail');
+
+// Local-only preview of the rejected-appointment email. No DB writes, no mail sent.
+Route::get('/preview/reject-appointment-mail', function () {
+    abort_unless(app()->environment('local'), 403);
+
+    $student = new App\Models\Student([
+        'first_name' => 'Maria',
+        'last_name' => 'Santos',
+    ]);
+
+    $appointment = new App\Models\Appointment([
+        'context' => 'Academic stress',
+        'datetime' => now()->addDays(3)->setTime(10, 30),
+    ]);
+    $appointment->id = 42;
+    $appointment->setRelation('student', $student);
+
+    return new App\Mail\RejectAppointmentMailable($student, $appointment);
+})->name('preview.reject-appointment-mail');
+
+// Local-only preview of the student-account credentials email. No DB writes, no mail sent.
+Route::get('/preview/student-account-password', function () {
+    abort_unless(app()->environment('local'), 403);
+
+    $student = new App\Models\Student([
+        'first_name' => 'Maria',
+        'last_name' => 'Santos',
+    ]);
+
+    return new App\Mail\StudentCredentialsMail(
+        $student,
+        'maria.santos@student.feu.edu.ph',
+        'Tmp-9f2K7xQ4',
+    );
+})->name('preview.student-account-password');
+
 Route::get('/test-password', function () {
     $svc = app(App\Services\StudentAccountService::class);
     $m = new ReflectionMethod($svc, 'generateInitialPassword');
@@ -78,16 +134,16 @@ Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-acce
 
     Route::get('/appointments', [AppointmentController::class, 'index'])
         ->name('appointments.index');
-    Route::patch('/appointments/{appointment}/approve', [AppointmentController::class, 'approve'])
-        ->name('appointments.approve');
-    Route::patch('/appointments/{appointment}/reject', [AppointmentController::class, 'reject'])
-        ->name('appointments.reject');
-    Route::patch('/appointments/{appointment}/complete', [AppointmentController::class, 'complete'])
-        ->name('appointments.complete');
-    Route::post('/appointments/schedules', [AppointmentController::class, 'storeSchedule'])
-        ->name('appointments.schedules.store');
-    Route::delete('/appointments/schedules/{schedule}', [AppointmentController::class, 'destroySchedule'])
-        ->name('appointments.schedules.destroy');
+    Route::patch('/appointments/{appointment}/approve-request', [AppointmentController::class, 'approveAppointmentRequest'])
+        ->name('appointments.approve-request');
+    Route::patch('/appointments/{appointment}/reject-request', [AppointmentController::class, 'rejectAppointmentRequest'])
+        ->name('appointments.reject-request');
+    Route::patch('/appointments/{appointment}/mark-completed', [AppointmentController::class, 'markAppointmentAsCompleted'])
+        ->name('appointments.mark-completed');
+    Route::post('/appointments/schedule-slots', [AppointmentController::class, 'createScheduleSlot'])
+        ->name('appointments.schedule-slots.store');
+    Route::delete('/appointments/schedule-slots/{schedule}', [AppointmentController::class, 'destroyScheduleSlot'])
+        ->name('appointments.schedule-slots.destroy');
 
     Route::get('/profile', [ProfileController::class, 'settings'])
         ->name('profile.settings');
