@@ -20,6 +20,7 @@ use App\Services\SupabaseAuthApi;
 use App\Services\SupabaseClient;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Vite;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -61,6 +62,11 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Force HTTPS URLs in production (fix Render mixed content issue)
+        if (app()->environment('production')) {
+            URL::forceScheme('https');
+        }
+
         Vite::prefetch(concurrency: 3);
 
         Auth::provider('supabase', fn($app, array $config) => new SupabaseUserProvider(
