@@ -28,12 +28,14 @@ use Illuminate\Support\Str;
  * @property int $year_level
  * @property string $section
  * @property string|null $daily_result
+ * @property \Illuminate\Support\Carbon|null $risk_start_date
  * @property string|null $personal_email
  * @property string|null $contact_number
  *
  * @property-read string|null $auth_user_id
  * @property-read string $name
  * @property-read string $studentNameInitials
+ * @property-read int $days_at_risk
  * @property-read string $year_level_label
  * @property-read string $account_status
  * @property-read string $verification_status
@@ -44,6 +46,7 @@ use Illuminate\Support\Str;
  * @method static Builder|Student matchingSearch(string $search)
  * @method static Builder|Student byYearLevel(int $yearLevel)
  * @method static Builder|Student byTab(string $tab)
+ * @method static Builder|Student flaggedAtRisk()
  */
 
 class Student extends Model
@@ -63,6 +66,7 @@ class Student extends Model
         'year_level',
         'section',
         'daily_result',
+        'risk_start_date',
         'personal_email',
         'contact_number',
     ];
@@ -72,6 +76,7 @@ class Student extends Model
         return [
             'status' => StudentStatus::class,
             'year_level' => 'integer',
+            'risk_start_date' => 'date',
         ];
     }
 
@@ -151,6 +156,22 @@ class Student extends Model
     }
 
     /**
+     * Whole days since the student was flagged At Risk (1 on the first day),
+     * or 0 when not flagged. Drives the escalation label.
+     */
+    protected function daysAtRisk(): Attribute
+    {
+        return Attribute::make(get: function (): int {
+            if ($this->risk_start_date === null) {
+                return 0;
+            }
+
+            return (int) $this->risk_start_date->copy()->startOfDay()
+                ->diffInDays(Carbon::now()->startOfDay()) + 1;
+        });
+    }
+
+    /**
      * @return HasMany<Appointment, $this>
      */
 
@@ -207,17 +228,6 @@ class Student extends Model
             return $query;
         }
     }
-    public function scopeAtRisk(Builder $query, ?Carbon $from): Builder
-    {
-        $atRiskPosts = fn(Builder $query) => $query
-            ->stressedOrDrained()
-            ->startingFrom($from);
-
-        return $query
-            ->whereStatusIsVerified()
-            ->whereHas('posts', $atRiskPosts, '>=', 1);
-    }
-
     protected static function queryFilteredBySearchAndYearLevel(array $filters): Builder
     {
         $search = str($filters['search'] ?? '')->squish()->toString();
@@ -266,27 +276,32 @@ class Student extends Model
             ->withQueryString();
     }
 
-    public static function getAtRiskCount(string $period): int
+    /**
+     * Verified students currently flagged At Risk (sticky risk_start_date),
+     * excluding those already in a consultation. Call RiskMonitor::refresh()
+     * first so the flags reflect the latest mood logs.
+     */
+    public function scopeFlaggedAtRisk(Builder $query): Builder
     {
-        return static::query()
-            ->atRisk(static::summaryReportPeriodStart($period)) // Apply period-based risk filter.
-            ->count();
+        return $query
+            ->whereStatusIsVerified()
+            ->whereNotNull('risk_start_date')
+            ->whereDoesntHave('appointments', fn(Builder $q) => $q->openConsultation());
     }
 
-    public static function atRiskList(string $period): Collection
+    public static function getAtRiskCount(): int
     {
-        $from = static::summaryReportPeriodStart($period);
+        return static::query()->flaggedAtRisk()->count();
+    }
 
-        $concerningPosts = fn(Builder $query) => $query
-            ->stressedOrDrained()
-            ->startingFrom($from); // Limit posts by date.
-
+    /**
+     * At-risk students, longest at risk first (oldest risk_start_date).
+     */
+    public static function atRiskList(): Collection
+    {
         return static::query()
-            ->atRisk($from) // Get students matching risk rules.
-            ->withCount([
-                'posts as concerning_count' => $concerningPosts, // Avoid loading full posts.
-            ])
-            ->orderByDesc('concerning_count')
+            ->flaggedAtRisk()
+            ->orderBy('risk_start_date')
             ->get();
     }
 

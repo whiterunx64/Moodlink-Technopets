@@ -41,10 +41,10 @@ const props = withDefaults(
     }>(),
     {
         overview: () => ({
-            totalMoodLogs: 0,
-            avgDailyLogs: 0,
-            atRiskStudents: 0,
-            appointmentsSet: 0,
+            total_mood_logs: 0,
+            avg_daily_logs: 0,
+            at_risk_students: 0,
+            appointments_set: 0,
             distribution: [],
         }),
         sections: () => [],
@@ -220,7 +220,7 @@ function miniBarWidth(count: number, total: number): string {
                             <p
                                 class="text-text-primary text-3xl font-extrabold"
                             >
-                                {{ overview.totalMoodLogs }}
+                                {{ overview.total_mood_logs }}
                             </p>
                             <p class="text-text-muted mt-0.5 text-xs">
                                 Total Mood Logs
@@ -242,7 +242,7 @@ function miniBarWidth(count: number, total: number): string {
                             <p
                                 class="text-text-primary text-3xl font-extrabold"
                             >
-                                {{ overview.avgDailyLogs }}
+                                {{ overview.avg_daily_logs }}
                             </p>
                             <p class="text-text-muted mt-0.5 text-xs">
                                 Avg Daily Logs
@@ -264,7 +264,7 @@ function miniBarWidth(count: number, total: number): string {
                             <p
                                 class="text-text-primary text-3xl font-extrabold"
                             >
-                                {{ overview.atRiskStudents }}
+                                {{ overview.at_risk_students }}
                             </p>
                             <p class="text-text-muted mt-0.5 text-xs">
                                 At-Risk Students
@@ -284,7 +284,7 @@ function miniBarWidth(count: number, total: number): string {
                             <p
                                 class="text-text-primary text-3xl font-extrabold"
                             >
-                                {{ overview.appointmentsSet }}
+                                {{ overview.appointments_set }}
                             </p>
                             <p class="text-text-muted mt-0.5 text-xs">
                                 Appointments Set
@@ -418,10 +418,10 @@ function miniBarWidth(count: number, total: number): string {
                                 </td>
                                 <td class="px-4 py-4">
                                     <span
-                                        v-if="sec.atRisk > 0"
+                                        v-if="sec.at_risk > 0"
                                         class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-xs font-bold text-red-600"
                                     >
-                                        {{ sec.atRisk }}
+                                        {{ sec.at_risk }}
                                     </span>
                                     <span v-else class="text-text-muted"
                                         >—</span
@@ -547,7 +547,7 @@ function miniBarWidth(count: number, total: number): string {
                                         >{{ student.name }}</span
                                     >
                                     <span class="text-text-muted text-xs"
-                                        >· {{ student.studentNumber }} ·
+                                        >· {{ student.student_number }} ·
                                         {{ student.section }}</span
                                     >
                                 </div>
@@ -573,15 +573,15 @@ function miniBarWidth(count: number, total: number): string {
                                     <p
                                         class="text-sm font-semibold text-red-500"
                                     >
-                                        {{ student.daysAtRisk }} days at risk
+                                        {{ student.days_at_risk }} days at risk
                                     </p>
                                     <p class="text-text-muted text-xs">
-                                        Last log: {{ student.lastLog }}
+                                        Last log: {{ student.last_log }}
                                     </p>
                                 </div>
 
                                 <button
-                                    v-if="!student.hasConsultation"
+                                    v-if="!student.has_consultation"
                                     type="button"
                                     class="bg-sidebar hover:bg-sidebar/90 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors"
                                     @click="openConsult(student)"
@@ -651,7 +651,7 @@ function miniBarWidth(count: number, total: number): string {
                             class="text-text-muted mb-1 text-center text-xs"
                         >
                             {{ consultStudent.name }} ·
-                            {{ consultStudent.studentNumber }}
+                            {{ consultStudent.student_number }}
                         </p>
                         <p class="mb-6 text-center text-xs text-gray-400">
                             GCU Operating Hours: 8:00 AM – 6:00 PM

@@ -23,7 +23,7 @@ const OVERVIEW_ITEMS = computed(() => [
     { label: 'Content', value: props.detail.content, color: 'text-blue-600', bg: 'bg-blue-50' },
     { label: 'Stressed', value: props.detail.stressed, color: 'text-orange-500', bg: 'bg-orange-50' },
     { label: 'Drained', value: props.detail.drained, color: 'text-red-500', bg: 'bg-red-50' },
-    { label: 'At-Risk', value: props.detail.atRisk, color: 'text-red-600', bg: 'bg-red-50' },
+    { label: 'At-Risk', value: props.detail.at_risk, color: 'text-red-600', bg: 'bg-red-50' },
 ]);
 
 const search = ref('');
@@ -32,7 +32,7 @@ const filteredStudents = computed(() => {
     const q = search.value.toLowerCase().trim();
     if (!q) return props.detail.students;
     return props.detail.students.filter(
-        (s) => s.name.toLowerCase().includes(q) || s.studentNumber.toLowerCase().includes(q),
+        (s) => s.name.toLowerCase().includes(q) || s.student_number.toLowerCase().includes(q),
     );
 });
 
@@ -131,13 +131,13 @@ function openStudent(studentId: number) {
                                 </div>
                                 <div class="min-w-0">
                                     <p class="text-sm font-semibold text-text-primary truncate">{{ student.name }}</p>
-                                    <p class="text-xs text-text-muted">{{ student.studentNumber }}</p>
+                                    <p class="text-xs text-text-muted">{{ student.student_number }}</p>
                                 </div>
                             </div>
 
                             <div class="flex items-center justify-between">
                                 <span class="px-2.5 py-1 rounded-full bg-gray-100 text-text-muted text-xs font-medium">
-                                    {{ student.yearLevel }}
+                                    {{ student.year_level }}
                                 </span>
                                 <span
                                     :class="['inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium', TREND_STYLE[student.trend]?.cls]">

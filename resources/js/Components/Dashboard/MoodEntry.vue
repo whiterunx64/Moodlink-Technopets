@@ -21,7 +21,7 @@ const moodEmoji: Record<Mood, string> = {
 </script>
 
 <template>
-  <div class="group flex gap-3 p-4 rounded-xl bg-post-card-bg hover:bg-post-card-bg-hover transition-all duration-200">
+  <div class="group flex shrink-0 gap-3 p-4 rounded-xl bg-post-card-bg hover:bg-post-card-bg-hover transition-all duration-200">
     <!-- Avatar -->
     <div
       class="shrink-0 w-9 h-9 rounded-full bg-avatar-bg flex items-center justify-center text-sm font-bold text-text-primary select-none">

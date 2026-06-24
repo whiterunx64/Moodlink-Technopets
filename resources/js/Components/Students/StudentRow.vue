@@ -15,14 +15,14 @@ defineEmits<{
     <tr class="bg-table-row transition-colors hover:bg-table-row-hover">
 
         <!-- Student -->
-        <td class="px-5 py-3.5 border-r border-table-grid">
-            <div class="flex items-center gap-3 min-w-0">
+        <td class="px-3 py-2.5 border-r border-table-grid sm:px-4 sm:py-3 lg:px-5 lg:py-3.5">
+            <div class="flex items-center gap-2 min-w-0 sm:gap-3">
                 <Avatar :name="student.name" />
                 <div class="min-w-0">
-                    <p class="text-sm font-semibold text-text-primary truncate">
+                    <p class="text-xs font-semibold text-text-primary truncate sm:text-sm">
                         {{ student.name }}
                     </p>
-                    <p class="text-xs text-text-muted">
+                    <p class="text-[11px] text-text-muted truncate sm:text-xs">
                         {{ student.section }}
                     </p>
                 </div>
@@ -30,21 +30,21 @@ defineEmits<{
         </td>
 
         <!-- Student ID -->
-        <td class="px-4 py-3.5 border-r border-table-grid">
-            <span class="text-sm text-text-secondary">
+        <td class="px-2.5 py-2.5 border-r border-table-grid sm:px-3 sm:py-3 lg:px-4 lg:py-3.5">
+            <span class="text-xs text-text-secondary sm:text-sm">
                 {{ student.student_id }}
             </span>
         </td>
 
         <!-- Year Level -->
-        <td class="px-4 py-3.5 border-r border-table-grid">
-            <span class="text-sm text-text-secondary">
+        <td class="px-2.5 py-2.5 border-r border-table-grid sm:px-3 sm:py-3 lg:px-4 lg:py-3.5">
+            <span class="text-xs text-text-secondary sm:text-sm">
                 {{ student.year_level }}
             </span>
         </td>
 
         <!-- Verification -->
-        <td class="px-4 py-3.5 border-r border-table-grid">
+        <td class="px-2.5 py-2.5 border-r border-table-grid sm:px-3 sm:py-3 lg:px-4 lg:py-3.5">
             <Badge
                 :label="VERIFICATION_BADGE[student.verification_status].label"
                 :variant="VERIFICATION_BADGE[student.verification_status].variant"
@@ -53,7 +53,7 @@ defineEmits<{
         </td>
 
         <!-- Account Status -->
-        <td class="px-4 py-3.5 border-r border-table-grid">
+        <td class="px-2.5 py-2.5 border-r border-table-grid sm:px-3 sm:py-3 lg:px-4 lg:py-3.5">
             <Badge
                 :label="ACCOUNT_BADGE[student.account_status].label"
                 :variant="ACCOUNT_BADGE[student.account_status].variant"
@@ -62,11 +62,11 @@ defineEmits<{
         </td>
 
         <!-- Manage -->
-        <td class="px-4 py-3.5 text-right">
+        <td class="px-2.5 py-2.5 text-right sm:px-3 sm:py-3 lg:px-4 lg:py-3.5">
             <button
                 type="button"
                 @click="$emit('open')"
-                class="inline-flex items-center gap-1.5 rounded-lg bg-sidebar px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sidebar/90"
+                class="inline-flex items-center gap-1 rounded-md bg-sidebar px-2.5 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-sidebar/90 sm:gap-1.5 sm:rounded-lg sm:px-3 sm:text-xs"
             >
                 Manage
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 shrink-0" viewBox="0 0 24 24" fill="none"

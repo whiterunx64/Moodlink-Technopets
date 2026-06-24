@@ -46,20 +46,20 @@ const logoUrl = usePage().props.assets.logo;
 
                 <!-- CTA Buttons -->
                 <div
-                    class="flex flex-1 items-center justify-end gap-2 md:gap-3"
+                    class="flex flex-1 items-center justify-end gap-2 sm:gap-2.5 md:gap-3"
                 >
                     <Link
                         :href="route('login')"
-                        class="font-inter inline-flex items-center gap-2 rounded-full border border-[#4a5e28] px-3 py-1.5 text-xs font-semibold text-[#4a5e28] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#f0f4eb] hover:shadow-md active:translate-y-0 active:scale-95 md:px-5 md:py-2.5 md:text-base"
+                        class="font-inter inline-flex items-center gap-2 rounded-full border border-[#4a5e28] px-3 py-1.5 text-xs font-semibold text-[#4a5e28] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#f0f4eb] hover:shadow-md active:translate-y-0 active:scale-95 sm:px-4 sm:py-2 sm:text-sm md:px-5 md:py-2.5 md:text-base"
                     >
                         Admin Login
                     </Link>
                     <a
                         href="#download"
-                        class="font-inter inline-flex items-center gap-1.5 rounded-full bg-[#3a4f1e] px-3 py-1.5 text-xs font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#2d3e17] hover:shadow-lg hover:shadow-[#3a4f1e]/30 active:translate-y-0 active:scale-95 md:gap-2 md:px-7 md:py-3.5 md:text-base"
+                        class="font-inter inline-flex items-center gap-1.5 rounded-full bg-[#3a4f1e] px-3 py-1.5 text-xs font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#2d3e17] hover:shadow-lg hover:shadow-[#3a4f1e]/30 active:translate-y-0 active:scale-95 sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm md:px-7 md:py-3.5 md:text-base"
                     >
                         <ArrowDownTrayIcon
-                            class="h-3.5 w-3.5 shrink-0 md:h-5 md:w-5"
+                            class="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4 md:h-5 md:w-5"
                         />
                         Download APK
                     </a>
@@ -374,76 +374,76 @@ const logoUrl = usePage().props.assets.logo;
                 >
                     Four moods, honestly tracked
                 </h2>
-                <div class="grid grid-cols-2 gap-5 lg:grid-cols-4">
+                <div class="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
                     <!-- Excited — golden yellow -->
                     <div
-                        class="mood-card cursor-pointer rounded-2xl border border-[#fbbf24] bg-[#fefce8] p-8 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-[#f59e0b] hover:shadow-xl hover:shadow-yellow-100"
+                        class="mood-card cursor-pointer rounded-2xl border border-[#fbbf24] bg-[#fefce8] p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 sm:p-8 hover:border-[#f59e0b] hover:shadow-xl hover:shadow-yellow-100"
                     >
                         <div
-                            class="mood-icon mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#fde047] text-3xl transition-transform duration-300 hover:scale-110"
+                            class="mood-icon mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fde047] text-2xl transition-transform duration-300 hover:scale-110 sm:mb-4 sm:h-14 sm:w-14 sm:text-3xl"
                         >
                             ⚡
                         </div>
                         <div
-                            class="font-montserrat mb-2 text-lg font-bold text-[#713f12]"
+                            class="font-montserrat mb-2 text-base font-bold sm:text-lg text-[#713f12]"
                         >
                             Excited
                         </div>
-                        <div class="font-inter text-base text-[#92400e]">
+                        <div class="font-inter text-sm sm:text-base text-[#92400e]">
                             Buzzing, charged, full of fuel
                         </div>
                     </div>
                     <!-- Content — mint green -->
                     <div
-                        class="mood-card cursor-pointer rounded-2xl border border-[#4ade80] bg-[#f0fdf4] p-8 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-[#22c55e] hover:shadow-xl hover:shadow-green-100"
+                        class="mood-card cursor-pointer rounded-2xl border border-[#4ade80] bg-[#f0fdf4] p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 sm:p-8 hover:border-[#22c55e] hover:shadow-xl hover:shadow-green-100"
                     >
                         <div
-                            class="mood-icon mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#4ade80] text-3xl transition-transform duration-300"
+                            class="mood-icon mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#4ade80] text-2xl transition-transform duration-300 sm:mb-4 sm:h-14 sm:w-14 sm:text-3xl"
                         >
                             🍀
                         </div>
                         <div
-                            class="font-montserrat mb-2 text-lg font-bold text-[#14532d]"
+                            class="font-montserrat mb-2 text-base font-bold sm:text-lg text-[#14532d]"
                         >
                             Content
                         </div>
-                        <div class="font-inter text-base text-[#166534]">
+                        <div class="font-inter text-sm sm:text-base text-[#166534]">
                             Calm, settled, at ease
                         </div>
                     </div>
                     <!-- Drained — soft purple -->
                     <div
-                        class="mood-card cursor-pointer rounded-2xl border border-[#a78bfa] bg-[#f5f3ff] p-8 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-[#8b5cf6] hover:shadow-xl hover:shadow-purple-100"
+                        class="mood-card cursor-pointer rounded-2xl border border-[#a78bfa] bg-[#f5f3ff] p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 sm:p-8 hover:border-[#8b5cf6] hover:shadow-xl hover:shadow-purple-100"
                     >
                         <div
-                            class="mood-icon mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#c4b5fd] text-3xl transition-transform duration-300"
+                            class="mood-icon mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c4b5fd] text-2xl transition-transform duration-300 sm:mb-4 sm:h-14 sm:w-14 sm:text-3xl"
                         >
                             🌧️
                         </div>
                         <div
-                            class="font-montserrat mb-2 text-lg font-bold text-[#4c1d95]"
+                            class="font-montserrat mb-2 text-base font-bold sm:text-lg text-[#4c1d95]"
                         >
                             Drained
                         </div>
-                        <div class="font-inter text-base text-[#5b21b6]">
+                        <div class="font-inter text-sm sm:text-base text-[#5b21b6]">
                             Tired, sluggish, running low
                         </div>
                     </div>
                     <!-- Stressed — deep red -->
                     <div
-                        class="mood-card cursor-pointer rounded-2xl border border-red-200 bg-[#fef2f2] p-8 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-red-400 hover:shadow-xl hover:shadow-red-100"
+                        class="mood-card cursor-pointer rounded-2xl border border-red-200 bg-[#fef2f2] p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 sm:p-8 hover:border-red-400 hover:shadow-xl hover:shadow-red-100"
                     >
                         <div
-                            class="mood-icon mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-400 text-3xl transition-transform duration-300"
+                            class="mood-icon mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-400 text-2xl transition-transform duration-300 sm:mb-4 sm:h-14 sm:w-14 sm:text-3xl"
                         >
                             😫
                         </div>
                         <div
-                            class="font-montserrat mb-2 text-lg font-bold text-[#7f1d1d]"
+                            class="font-montserrat mb-2 text-base font-bold sm:text-lg text-[#7f1d1d]"
                         >
                             Stressed
                         </div>
-                        <div class="font-inter text-base text-[#991b1b]">
+                        <div class="font-inter text-sm sm:text-base text-[#991b1b]">
                             Tense, on-edge, overwhelmed
                         </div>
                     </div>
@@ -470,20 +470,20 @@ const logoUrl = usePage().props.assets.logo;
                     class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3"
                 >
                     <div
-                        class="module-card group cursor-pointer rounded-2xl border border-gray-100 bg-[#f8faf4] p-8 transition-all duration-300 hover:-translate-y-2 hover:border-[#c8dba0] hover:shadow-xl hover:shadow-green-100"
+                        class="module-card group cursor-pointer rounded-2xl border border-gray-100 bg-[#f8faf4] p-6 transition-all duration-300 hover:-translate-y-2 hover:border-[#c8dba0] hover:shadow-xl hover:shadow-green-100 sm:p-8"
                     >
                         <div
-                            class="module-icon mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e0ead0] text-2xl transition-transform duration-300 group-hover:scale-110"
+                            class="module-icon mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e0ead0] text-xl transition-transform duration-300 group-hover:scale-110 sm:mb-5 sm:h-14 sm:w-14 sm:text-2xl"
                         >
                             📋
                         </div>
                         <h3
-                            class="font-montserrat mb-3 text-xl font-bold text-gray-900 transition-colors duration-300 group-hover:text-[#4a5e28]"
+                            class="font-montserrat mb-2 text-lg font-bold text-gray-900 transition-colors duration-300 group-hover:text-[#4a5e28] sm:mb-3 sm:text-xl"
                         >
                             Mood Check-In
                         </h3>
                         <p
-                            class="font-inter text-base leading-relaxed text-gray-500"
+                            class="font-inter text-sm leading-relaxed text-gray-500 sm:text-base"
                         >
                             Four quick "doors" — Energy, Duration, Heart, and
                             Context — capture how you really feel in under a
@@ -491,20 +491,20 @@ const logoUrl = usePage().props.assets.logo;
                         </p>
                     </div>
                     <div
-                        class="module-card group cursor-pointer rounded-2xl border border-gray-100 bg-[#f8faf4] p-8 transition-all duration-300 hover:-translate-y-2 hover:border-[#c8dba0] hover:shadow-xl hover:shadow-green-100"
+                        class="module-card group cursor-pointer rounded-2xl border border-gray-100 bg-[#f8faf4] p-6 transition-all duration-300 hover:-translate-y-2 hover:border-[#c8dba0] hover:shadow-xl hover:shadow-green-100 sm:p-8"
                     >
                         <div
-                            class="module-icon mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e0ead0] text-2xl transition-transform duration-300 group-hover:scale-110"
+                            class="module-icon mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e0ead0] text-xl transition-transform duration-300 group-hover:scale-110 sm:mb-5 sm:h-14 sm:w-14 sm:text-2xl"
                         >
                             📓
                         </div>
                         <h3
-                            class="font-montserrat mb-3 text-xl font-bold text-gray-900 transition-colors duration-300 group-hover:text-[#4a5e28]"
+                            class="font-montserrat mb-2 text-lg font-bold text-gray-900 transition-colors duration-300 group-hover:text-[#4a5e28] sm:mb-3 sm:text-xl"
                         >
                             My Journal
                         </h3>
                         <p
-                            class="font-inter text-base leading-relaxed text-gray-500"
+                            class="font-inter text-sm leading-relaxed text-gray-500 sm:text-base"
                         >
                             Weekly, monthly, and yearly mood trends, a color
                             heatmap, check-in streaks, and every entry in one
@@ -512,20 +512,20 @@ const logoUrl = usePage().props.assets.logo;
                         </p>
                     </div>
                     <div
-                        class="module-card group cursor-pointer rounded-2xl border border-gray-100 bg-[#f8faf4] p-8 transition-all duration-300 hover:-translate-y-2 hover:border-[#c8dba0] hover:shadow-xl hover:shadow-green-100"
+                        class="module-card group cursor-pointer rounded-2xl border border-gray-100 bg-[#f8faf4] p-6 transition-all duration-300 hover:-translate-y-2 hover:border-[#c8dba0] hover:shadow-xl hover:shadow-green-100 sm:p-8"
                     >
                         <div
-                            class="module-icon mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e0ead0] text-2xl transition-transform duration-300 group-hover:scale-110"
+                            class="module-icon mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e0ead0] text-xl transition-transform duration-300 group-hover:scale-110 sm:mb-5 sm:h-14 sm:w-14 sm:text-2xl"
                         >
                             🌸
                         </div>
                         <h3
-                            class="font-montserrat mb-3 text-xl font-bold text-gray-900 transition-colors duration-300 group-hover:text-[#4a5e28]"
+                            class="font-montserrat mb-2 text-lg font-bold text-gray-900 transition-colors duration-300 group-hover:text-[#4a5e28] sm:mb-3 sm:text-xl"
                         >
                             MoodSpace
                         </h3>
                         <p
-                            class="font-inter text-base leading-relaxed text-gray-500"
+                            class="font-inter text-sm leading-relaxed text-gray-500 sm:text-base"
                         >
                             A safe, anonymous space to share how you feel and
                             react to others. Every post is screened by the GCU
@@ -533,20 +533,20 @@ const logoUrl = usePage().props.assets.logo;
                         </p>
                     </div>
                     <div
-                        class="module-card group cursor-pointer rounded-2xl border border-gray-100 bg-[#f8faf4] p-8 transition-all duration-300 hover:-translate-y-2 hover:border-[#c8dba0] hover:shadow-xl hover:shadow-green-100"
+                        class="module-card group cursor-pointer rounded-2xl border border-gray-100 bg-[#f8faf4] p-6 transition-all duration-300 hover:-translate-y-2 hover:border-[#c8dba0] hover:shadow-xl hover:shadow-green-100 sm:p-8"
                     >
                         <div
-                            class="module-icon mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e0ead0] text-2xl transition-transform duration-300 group-hover:scale-110"
+                            class="module-icon mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e0ead0] text-xl transition-transform duration-300 group-hover:scale-110 sm:mb-5 sm:h-14 sm:w-14 sm:text-2xl"
                         >
                             📅
                         </div>
                         <h3
-                            class="font-montserrat mb-3 text-xl font-bold text-gray-900 transition-colors duration-300 group-hover:text-[#4a5e28]"
+                            class="font-montserrat mb-2 text-lg font-bold text-gray-900 transition-colors duration-300 group-hover:text-[#4a5e28] sm:mb-3 sm:text-xl"
                         >
                             Appointments
                         </h3>
                         <p
-                            class="font-inter text-base leading-relaxed text-gray-500"
+                            class="font-inter text-sm leading-relaxed text-gray-500 sm:text-base"
                         >
                             Book a confidential session with a GCU counselor,
                             see your scheduled visits, and get gentle reminders
@@ -554,20 +554,20 @@ const logoUrl = usePage().props.assets.logo;
                         </p>
                     </div>
                     <div
-                        class="module-card group cursor-pointer rounded-2xl border border-gray-100 bg-[#f8faf4] p-8 transition-all duration-300 hover:-translate-y-2 hover:border-[#c8dba0] hover:shadow-xl hover:shadow-green-100"
+                        class="module-card group cursor-pointer rounded-2xl border border-gray-100 bg-[#f8faf4] p-6 transition-all duration-300 hover:-translate-y-2 hover:border-[#c8dba0] hover:shadow-xl hover:shadow-green-100 sm:p-8"
                     >
                         <div
-                            class="module-icon mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e0ead0] text-2xl transition-transform duration-300 group-hover:scale-110"
+                            class="module-icon mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e0ead0] text-xl transition-transform duration-300 group-hover:scale-110 sm:mb-5 sm:h-14 sm:w-14 sm:text-2xl"
                         >
                             💬
                         </div>
                         <h3
-                            class="font-montserrat mb-3 text-xl font-bold text-gray-900 transition-colors duration-300 group-hover:text-[#4a5e28]"
+                            class="font-montserrat mb-2 text-lg font-bold text-gray-900 transition-colors duration-300 group-hover:text-[#4a5e28] sm:mb-3 sm:text-xl"
                         >
                             MoLi · Wellness AI
                         </h3>
                         <p
-                            class="font-inter text-base leading-relaxed text-gray-500"
+                            class="font-inter text-sm leading-relaxed text-gray-500 sm:text-base"
                         >
                             An always-on companion for emotional support that
                             remembers your recent moods — never a replacement
@@ -575,20 +575,20 @@ const logoUrl = usePage().props.assets.logo;
                         </p>
                     </div>
                     <div
-                        class="module-card group cursor-pointer rounded-2xl border border-gray-100 bg-[#f8faf4] p-8 transition-all duration-300 hover:-translate-y-2 hover:border-[#c8dba0] hover:shadow-xl hover:shadow-green-100"
+                        class="module-card group cursor-pointer rounded-2xl border border-gray-100 bg-[#f8faf4] p-6 transition-all duration-300 hover:-translate-y-2 hover:border-[#c8dba0] hover:shadow-xl hover:shadow-green-100 sm:p-8"
                     >
                         <div
-                            class="module-icon mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e0ead0] text-2xl transition-transform duration-300 group-hover:scale-110"
+                            class="module-icon mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e0ead0] text-xl transition-transform duration-300 group-hover:scale-110 sm:mb-5 sm:h-14 sm:w-14 sm:text-2xl"
                         >
                             🔔
                         </div>
                         <h3
-                            class="font-montserrat mb-3 text-xl font-bold text-gray-900 transition-colors duration-300 group-hover:text-[#4a5e28]"
+                            class="font-montserrat mb-2 text-lg font-bold text-gray-900 transition-colors duration-300 group-hover:text-[#4a5e28] sm:mb-3 sm:text-xl"
                         >
                             Smart Alerts
                         </h3>
                         <p
-                            class="font-inter text-base leading-relaxed text-gray-500"
+                            class="font-inter text-sm leading-relaxed text-gray-500 sm:text-base"
                         >
                             Stay updated on appointments set by the GCU,
                             MoodSpace post approvals, and daily check-in
@@ -620,20 +620,20 @@ const logoUrl = usePage().props.assets.logo;
                 <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
                     <!-- Step 1 -->
                     <div
-                        class="group cursor-pointer rounded-2xl border border-white/5 bg-[#263318] p-9 transition-all duration-300 hover:-translate-y-2 hover:border-white/15 hover:bg-[#2e3d1e] hover:shadow-xl hover:shadow-black/30"
+                        class="group cursor-pointer rounded-2xl border border-white/5 bg-[#263318] p-6 transition-all duration-300 hover:-translate-y-2 hover:border-white/15 hover:bg-[#2e3d1e] hover:shadow-xl hover:shadow-black/30 sm:p-9"
                     >
                         <div
-                            class="font-montserrat mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-[#4a5e28] text-base font-black text-white transition-transform duration-300 group-hover:scale-110"
+                            class="font-montserrat mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-[#4a5e28] text-base font-black text-white transition-transform duration-300 group-hover:scale-110 sm:mb-6 sm:h-11 sm:w-11"
                         >
                             1
                         </div>
                         <h3
-                            class="font-montserrat mb-3 text-2xl font-bold text-white transition-colors duration-300 group-hover:text-[#8bba5e]"
+                            class="font-montserrat mb-3 text-xl font-bold text-white transition-colors duration-300 group-hover:text-[#8bba5e] sm:text-2xl"
                         >
                             Download the APK
                         </h3>
                         <p
-                            class="font-inter text-base leading-relaxed text-gray-400"
+                            class="font-inter text-sm leading-relaxed text-gray-400 sm:text-base"
                         >
                             Get the official MoodLink build for Android from
                             this page and install it on your phone.
@@ -641,7 +641,7 @@ const logoUrl = usePage().props.assets.logo;
                     </div>
                     <!-- Step 2 -->
                     <div
-                        class="group cursor-pointer rounded-2xl border border-white/5 bg-[#263318] p-9 transition-all duration-300 hover:-translate-y-2 hover:border-white/15 hover:bg-[#2e3d1e] hover:shadow-xl hover:shadow-black/30"
+                        class="group cursor-pointer rounded-2xl border border-white/5 bg-[#263318] p-6 transition-all duration-300 hover:-translate-y-2 hover:border-white/15 hover:bg-[#2e3d1e] hover:shadow-xl hover:shadow-black/30 sm:p-9"
                     >
                         <div
                             class="font-montserrat mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-[#c8922a] text-base font-black text-white transition-transform duration-300 group-hover:scale-110"
@@ -649,12 +649,12 @@ const logoUrl = usePage().props.assets.logo;
                             2
                         </div>
                         <h3
-                            class="font-montserrat mb-3 text-2xl font-bold text-white transition-colors duration-300 group-hover:text-[#e6b05a]"
+                            class="font-montserrat mb-3 text-xl font-bold text-white transition-colors duration-300 group-hover:text-[#e6b05a] sm:text-2xl"
                         >
                             Verify with the GCU
                         </h3>
                         <p
-                            class="font-inter text-base leading-relaxed text-gray-400"
+                            class="font-inter text-sm leading-relaxed text-gray-400 sm:text-base"
                         >
                             Submit your name, year, section, and student number.
                             The Guidance &amp; Counseling Unit reviews and
@@ -663,7 +663,7 @@ const logoUrl = usePage().props.assets.logo;
                     </div>
                     <!-- Step 3 -->
                     <div
-                        class="group cursor-pointer rounded-2xl border border-white/5 bg-[#263318] p-9 transition-all duration-300 hover:-translate-y-2 hover:border-white/15 hover:bg-[#2e3d1e] hover:shadow-xl hover:shadow-black/30"
+                        class="group cursor-pointer rounded-2xl border border-white/5 bg-[#263318] p-6 transition-all duration-300 hover:-translate-y-2 hover:border-white/15 hover:bg-[#2e3d1e] hover:shadow-xl hover:shadow-black/30 sm:p-9"
                     >
                         <div
                             class="font-montserrat mb-6 flex h-11 w-11 items-center justify-center rounded-xl bg-[#3a4f1e] text-base font-black text-white transition-transform duration-300 group-hover:scale-110"
@@ -671,12 +671,12 @@ const logoUrl = usePage().props.assets.logo;
                             3
                         </div>
                         <h3
-                            class="font-montserrat mb-3 text-2xl font-bold text-white transition-colors duration-300 group-hover:text-[#8bba5e]"
+                            class="font-montserrat mb-3 text-xl font-bold text-white transition-colors duration-300 group-hover:text-[#8bba5e] sm:text-2xl"
                         >
                             Sign in &amp; check in
                         </h3>
                         <p
-                            class="font-inter text-base leading-relaxed text-gray-400"
+                            class="font-inter text-sm leading-relaxed text-gray-400 sm:text-base"
                         >
                             Log in with your FEU student credentials and start
                             your first daily mood check-in right from the home
@@ -690,7 +690,7 @@ const logoUrl = usePage().props.assets.logo;
         <!-- Download Section -->
         <section id="download" class="bg-[#f0f4eb] px-4 py-12 md:px-8 md:py-24">
             <div class="mx-auto max-w-7xl">
-                <div class="max-w-2xl rounded-3xl bg-white p-6 md:p-12">
+                <div class="max-w-2xl rounded-3xl bg-white p-6 sm:p-8 md:p-12">
                     <h2
                         class="font-montserrat mb-4 text-2xl font-black text-gray-900 md:text-4xl"
                     >
@@ -720,7 +720,7 @@ const logoUrl = usePage().props.assets.logo;
                             Release notes
                         </a>
                     </div>
-                    <div class="flex flex-wrap gap-10">
+                    <div class="flex flex-wrap gap-6 sm:gap-10">
                         <div>
                             <div
                                 class="font-inter mb-1.5 text-xs font-bold tracking-widest text-gray-400 uppercase"

@@ -31,7 +31,7 @@ const LOG_TAG: Record<string, string> = {
 const MOOD_ORDER = ['Excited', 'Content', 'Stressed', 'Drained'] as const;
 
 const moodBars = computed(() => {
-    const { moodSummary } = props.studentReport;
+    const { mood_summary: moodSummary } = props.studentReport;
     const values: Record<string, number> = {
         Excited: moodSummary.excited,
         Content: moodSummary.content,
@@ -103,17 +103,17 @@ function goBack() {
                     <div class="grid grid-cols-2 sm:grid-cols-4 gap-x-10 gap-y-3 flex-1">
                         <div>
                             <p class="text-xs text-text-muted">Name Of Student</p>
-                            <p class="text-sm font-semibold text-text-primary mt-0.5">{{ studentReport.fullName }}
+                            <p class="text-sm font-semibold text-text-primary mt-0.5">{{ studentReport.full_name }}
                             </p>
                         </div>
                         <div>
                             <p class="text-xs text-text-muted">Student Number</p>
-                            <p class="text-sm font-semibold text-text-primary mt-0.5">{{ studentReport.studentNumber }}
+                            <p class="text-sm font-semibold text-text-primary mt-0.5">{{ studentReport.student_number }}
                             </p>
                         </div>
                         <div>
                             <p class="text-xs text-text-muted">Year Level</p>
-                            <p class="text-sm font-semibold text-text-primary mt-0.5">{{ studentReport.yearLevel }}</p>
+                            <p class="text-sm font-semibold text-text-primary mt-0.5">{{ studentReport.year_level }}</p>
                         </div>
                         <div>
                             <p class="text-xs text-text-muted">Section</p>
@@ -159,21 +159,21 @@ function goBack() {
                         <div>
                             <p class="text-xs text-text-muted">Total Mood Logs</p>
                             <p class="text-3xl font-extrabold text-text-primary mt-1">
-                                {{ studentReport.summaryStats.totalMoodLogs }}
+                                {{ studentReport.summary_stats.total_mood_logs }}
                             </p>
                         </div>
                         <div class="border-t border-border-light" />
                         <div>
                             <p class="text-xs text-text-muted">Total Posts</p>
                             <p class="text-3xl font-extrabold text-text-primary mt-1">
-                                {{ studentReport.summaryStats.totalPosts }}
+                                {{ studentReport.summary_stats.total_posts }}
                             </p>
                         </div>
                         <div class="border-t border-border-light" />
                         <div>
                             <p class="text-xs text-text-muted">Flagged Posts</p>
                             <p class="text-3xl font-extrabold text-red-500 mt-1">
-                                {{ studentReport.summaryStats.flaggedPosts }}
+                                {{ studentReport.summary_stats.flagged_posts }}
                             </p>
                         </div>
                     </div>
@@ -181,8 +181,8 @@ function goBack() {
             </div>
 
             <!-- Mood Trend chart (extracted component) -->
-            <MoodTrendChart :data="studentReport.trendData" :trend="studentReport.trend" :trend-days="filters.trendDays"
-                @update:trend-days="onTrendDaysChange" />
+            <MoodTrendChart :data="studentReport.trend_data" :trend="studentReport.trend"
+                :trend-days="filters.trendDays" @update:trend-days="onTrendDaysChange" />
 
             <!-- Recent Mood Logs -->
             <div class="bg-white rounded-2xl border border-border-light shadow-sm">
@@ -191,7 +191,7 @@ function goBack() {
                 </div>
 
                 <div class="divide-y divide-border-light">
-                    <div v-for="log in studentReport.recentLogs" :key="log.id"
+                    <div v-for="log in studentReport.recent_logs" :key="log.id"
                         class="px-6 py-4 flex items-center gap-4">
                         <span
                             :class="['px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 w-20 text-center', LOG_TAG[log.mood] ?? 'bg-gray-100 text-gray-600']">
@@ -201,7 +201,7 @@ function goBack() {
                         <span class="text-xs text-text-muted shrink-0">{{ log.date }}</span>
                     </div>
 
-                    <div v-if="studentReport.recentLogs.length === 0"
+                    <div v-if="studentReport.recent_logs.length === 0"
                         class="px-6 py-12 text-center text-sm text-text-muted">
                         No mood logs available.
                     </div>

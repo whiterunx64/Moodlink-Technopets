@@ -40,23 +40,23 @@ const TAB_COUNT_IDLE: Record<StudentTab, string> = {
 </script>
 
 <template>
-    <div class="flex items-center gap-2 flex-wrap">
+    <div class="flex items-center gap-1.5 flex-wrap sm:gap-2">
         <button
             v-for="tab in STUDENT_TABS"
             :key="tab"
             type="button"
             @click="$emit('update:modelValue', tab)"
             :class="[
-                'inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all duration-150',
+                'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-all duration-150 sm:gap-2 sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-sm',
                 modelValue === tab
                     ? 'bg-sidebar border-sidebar text-white shadow-sm'
                     : 'border-gray-200 bg-white text-gray-600 hover:border-sidebar/40 hover:bg-sidebar/5 hover:text-sidebar',
             ]"
         >
-            <component :is="TAB_ICONS[tab]" class="h-4 w-4 shrink-0" />
+            <component :is="TAB_ICONS[tab]" class="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" />
             <span>{{ tab }}</span>
             <span :class="[
-                'rounded-full px-1.5 py-0.5 text-xs font-bold',
+                'rounded-full px-1.5 py-0.5 text-[10px] font-bold sm:text-xs',
                 modelValue === tab ? TAB_COUNT[tab] : TAB_COUNT_IDLE[tab],
             ]">
                 {{ counts[tab] }}

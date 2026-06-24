@@ -12,7 +12,7 @@ defineEmits<{
 </script>
 
 <template>
-    <div class="relative flex-1 min-w-52 max-w-sm flex">
+    <div class="relative flex-1 min-w-0 max-w-none flex sm:min-w-52 sm:max-w-sm">
         <input :value="modelValue" @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
             @keyup.enter="$emit('search')" type="text" :placeholder="placeholder"
             class="w-full pl-5 pr-4 py-2.5 text-sm rounded-l-xl border border-r-0 border-gray-200 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-sidebar/20 focus:border-sidebar transition-colors" />

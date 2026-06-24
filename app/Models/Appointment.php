@@ -140,6 +140,19 @@ class Appointment extends Model
         ]);
     }
 
+    /**
+     * Open (in-progress) consultations: a request or an upcoming session. These
+     * block At Risk re-flagging; a Completed consultation does not, so a student
+     * can re-enter the list on a fresh stress run.
+     */
+    public function scopeOpenConsultation(Builder $query): Builder
+    {
+        return $query->whereIn('status', [
+            AppointmentStatus::Pending->value,
+            AppointmentStatus::Scheduled->value,
+        ]);
+    }
+
     public function scopeStartingFrom(Builder $query, ?Carbon $from): Builder
     {
         return $query->when($from, fn(Builder $q) => $q->where('datetime', '>=', $from));

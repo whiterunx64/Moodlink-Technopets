@@ -108,6 +108,10 @@ class AppointmentService
         'datetime' => $datetime,
       ]);
 
+      // Consultation is an At Risk exit: clear the sticky flag so the student
+      // leaves the list. The active consultation also blocks re-flagging.
+      $student->update(['risk_start_date' => null]);
+
       $this->notifyStudentOfConsultation($student, $appointment);
 
       return $appointment;

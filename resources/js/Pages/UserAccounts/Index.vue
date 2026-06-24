@@ -85,13 +85,13 @@ function goToPage(page: number) {
         <div class="space-y-4 pb-20">
 
             <!-- Top bar -->
-            <div class="flex items-center gap-3 flex-wrap">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 sm:flex-wrap">
 
                 <!-- Search -->
                 <SearchInput v-model="search" placeholder="Search by name or student ID..." @search="searchStudents" />
 
                 <!-- Year level filter -->
-                <div class="relative">
+                <div class="relative w-full sm:w-auto">
                     <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -99,7 +99,7 @@ function goToPage(page: number) {
                         </svg>
                     </span>
                     <select v-model="yearFilter"
-                        class="appearance-none rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-8 text-sm text-text-secondary transition-colors focus:border-sidebar focus:ring-2 focus:ring-sidebar/20 focus:outline-none cursor-pointer">
+                        class="w-full sm:w-auto appearance-none rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-8 text-xs text-text-secondary transition-colors focus:border-sidebar focus:ring-2 focus:ring-sidebar/20 focus:outline-none cursor-pointer sm:py-2.5 sm:text-sm">
                         <option v-for="y in YEAR_LEVEL_OPTIONS" :key="y.value" :value="y.value">
                             {{ y.label }}
                         </option>

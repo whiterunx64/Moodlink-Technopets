@@ -145,10 +145,10 @@ export interface MoodDistributionItem {
 }
 
 export interface SummaryOverview {
-    totalMoodLogs: number;
-    avgDailyLogs: number;
-    atRiskStudents: number;
-    appointmentsSet: number;
+    total_mood_logs: number;
+    avg_daily_logs: number;
+    at_risk_students: number;
+    appointments_set: number;
     distribution: MoodDistributionItem[];
 }
 
@@ -159,26 +159,28 @@ export interface SectionSummary {
     content: number;
     stressed: number;
     drained: number;
-    atRisk: number;
+    at_risk: number;
 }
 
 export interface AtRiskStudent {
     id: number;
     name: string;
-    studentNumber: string;
+    student_number: string;
     section: string;
     moods: string[];
-    daysAtRisk: number;
-    lastLog: string;
-    hasConsultation: boolean;
+    days_at_risk: number;
+    last_log: string;
+    risk_start_day: string | null;
+    level: 'monitor' | 'recommend' | 'consult';
+    has_consultation: boolean;
 }
 
 export interface SectionStudentRow {
     id: number;
     name: string;
     initials: string;
-    studentNumber: string;
-    yearLevel: string;
+    student_number: string;
+    year_level: string;
     trend: 'Declining' | 'Stable' | 'Improving';
 }
 
@@ -189,7 +191,7 @@ export interface SectionDetail {
     content: number;
     stressed: number;
     drained: number;
-    atRisk: number;
+    at_risk: number;
     students: SectionStudentRow[];
 }
 
@@ -263,25 +265,25 @@ export interface AppointmentFilters {
 export interface StudentMoodReport {
     id: number;
     name: string;
-    fullName: string;
-    studentNumber: string;
-    yearLevel: string;
+    full_name: string;
+    student_number: string;
+    year_level: string;
     section: string;
     initials: string;
-    moodSummary: {
+    mood_summary: {
         excited: number;
         content: number;
         stressed: number;
         drained: number;
     };
-    summaryStats: {
-        totalMoodLogs: number;
-        totalPosts: number;
-        flaggedPosts: number;
+    summary_stats: {
+        total_mood_logs: number;
+        total_posts: number;
+        flagged_posts: number;
     };
     trend: 'Declining' | 'Stable' | 'Improving';
-    trendData: MoodTrendPoint[];
-    recentLogs: RecentMoodLog[];
+    trend_data: MoodTrendPoint[];
+    recent_logs: RecentMoodLog[];
 }
 
 // ── Dashboard ────────────────────────────────────────────────────────────────
