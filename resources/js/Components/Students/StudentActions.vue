@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CheckCircle, XCircle, Ban, RotateCcw } from 'lucide-vue-next';
+import { CheckCircleIcon, XCircleIcon, NoSymbolIcon, ArrowPathIcon } from '@heroicons/vue/24/outline';
 import type { Student } from '@/types';
 
 defineProps<{ student: Student }>();
@@ -20,13 +20,13 @@ defineEmits<{
             <button @click="$emit('register')"
                 class="w-24 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold bg-sidebar text-white hover:bg-sidebar/90 transition-colors">
                 Verify
-                <CheckCircle class="w-3.5 h-3.5" />
+                <CheckCircleIcon class="w-3.5 h-3.5" />
             </button>
 
             <button @click="$emit('reject')"
                 class="w-24 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold border border-red-300 text-red-500 hover:bg-red-50 transition-colors">
                 Reject
-                <XCircle class="w-3.5 h-3.5" />
+                <XCircleIcon class="w-3.5 h-3.5" />
             </button>
         </template>
 
@@ -44,7 +44,7 @@ defineEmits<{
             <button @click="$emit('suspend')"
                 class="w-24 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold border border-orange-300 text-orange-500 hover:bg-orange-50 transition-colors">
                 Suspend
-                <Ban class="w-3.5 h-3.5" />
+                <NoSymbolIcon class="w-3.5 h-3.5" />
             </button>
         </template>
 
@@ -53,7 +53,7 @@ defineEmits<{
             <button @click="$emit('reactivate')"
                 class="w-24 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold border border-blue-300 text-blue-500 hover:bg-blue-50 transition-colors">
                 Reactivate
-                <RotateCcw class="w-3.5 h-3.5" />
+                <ArrowPathIcon class="w-3.5 h-3.5" />
             </button>
         </template>
     </div>
