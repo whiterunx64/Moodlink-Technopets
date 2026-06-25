@@ -30,10 +30,23 @@ class SetSecurityHeaders
 
     private function preventClickjacking(Response $response): void
     {
-        // $response->headers->set('X-Frame-Options', 'SAMEORIGIN'); // Prevent iframe-based clickjacking
-        $response->headers->set('Content-Security-Policy', "default-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self';");
-    }
+        $csp = [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline'",
+            "style-src 'self' 'unsafe-inline'",
+            "connect-src 'self' https://*.supabase.co",
+            "img-src 'self' data: https://xyxjbqmvxtopeemdxjnq.supabase.co",
+            "font-src 'self' data:",
+            "frame-ancestors 'self'",
+            "object-src 'none'",
+            "base-uri 'self'",
+        ];
 
+        $response->headers->set(
+            'Content-Security-Policy',
+            implode('; ', $csp)
+        );
+    }
     private function preventMimeTypeSniffing(Response $response): void
     {
         $response->headers->set('X-Content-Type-Options', 'nosniff'); // Prevent MIME type guessing attacks

@@ -44,7 +44,7 @@ class InitialPasswordMailable extends Mailable
             view: 'mail.student-account-password',
             with: [
                 'logoData' => @file_get_contents(
-                    config('supabase-auth.url') . '/storage/v1/object/public/assets/MailLogo.png'
+                    config('supabase-auth.url') . '/storage/v1/object/public/assets/MoodlinkLogo.svg'
                 ) ?: null,
             ],
         );

@@ -13,8 +13,8 @@ $logoData ?string raw image bytes, embedded inline
   $serif = "Georgia,'Times New Roman',Times,serif";
 
   $logoSrc = $logoData
-    ? $message->embedData($logoData, 'MailLogo.png', 'image/png')
-    : config('supabase-auth.url') . '/storage/v1/object/public/assets/MailLogo.svg';
+    ? $message->embedData($logoData, 'MoodlinkLogo.svg', 'image/svg+xml')
+    : config('supabase-auth.url') . '/storage/v1/object/public/assets/MoodlinkLogo.svg';
 @endphp
 
 <!DOCTYPE html>

@@ -7,17 +7,17 @@ student (e.g. an at-risk follow-up) — the student did not request
 it, so the copy reflects the Unit reaching out.
 
 Passed from ConsultationAppointmentMailable:
-$student     App\Models\Student
+$student App\Models\Student
 $appointment App\Models\Appointment
-$logoData    ?string raw PNG bytes, embedded inline
+$logoData ?string raw PNG bytes, embedded inline
 ============================================================
 --}}
 @php
   $serif = "Georgia,'Times New Roman',Times,serif";
 
   $logoSrc = $logoData
-    ? $message->embedData($logoData, 'MailLogo.png', 'image/svg+xml')
-    : config('supabase-auth.url') . '/storage/v1/object/public/assets/MailLogo.svg';
+    ? $message->embedData($logoData, 'MoodlinkLogo.svg', 'image/svg+xml')
+    : config('supabase-auth.url') . '/storage/v1/object/public/assets/MoodlinkLogo.svg';
 @endphp
 <!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
