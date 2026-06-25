@@ -16,6 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustProxies(at: '*');
+
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
@@ -79,8 +81,8 @@ return Application::configure(basePath: dirname(__DIR__))
 function infrastructureJsonResponse(InfrastructureException $e): Response
 {
     return response()->json([
-        'message'   => $e->getMessage(),
-        'code'      => $e->errorCode,
+        'message' => $e->getMessage(),
+        'code' => $e->errorCode,
         'retryable' => $e->isRetryable(),
     ], $e->getStatusCode());
 }
