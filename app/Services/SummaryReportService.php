@@ -11,8 +11,8 @@ use App\Models\Student;
 use Illuminate\Support\Collection;
 
 /**
- * Builds the data payloads for the Summary Reports screens (overview, sections,
- * at-risk, per-section detail, per-student detail) and owns the at-risk rules.
+ * Builds the data payloads for the Summary Reports screens (overview, programs,
+ * at-risk, per-program detail, per-student detail) and owns the at-risk rules.
  *
  * Weighted Risk Scoring Algorithm (WRSA) — two-window, sticky model. Two
  * independent windows decide when a student enters and leaves the At Risk list:
@@ -96,7 +96,7 @@ class SummaryReportService
                   'id' => $student->id,
                   'name' => $student->name,
                   'student_number' => $student->student_number,
-                  'section' => $student->section,
+                  'program' => $student->program,
                   'moods' => $summary['moods'],
                   'days_at_risk' => $daysAtRisk,
                   'last_log' => $summary['lastLog'],

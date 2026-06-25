@@ -127,10 +127,10 @@ function moodStyle(mood: string) {
                         <div class="grid grid-cols-2 gap-3">
                             <div class="rounded-xl bg-gray-50 px-4 py-3">
                                 <p class="text-text-muted mb-1 text-[10px] font-semibold tracking-wider uppercase">
-                                    Section
+                                    Program
                                 </p>
                                 <p class="text-text-primary text-sm font-bold">
-                                    {{ post.section }}
+                                    {{ post.program }}
                                 </p>
                             </div>
                             <div class="rounded-xl bg-gray-50 px-4 py-3">

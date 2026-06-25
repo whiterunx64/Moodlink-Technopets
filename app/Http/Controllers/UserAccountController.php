@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Exceptions\CircuitBreakerException;
 use App\Exceptions\StudentAccountException;
 use App\Enums\StudentStatus;
-use App\Http\Requests\RegisterStudentRequest;
 use App\Http\Requests\UserAccountFilterRequest;
 use App\Models\Student;
 use App\Services\StudentAccountService;
@@ -38,17 +37,17 @@ class UserAccountController extends Controller
                 'personal_email' => $student->personal_email,
                 'contact_number' => $student->contact_number,
                 'year_level' => $student->year_level_label,
-                'section' => $student->section,
+                'program' => $student->program,
                 'verification_status' => $student->verification_status,
                 'account_status' => $student->account_status,
             ]);
-        $statusCounts = Student::statusCountsForFilters($studentFilters);
+        $statusCounts = Student::tabCounts($studentFilters);
 
         $tabCounts = [
-            'All' => $statusCounts->get('All', 0),
-            'Pending' => $statusCounts->get(StudentStatus::Pending->value, 0),
-            'Verified' => $statusCounts->get(StudentStatus::Verified->value, 0),
-            'Suspended' => $statusCounts->get(StudentStatus::Suspended->value, 0),
+            'all' => $statusCounts->total,
+            'pending' => $statusCounts->pending,
+            'verified' => $statusCounts->verified,
+            'suspended' => $statusCounts->suspended,
         ];
 
         return Inertia::render('UserAccounts/Index', [
@@ -62,7 +61,7 @@ class UserAccountController extends Controller
      * Accept a pending/unverified student's registration by marking them
      * verified, without provisioning an authentication account.
      */
-    public function acceptStudentRegistration(Request $request, Student $student): RedirectResponse
+    public function acceptRegistration(Request $request, Student $student): RedirectResponse
     {
         try {
             $this->service->verifyStudent($student);
@@ -103,7 +102,7 @@ class UserAccountController extends Controller
         );
     }
 
-    public function destroyStudentRegistration(Request $request, Student $student): RedirectResponse
+    public function destroyRegistration(Request $request, Student $student): RedirectResponse
     {
         try {
             $this->service->rejectStudent($student);
@@ -149,10 +148,10 @@ class UserAccountController extends Controller
      *
      * Bound by the Supabase auth.users UUID (not the integer id) to avoid IDOR.
      */
-    public function restrictStudentAccountAccess(string $authUserId): RedirectResponse
+    public function restrictAccess(string $studentUuid): RedirectResponse
     {
         try {
-            $student = Student::findBySupabaseAuthId($authUserId)
+            $student = Student::findBySupabaseAuthId($studentUuid)
                 ?? throw StudentAccountException::authAccountNotFound();
 
             $this->service->suspendStudent($student);
@@ -171,10 +170,10 @@ class UserAccountController extends Controller
      *
      * Bound by the Supabase auth.users UUID (not the integer id) to avoid IDOR.
      */
-    public function restoreStudentAccountAccess(string $authUserId): RedirectResponse
+    public function restoreAccess(string $studentUuid): RedirectResponse
     {
         try {
-            $student = Student::findBySupabaseAuthId($authUserId)
+            $student = Student::findBySupabaseAuthId($studentUuid)
                 ?? throw StudentAccountException::authAccountNotFound();
 
             $this->service->reactivateStudent($student);
@@ -191,7 +190,7 @@ class UserAccountController extends Controller
     /**
      * Permanently delete a student record and their Supabase auth account.
      */
-    public function destroyStudentAccount(Request $request, Student $student): RedirectResponse
+    public function destroy(Request $request, Student $student): RedirectResponse
     {
         $this->service->deleteStudent($student);
 
@@ -231,7 +230,7 @@ class UserAccountController extends Controller
      * @throws StudentAccountException
      * @throws CircuitBreakerException
      */
-    public function createRegistrationAccount(RegisterStudentRequest $request, Student $student): RedirectResponse
+    public function storeRegistration(Request $request, Student $student): RedirectResponse
     {
         try {
             $credentials = $this->service->createSupabaseAccountForStudent($student);

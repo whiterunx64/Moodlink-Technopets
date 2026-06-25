@@ -43,12 +43,12 @@ const props = defineProps<{
     filters: AppointmentFilters;
 }>();
 
-const TABS: { key: AppointmentTab; label: string; badge: string }[] = [
-    { key: 'requests', label: 'Requests', badge: 'bg-red-500' },
-    { key: 'scheduled', label: 'Scheduled', badge: 'bg-green-500' },
-    { key: 'missed', label: 'Missed', badge: 'bg-purple-500' },
-    { key: 'history', label: 'History', badge: 'bg-gray-400' },
-    { key: 'rejected', label: 'Rejected', badge: 'bg-orange-400' },
+const TABS: { key: AppointmentTab; label: string }[] = [
+    { key: 'requests', label: 'Requests' },
+    { key: 'scheduled', label: 'Scheduled' },
+    { key: 'missed', label: 'Missed' },
+    { key: 'history', label: 'History' },
+    { key: 'rejected', label: 'Rejected' },
 ];
 
 usePollingReload(['appointments', 'tabCounts', 'availableSlots']);
@@ -71,21 +71,21 @@ const pendingAction = ref<{
 
 function approve(id: number) {
     router.patch(
-        route('appointments.approve-request', id),
+        route('appointments.approve', id),
         {},
         { preserveScroll: true },
     );
 }
 function reject(id: number) {
     router.patch(
-        route('appointments.reject-request', id),
+        route('appointments.reject', id),
         {},
         { preserveScroll: true },
     );
 }
 function complete(id: number) {
     router.patch(
-        route('appointments.mark-completed', id),
+        route('appointments.complete', id),
         {},
         { preserveScroll: true },
     );
@@ -139,7 +139,7 @@ function openScheduleModal() {
 }
 
 function submitSchedule() {
-    scheduleForm.post(route('appointments.schedule-slots.store'), {
+    scheduleForm.post(route('appointments.slots.store'), {
         preserveScroll: true,
         onSuccess: () => {
             showScheduleModal.value = false;
@@ -149,7 +149,7 @@ function submitSchedule() {
 }
 
 function deleteSlot(id: number) {
-    router.delete(route('appointments.schedule-slots.destroy', id), {
+    router.delete(route('appointments.slots.destroy', id), {
         preserveScroll: true,
     });
 }
@@ -232,13 +232,6 @@ const STATS = computed(() => [
                             @click="switchTab(tab.key)"
                         >
                             {{ tab.label }}
-                            <span
-                                :class="[
-                                    'inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white',
-                                    tab.badge,
-                                ]"
-                                >{{ tabCounts[tab.key] }}</span
-                            >
                         </button>
                     </div>
                 </div>
@@ -574,7 +567,7 @@ const STATS = computed(() => [
                                     </p>
                                     <p class="text-text-muted mt-0.5 text-sm">
                                         {{ selectedStudent.student_id }} &bull;
-                                        {{ selectedStudent.section }} &bull;
+                                        {{ selectedStudent.program }} &bull;
                                         {{ selectedStudent.year_level }}
                                     </p>
                                     <p class="text-text-muted text-sm">
@@ -589,12 +582,12 @@ const STATS = computed(() => [
                             >
                                 <div>
                                     <p class="text-text-muted text-xs">
-                                        Section
+                                        Program
                                     </p>
                                     <p
                                         class="text-text-primary mt-0.5 text-sm font-semibold"
                                     >
-                                        {{ selectedStudent.section }}
+                                        {{ selectedStudent.program }}
                                     </p>
                                 </div>
                                 <div>

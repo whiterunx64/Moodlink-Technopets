@@ -1,40 +1,19 @@
 <script setup lang="ts">
 import InputError from '@/Components/InputError.vue';
-import { useToast } from '@/composables/useToast';
-import { Link, usePage, useForm } from '@inertiajs/vue3';
+import { useAdminLoginSubmission } from '@/composables/useAdminLoginSubmission';
+import { Link, usePage } from '@inertiajs/vue3';
 import { onMounted, ref } from 'vue';
 import type { LoginPageProps } from '@/types';
 
 const props = defineProps<LoginPageProps>();
 
-const { add } = useToast();
 const page = usePage();
 const showPassword = ref(false);
-
 const logoUrl = page.props.assets.logo;
 
-const form = useForm({
-    email: '',
-    password: '',
-});
+const { form, submit, showInitialMessages } = useAdminLoginSubmission(props.status);
 
-onMounted(() => {
-    if (props.status) {
-        add({ type: 'success', message: props.status });
-    }
-    const error = page.props.flash?.error;
-    if (error) add({ type: 'error', message: error });
-});
-
-const submit = () => {
-    form.post(route('login'), {
-        onFinish: () => {
-            form.reset('password');
-            const error = page.props.flash?.error;
-            if (error) add({ type: 'error', message: error });
-        },
-    });
-};
+onMounted(showInitialMessages);
 </script>
 
 <template>

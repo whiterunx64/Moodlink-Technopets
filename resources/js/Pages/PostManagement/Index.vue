@@ -23,36 +23,38 @@ const currentSortLabel = computed(() =>
     currentSort.value === 'oldest' ? 'Oldest first' : 'Latest first',
 );
 
+const sortIcon = computed(() =>
+    currentSort.value === 'oldest' ? 'fa-arrow-up-wide-short' : 'fa-arrow-down-wide-short',
+);
+
 function toggleSort() {
     const next = currentSort.value === 'latest' ? 'oldest' : 'latest';
+    const sortParam = next === 'latest' ? undefined : next;
+
     router.get(
-        route('post-management.index'),
-        filterParams({
-            sort: next === 'latest' ? undefined : next,
-            page: undefined,
-        }),
+        route('posts.index'),
+        filterParams({ sort: sortParam, page: undefined }),
         { preserveState: true, replace: true },
     );
 }
 
 const activeFilter = computed<string>(() => {
-    const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-    if (props.filters.status) return cap(props.filters.status);
-    if (props.filters.section) return props.filters.section;
-    if (props.filters.mood) return cap(props.filters.mood);
-    return 'All';
+    if (props.filters.status) return props.filters.status;
+    if (props.filters.program) return props.filters.program;
+    if (props.filters.mood) return props.filters.mood;
+    return 'all';
 });
 
 const tabs: FilterTab[] = [
-    { label: 'All', value: 'All' },
+    { label: 'All', value: 'all' },
     {
         label: 'Flagged',
-        value: 'Flagged',
+        value: 'flagged',
         badgeInactiveClass: 'bg-status-flagged-bg text-status-flagged',
     },
     {
         label: 'Safe',
-        value: 'Safe',
+        value: 'safe',
         badgeInactiveClass: 'bg-status-safe-bg text-status-safe',
     },
     {
@@ -67,65 +69,78 @@ const tabs: FilterTab[] = [
     },
 ];
 
-function filterParams(
-    extra: Record<string, string | number | null | undefined> = {},
-): Record<string, string | number | null | undefined> {
-    const p: Record<string, string | number | null | undefined> = {};
-    if (props.filters.status) p.status = props.filters.status;
-    if (props.filters.section) p.section = props.filters.section;
-    if (props.filters.mood) p.mood = props.filters.mood;
-    if (props.filters.sort && props.filters.sort !== 'latest')
-        p.sort = props.filters.sort;
-    return { ...p, ...extra };
+type FilterParams = Record<string, string | number | null | undefined>;
+
+function filterParams(extra: FilterParams = {}): FilterParams {
+    const params: FilterParams = {};
+    const keys: Array<'status' | 'program' | 'mood'> = ['status', 'program', 'mood'];
+
+    for (const key of keys) {
+        if (props.filters[key]) params[key] = props.filters[key];
+    }
+
+    if (props.filters.sort && props.filters.sort !== 'latest') {
+        params.sort = props.filters.sort;
+    }
+
+    return { ...params, ...extra };
 }
 
 function setFilter(filter: string) {
-    const base = filter === 'All' ? {} : { status: filter.toLowerCase() };
-    const sort =
-        currentSort.value !== 'latest' ? { sort: currentSort.value } : {};
-    router.get(
-        route('post-management.index'),
-        { ...base, ...sort },
-        { preserveState: true, replace: true },
-    );
-}
+    const params: Record<string, string> = {};
 
-const { pageNumbers } = usePaginatorNav(toRef(props, 'posts'));
+    if (filter !== 'all') {
+        params.status = filter;
+    }
 
-function goToPage(page: number) {
-    router.get(route('post-management.index'), filterParams({ page }), {
+    if (currentSort.value !== 'latest') {
+        params.sort = currentSort.value;
+    }
+
+    router.get(route('posts.index'), params, {
         preserveState: true,
         replace: true,
     });
 }
 
-function toggleFlag(post: Post) {
-    const routeName =
-        post.status === 'flagged'
-            ? 'post-management.unflagPost'
-            : 'post-management.flagPost';
+const { pageNumbers } = usePaginatorNav(toRef(props, 'posts'));
 
-    const nextStatus = post.status === 'flagged' ? 'safe' : 'flagged';
-
-    router.patch(
-        route(routeName, post.id),
-        {},
-        {
-            preserveScroll: true,
-            only: ['posts', 'filters', 'flash'],
-            onSuccess: () => {
-                if (selectedPost.value && selectedPost.value.id === post.id) {
-                    selectedPost.value = {
-                        ...selectedPost.value,
-                        status: nextStatus,
-                    };
-                }
-            },
-        },
-    );
+function goToPage(page: number) {
+    router.get(route('posts.index'), filterParams({ page }), {
+        preserveState: true,
+        replace: true,
+    });
 }
 
 const selectedPost = ref<Post | null>(null);
+
+function updateSelectedPostStatus(post: Post, nextStatus: Post['status']) {
+    if (selectedPost.value?.id !== post.id) {
+        return;
+    }
+    selectedPost.value = { ...selectedPost.value, status: nextStatus };
+}
+
+function toggleFlag(post: Post) {
+    let routeName: string;
+    let nextStatus: Post['status'];
+
+    if (post.status === 'flagged') {
+        routeName = 'posts.flag';
+        nextStatus = 'safe';
+    } else {
+        routeName = 'posts.unflag';
+        nextStatus = 'flagged';
+    }
+
+    router.patch(route(routeName, post.id), {},
+        {
+            preserveScroll: true,
+            only: ['posts', 'filters', 'flash'],
+            onSuccess: () => updateSelectedPostStatus(post, nextStatus),
+        },
+    );
+}
 
 function openModal(post: Post) {
     selectedPost.value = post;
@@ -154,12 +169,7 @@ function toggleFlagFromModal() {
                     <button type="button"
                         class="text-filter-inactive-text hover:text-filter-inactive-hover-text hover:bg-filter-inactive-hover-bg flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-medium transition-all duration-150 select-none"
                         @click="toggleSort">
-                        <i :class="[
-                            'fas text-[10px]',
-                            currentSort === 'oldest'
-                                ? 'fa-arrow-up-wide-short'
-                                : 'fa-arrow-down-wide-short',
-                        ]" />
+                        <i class="fas text-[10px]" :class="sortIcon" />
                         {{ currentSortLabel }}
                     </button>
                 </div>

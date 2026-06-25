@@ -19,9 +19,9 @@ class PostManagementController extends Controller
 
     public function index(PostManagementFilterRequest $request): Response
     {
-        $filters = $request->filters();
+        $postFilters = $request->filters();
 
-        $posts = Post::paginatedListWithFilters($filters)
+        $posts = Post::paginatedListWithFilters($postFilters)
             ->through(fn(Post $post): array => [
                 'id' => $post->id,
                 'content' => $post->content,
@@ -29,7 +29,7 @@ class PostManagementController extends Controller
                 'status' => $post->status?->value,
                 'date' => $post->display_date,
                 'time' => $post->display_time,
-                'section' => $post->student?->section ?? '',
+                'program' => $post->student?->program ?? '',
                 'anonymous_name' => $post->student?->anonymous_name,
                 'last_name' => $post->student?->last_name,
                 'first_name' => $post->student?->first_name,
@@ -37,11 +37,11 @@ class PostManagementController extends Controller
 
         return Inertia::render('PostManagement/Index', [
             'posts' => $posts,
-            'filters' => $filters,
+            'filters' => $postFilters,
         ]);
     }
 
-    public function flagPost(Post $post): RedirectResponse
+    public function flag(Post $post): RedirectResponse
     {
         try {
             $this->service->flagPost($post);
@@ -55,7 +55,7 @@ class PostManagementController extends Controller
         );
     }
 
-    public function unflagPost(Post $post): RedirectResponse
+    public function unflag(Post $post): RedirectResponse
     {
         try {
             $this->service->unflagPost($post);
@@ -63,6 +63,6 @@ class PostManagementController extends Controller
             return back()->with('flash_error', $exception->getMessage());
         }
 
-        return back()->with('flash_success', 'Post unflagged.');
+        return back()->with('flash_success', 'Post unflagged as safe content.');
     }
 }

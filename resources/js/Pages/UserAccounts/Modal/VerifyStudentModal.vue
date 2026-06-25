@@ -224,10 +224,10 @@ async function copy(field: 'email' | 'password') {
 
               <div>
                 <p class="text-xs font-bold uppercase tracking-wide text-sky-700">
-                  Section
+                  Program
                 </p>
                 <p class="mt-2 border-b-2 border-slate-800 pb-2 text-sm font-medium">
-                  {{ student.section || '—' }}
+                  {{ student.program || '—' }}
                 </p>
               </div>
 
@@ -271,7 +271,7 @@ async function copy(field: 'email' | 'password') {
                 <span>
                   Verify that the student's
                   <strong class="font-semibold text-slate-900">
-                    full name, ID number, section, and year level
+                    full name, ID number, program, and year level
                   </strong>
                   exactly match the official enrollment records before proceeding.
                 </span>

@@ -19,7 +19,7 @@ class PostManagementFilterRequest extends FormRequest
     {
         return [
             'status' => ['sometimes', 'nullable', Rule::enum(PostStatus::class)],
-            'section' => ['sometimes', 'nullable', 'string', 'max:100', 'regex:/^[\w\s\-]+$/', Rule::exists('students', 'section')],
+            'program' => ['sometimes', 'nullable', 'string', 'max:100', 'regex:/^[\w\s\-]+$/', Rule::exists('students', 'program')],
             'mood' => ['sometimes', 'nullable', Rule::enum(PostMood::class)],
             'sort' => ['sometimes', 'nullable', Rule::in(['latest', 'oldest'])],
         ];
@@ -31,7 +31,7 @@ class PostManagementFilterRequest extends FormRequest
     {
         return [
             'status' => $this->validated('status'),
-            'section' => $this->validated('section'),
+            'program' => $this->validated('program'),
             'mood' => $this->validated('mood'),
             'sort' => $this->validated('sort') ?? 'latest',
         ];
@@ -40,7 +40,7 @@ class PostManagementFilterRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
-            $filled = collect(['status', 'section', 'mood'])
+            $filled = collect(['status', 'program', 'mood'])
                 ->filter(fn(string $key) => $this->filled($key))
                 ->count();
 

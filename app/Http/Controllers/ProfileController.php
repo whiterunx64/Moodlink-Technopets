@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\DeleteAccountRequest;
-use App\Http\Requests\ProfileUpdateRequest;
 use App\Http\Requests\UpdateNotificationPreferencesRequest;
 use App\Http\Requests\UpdatePasswordRequest;
+use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Requests\UploadAvatarRequest;
 use App\Services\ProfileService;
 use DomainException;
@@ -36,7 +36,7 @@ class ProfileController extends Controller
         ]);
     }
 
-    public function update(ProfileUpdateRequest $request): RedirectResponse
+    public function updateMetadata(UpdateProfileRequest $request): RedirectResponse
     {
         try {
             $this->service->updatePersonalDetails($request->user(), $request->validated());
@@ -89,7 +89,7 @@ class ProfileController extends Controller
         return back()->with('status', 'password-updated');
     }
 
-    public function destroy(DeleteAccountRequest $request): RedirectResponse
+    public function destroyAccount(DeleteAccountRequest $request): RedirectResponse
     {
         $password = $request->validated('password');
 

@@ -26,12 +26,13 @@ use Illuminate\Support\Collection;
  *
  * @property-read \App\Models\Student|null $student
  * @property-read string $student_name
- * @property-read string $student_section
+ * @property-read string $student_program
  * @property-read string $display_date
  * @property-read string $display_time
  * 
  * @method static Builder|Appointment pending()
  * @method static Builder|Appointment scheduled()
+ * @method static Builder|Appointment upcomingScheduled()
  * @method static Builder|Appointment missed()
  * @method static Builder|Appointment history()
  * @method static Builder|Appointment rejected()
@@ -81,10 +82,10 @@ class Appointment extends Model
         );
     }
 
-    protected function studentSection(): Attribute
+    protected function studentProgram(): Attribute
     {
         return Attribute::make(
-            get: fn(): string => $this->student?->section ?? '',
+            get: fn(): string => $this->student?->program ?? '',
         );
     }
 
@@ -111,6 +112,12 @@ class Appointment extends Model
     public function scopeScheduled(Builder $query): Builder
     {
         return $query->where('status', AppointmentStatus::Scheduled->value);
+    }
+
+    /** Scheduled appointments that are still upcoming (drives the "scheduled" tab). */
+    public function scopeUpcomingScheduled(Builder $query): Builder
+    {
+        return $query->scheduled()->where('datetime', '>=', Carbon::now());
     }
 
     public function scopeMissed(Builder $query): Builder
@@ -140,11 +147,6 @@ class Appointment extends Model
         ]);
     }
 
-    /**
-     * Open (in-progress) consultations: a request or an upcoming session. These
-     * block At Risk re-flagging; a Completed consultation does not, so a student
-     * can re-enter the list on a fresh stress run.
-     */
     public function scopeOpenConsultation(Builder $query): Builder
     {
         return $query->whereIn('status', [
@@ -158,30 +160,6 @@ class Appointment extends Model
         return $query->when($from, fn(Builder $q) => $q->where('datetime', '>=', $from));
     }
 
-    /**
-     * @param Builder|Appointment $query
-     */
-    public function scopeForAppointmentTab(Builder $query, string $tab): Builder
-    {
-        if ($tab === 'scheduled') {
-            return $query->scheduled()->where('datetime', '>=', Carbon::now());
-        }
-
-        if ($tab === 'missed') {
-            return $query->missed();
-        }
-
-        if ($tab === 'history') {
-            return $query->history();
-        }
-
-        if ($tab === 'rejected') {
-            return $query->rejected();
-        }
-
-        return $query->pending();
-    }
-
     public function scopeForStudent(Builder $query, int $studentId): Builder
     {
         return $query->where('student_id', $studentId);
@@ -189,26 +167,39 @@ class Appointment extends Model
 
     public static function getListForTab(string $tab): Collection
     {
+        $status = AppointmentStatus::fromTab($tab);
+
         return static::query()
             ->with('student.appointments')
-            ->forAppointmentTab($tab)
+            ->where('status', $status->value)
+            ->when($tab === 'scheduled', fn($q) => $q->where('datetime', '>=', now()))
+            ->when($tab === 'missed', fn($q) => $q->where('datetime', '<', now()))
             ->orderBy('datetime')
             ->get();
     }
 
     /**
-     * Raw appointment totals keyed by status value.
-     *
      * @return array<string, int>
      */
-    public static function countsByStatus(): array
+    public static function tabCounts(): object
     {
-        return static::selectRaw('status, count(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status')
-            ->all();
+        return static::query()
+            ->selectRaw(
+                'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS requests,
+             SUM(CASE WHEN status = ? AND datetime >= NOW() THEN 1 ELSE 0 END) AS scheduled,
+             SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS history,
+             SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS rejected,
+             SUM(CASE WHEN status = ? AND datetime < NOW() THEN 1 ELSE 0 END) AS missed',
+                [
+                    AppointmentStatus::Pending->value,
+                    AppointmentStatus::Scheduled->value,
+                    AppointmentStatus::Completed->value,
+                    AppointmentStatus::Rejected->value,
+                    AppointmentStatus::Missed->value,
+                ],
+            )
+            ->first();
     }
-
     public static function activeConsultationStudentIds(array $studentIds): array
     {
         if (empty($studentIds)) {

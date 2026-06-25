@@ -11,9 +11,13 @@ use App\Exceptions\StudentAccountException;
 use App\Models\Notification;
 use App\Models\Student;
 use App\Mail\StudentCredentialsMail;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 use function count;

@@ -1,5 +1,6 @@
 import { computed, type Ref } from 'vue';
 import type { Paginated } from '@/types';
+import { buildPageButtons } from '@/utils/pagination';
 
 /**
  * Derives the page-button list (with '…' gaps) from a server-side Laravel
@@ -10,14 +11,7 @@ export function usePaginatorNav<T>(paginator: Ref<Paginated<T>>) {
     const currentPage = computed(() => paginator.value.current_page);
     const totalPages = computed(() => paginator.value.last_page);
 
-    const pageNumbers = computed<(number | '…')[]>(() => {
-        const t = totalPages.value;
-        const c = currentPage.value;
-        if (t <= 7) return Array.from({ length: t }, (_, i) => i + 1);
-        if (c <= 4) return [1, 2, 3, 4, 5, '…', t];
-        if (c >= t - 3) return [1, '…', t - 4, t - 3, t - 2, t - 1, t];
-        return [1, '…', c - 1, c, c + 1, '…', t];
-    });
+    const pageNumbers = computed(() => buildPageButtons(currentPage.value, totalPages.value));
 
     return {
         currentPage,

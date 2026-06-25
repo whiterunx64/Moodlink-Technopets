@@ -22,7 +22,7 @@ const props = defineProps<{
 // ── Local filter state, seeded from the server's echoed filters ───────────────
 const search = ref(props.filters.search ?? '');
 const yearFilter = ref(props.filters.year_level ? String(props.filters.year_level) : 'All');
-const activeTab = ref<StudentTab>((props.filters.tab as StudentTab) ?? 'All');
+const activeTab = ref<StudentTab>((props.filters.tab as StudentTab) ?? 'all');
 
 const paginator = usePaginatorNav(toRef(props, 'students'));
 
@@ -59,7 +59,7 @@ function reload(overrides: Record<string, unknown> = {}) {
         {
             search: search.value || undefined,
             year_level: yl ?? undefined,
-            tab: activeTab.value === 'All' ? undefined : activeTab.value,
+            tab: activeTab.value === 'all' ? undefined : activeTab.value,
             ...overrides,
         },
         { preserveState: true, preserveScroll: true, replace: true },
@@ -132,6 +132,5 @@ function goToPage(page: number) {
     <VerifyStudentModal :show="verifyModalOpen" :student="selectedStudent" @close="closeModal" @verified="onVerified" />
 
     <!-- Verified / suspended students: manage account -->
-    <ManageAccountModal :show="manageModalOpen" :student="selectedStudent" @close="closeModal"
-        @updated="onVerified" />
+    <ManageAccountModal :show="manageModalOpen" :student="selectedStudent" @close="closeModal" @updated="onVerified" />
 </template>

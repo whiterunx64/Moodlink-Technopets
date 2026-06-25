@@ -656,7 +656,7 @@ const logoUrl = usePage().props.assets.logo;
                         <p
                             class="font-inter text-sm leading-relaxed text-gray-400 sm:text-base"
                         >
-                            Submit your name, year, section, and student number.
+                            Submit your name, year, program, and student number.
                             The Guidance &amp; Counseling Unit reviews and
                             approves your account.
                         </p>

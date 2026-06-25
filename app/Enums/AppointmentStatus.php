@@ -13,9 +13,6 @@ enum AppointmentStatus: string
     case Missed = 'Missed';
 
     /**
-     * UI tab keys this status counts toward. A status may appear under
-     * more than one tab (e.g. Rejected shows under both History and Rejected).
-     *
      * @return array<int, string>
      */
     public function tabKeys(): array
@@ -29,25 +26,14 @@ enum AppointmentStatus: string
         };
     }
 
-    /**
-     * Build per-tab totals from raw counts keyed by status value.
-     * Every tab is present, defaulting to 0.
-     *
-     * @param  array<string, int>  $countsByStatus  Raw counts keyed by status value.
-     * @return array<string, int>
-     */
-    public static function tabCounts(array $countsByStatus): array
+    public static function fromTab(string $tab): self
     {
-        $tabCounts = ['requests' => 0, 'scheduled' => 0, 'history' => 0, 'rejected' => 0];
-
-        foreach (self::cases() as $status) {
-            $count = $countsByStatus[$status->value] ?? 0;
-
-            foreach ($status->tabKeys() as $tab) {
-                $tabCounts[$tab] += $count;
-            }
-        }
-
-        return $tabCounts;
+        return match ($tab) {
+            'scheduled' => self::Scheduled,
+            'missed' => self::Missed,
+            'history' => self::Completed,
+            'rejected' => self::Rejected,
+            default => self::Pending,
+        };
     }
 }

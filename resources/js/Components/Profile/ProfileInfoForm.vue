@@ -7,7 +7,7 @@ import type { AdminProfile } from '@/types';
 const props = withDefaults(defineProps<{
     profile: AdminProfile;
     processing?: boolean;
-    errors?: Partial<Record<'firstName' | 'lastName' | 'phone', string>>;
+    errors?: Partial<Record<'first_name' | 'last_name' | 'phone', string>>;
 }>(), {
     processing: false,
     errors: () => ({}),
@@ -25,9 +25,9 @@ function save() {
 <template>
     <SettingsSection title="Profile Information" description="Update your personal details">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FormField label="First Name" v-model="form.firstName" :error="errors.firstName"
+            <FormField label="First Name" v-model="form.first_name" :error="errors.first_name"
                 :show-error-text="false" />
-            <FormField label="Last Name" v-model="form.lastName" :error="errors.lastName" :show-error-text="false" />
+            <FormField label="Last Name" v-model="form.last_name" :error="errors.last_name" :show-error-text="false" />
             <FormField label="Phone Number" v-model="form.phone" type="tel" :error="errors.phone"
                 :show-error-text="false" />
         </div>

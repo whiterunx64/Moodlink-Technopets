@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\AppointmentStatus;
 use App\Enums\YearLevel;
 use App\Http\Requests\AppointmentFilterRequest;
 use App\Http\Requests\StoreScheduleRequest;
@@ -35,18 +34,18 @@ class AppointmentController extends Controller
                 'date' => $appointment->display_date,
                 'time' => $appointment->display_time,
                 'student_name' => $appointment->student_name,
-                'section' => $appointment->student_section,
+                'program' => $appointment->student_program,
                 'student_profile' => $this->getStudentInformation($appointment),
             ]);
 
-        $counts = Appointment::countsByStatus();
+        $statusCounts = Appointment::tabCounts();
 
         $tabCounts = [
-            'requests' => $counts[AppointmentStatus::Pending->value] ?? 0,
-            'scheduled' => Appointment::scheduled()->where('datetime', '>=', now())->count(),
-            'history' => ($counts[AppointmentStatus::Completed->value] ?? 0),
-            'rejected' => $counts[AppointmentStatus::Rejected->value] ?? 0,
-            'missed' => $counts[AppointmentStatus::Missed->value] ?? 0,
+            'requests' => (int) $statusCounts->requests,
+            'scheduled' => (int) $statusCounts->scheduled,
+            'history' => (int) $statusCounts->history,
+            'rejected' => (int) $statusCounts->rejected,
+            'missed' => (int) $statusCounts->missed,
         ];
 
         $availableSlots = AvailableSchedule::getAvailableSlotsList()
@@ -65,7 +64,7 @@ class AppointmentController extends Controller
         ]);
     }
 
-    public function approveAppointmentRequest(Appointment $appointment): RedirectResponse
+    public function approve(Appointment $appointment): RedirectResponse
     {
         try {
             $this->service->approve($appointment);
@@ -76,7 +75,7 @@ class AppointmentController extends Controller
         return back()->with('flash_success', 'Appointment approved.');
     }
 
-    public function rejectAppointmentRequest(Appointment $appointment): RedirectResponse
+    public function reject(Appointment $appointment): RedirectResponse
     {
         try {
             $this->service->reject($appointment);
@@ -87,7 +86,7 @@ class AppointmentController extends Controller
         return back()->with('flash_success', 'Appointment rejected.');
     }
 
-    public function markAppointmentAsCompleted(Appointment $appointment): RedirectResponse
+    public function complete(Appointment $appointment): RedirectResponse
     {
         try {
             $this->service->complete($appointment);
@@ -98,7 +97,7 @@ class AppointmentController extends Controller
         return back()->with('flash_success', 'Appointment marked as completed.');
     }
 
-    public function createScheduleSlot(StoreScheduleRequest $request): RedirectResponse
+    public function storeSlot(StoreScheduleRequest $request): RedirectResponse
     {
         try {
             $this->service->addSlot($request->scheduledAt());
@@ -109,10 +108,10 @@ class AppointmentController extends Controller
         return back()->with('flash_success', 'Schedule slot added.');
     }
 
-    public function destroyScheduleSlot(AvailableSchedule $schedule): RedirectResponse
+    public function destroySlot(AvailableSchedule $slot): RedirectResponse
     {
         try {
-            $this->service->deleteSlot($schedule);
+            $this->service->deleteSlot($slot);
         } catch (AppointmentException $exception) {
             return back()->with('flash_error', $exception->getMessage());
         }
@@ -130,7 +129,7 @@ class AppointmentController extends Controller
         if ($student === null) {
             return [
                 'initials' => '',
-                'section' => '',
+                'program' => '',
                 'year_level' => '',
                 'student_id' => '',
                 'total_appointments' => 0,
@@ -140,7 +139,7 @@ class AppointmentController extends Controller
 
         return [
             'initials' => $student->studentNameInitials,
-            'section' => $student->section,
+            'program' => $student->program,
             'year_level' => YearLevel::tryFrom($student->year_level)?->toOrdinal() ?? '',
             'student_id' => $student->student_number,
             'total_appointments' => $student->appointments->count(),

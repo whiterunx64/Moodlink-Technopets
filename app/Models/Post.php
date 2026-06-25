@@ -6,7 +6,6 @@ namespace App\Models;
 
 use App\Enums\PostMood;
 use App\Enums\PostStatus;
-use App\Traits\HasAdminPagination;
 use App\Traits\HasDateTimeDisplay;
 use App\Traits\HasFilters;
 use Illuminate\Database\Eloquent\Builder;
@@ -29,20 +28,16 @@ use function in_array;
  * @property-read \App\Models\Student|null $student
  *
  * @method static Builder|Post fromVerifiedStudents()
- * @method static Builder|Post wherePostStatus(string $status)
- * @method static Builder|Post fromStudentsInSection(string $section)
- * @method static Builder|Post wherePostMood(string $mood)
- * @method static Builder|Post stressedOrDrained()
+ * @method static Builder|Post fromProgram(string $program)
  * @method static Builder|Post startingFrom(?\Illuminate\Support\Carbon $from)
  * @method static Builder|Post sortedByDateDirection(string $direction)
  *
- * @mixin HasAdminPagination
  * @mixin HasDateTimeDisplay
  */
 
 class Post extends Model
 {
-    use HasAdminPagination, HasDateTimeDisplay, HasFilters;
+    use HasDateTimeDisplay, HasFilters;
 
     protected $table = 'posts';
     public const UPDATED_AT = null;
@@ -92,27 +87,9 @@ class Post extends Model
         return $query->whereHas('student', fn(Builder $q) => $q->whereStatusIsVerified());
     }
 
-    public function scopeWherePostStatus(Builder $query, string $status): Builder
+    public function scopeFromProgram(Builder $query, string $program): Builder
     {
-        return $query->where('status', $status);
-    }
-
-    public function scopeFromStudentsInSection(Builder $query, string $section): Builder
-    {
-        return $query->whereHas('student', fn(Builder $q) => $q->where('section', $section));
-    }
-
-    public function scopeWherePostMood(Builder $query, string $mood): Builder
-    {
-        return $query->where('mood', $mood);
-    }
-
-    public function scopeStressedOrDrained(Builder $query): Builder
-    {
-        return $query->whereIn('mood', [
-            PostMood::Stressed->value,
-            PostMood::Drained->value,
-        ]);
+        return $query->whereHas('student', fn(Builder $q) => $q->where('program', $program));
     }
 
     public function scopeStartingFrom(Builder $query, ?Carbon $from): Builder
@@ -129,29 +106,17 @@ class Post extends Model
         return $query->orderByDesc('datetime');
     }
 
-    public static function queryVerifiedPostsWithFilters(array $filters): Builder
+    public static function paginatedListWithFilters(array $filters): LengthAwarePaginator
     {
         return static::query()
             ->with('student')
             ->fromVerifiedStudents()
-            ->when(
-                $filters['status'] ?? null,
-                fn(Builder|Post $q, string $status) => $q->wherePostStatus($status)
-            )
-            ->when(
-                $filters['section'] ?? null,
-                fn(Builder|Post $q, string $section) => $q->fromStudentsInSection($section)
-            )
-            ->when(
-                $filters['mood'] ?? null,
-                fn(Builder|Post $q, string $mood) => $q->wherePostMood($mood)
-            )
-            ->sortedByDateDirection($filters['sort'] ?? 'latest');
-    }
-
-    public static function paginatedListWithFilters(array $filters): LengthAwarePaginator
-    {
-        return static::paginateForAdmin(static::queryVerifiedPostsWithFilters($filters));
+            ->when($filters['status'] ?? null, fn(Builder $query, string $status) => $query->where('status', $status))
+            ->when($filters['program'] ?? null, fn(Builder $query, string $program) => $query->fromProgram($program))
+            ->when($filters['mood'] ?? null, fn(Builder $query, string $mood) => $query->where('mood', $mood))
+            ->sortedByDateDirection($filters['sort'] ?? 'latest')
+            ->paginate(10)
+            ->withQueryString();
     }
 
     public function isAtRisk(?Carbon $from = null): bool
@@ -169,8 +134,6 @@ class Post extends Model
     }
 
     /**
-     * Mood counts keyed by mood value, for verified students within the period.
-     *
      * @return \Illuminate\Support\Collection<string, int>
      */
     public static function getMoodCounts(string $period): \Illuminate\Support\Collection

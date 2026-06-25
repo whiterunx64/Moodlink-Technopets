@@ -48,7 +48,7 @@ function moodStyle(mood: string) {
                         {{ post.anonymous_name ?? 'Anonymous (Not Set)' }}
                     </p>
                     <p class="text-text-muted text-xs">
-                        {{ post.section }} · {{ post.date }}, {{ post.time }}
+                        {{ post.program }} · {{ post.date }}, {{ post.time }}
                     </p>
                 </div>
             </div>

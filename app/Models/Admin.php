@@ -77,8 +77,8 @@ class Admin extends Model
     public function profileSummary(): array
     {
         return [
-            'firstName' => $this->first_name,
-            'lastName' => $this->last_name,
+            'first_name' => $this->first_name,
+            'last_name' => $this->last_name,
             'phone' => $this->phone,
             'avatar' => $this->avatar,
             'role' => $this->role,
@@ -89,8 +89,8 @@ class Admin extends Model
     public function savePersonalDetails(array $details): bool
     {
         return $this->update([
-            'first_name' => $details['firstName'],
-            'last_name' => $details['lastName'],
+            'first_name' => $details['first_name'],
+            'last_name' => $details['last_name'],
             'phone' => $details['phone'] ?? null,
             'avatar' => $details['avatar'] ?? $this->avatar,
         ]);

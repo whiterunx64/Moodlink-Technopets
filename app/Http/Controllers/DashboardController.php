@@ -20,9 +20,9 @@ class DashboardController extends Controller
     {
         return Inertia::render('Dashboard', [
             ...$this->dashboardService->getDashboardData(),
-            'moodTrends' => $this->dashboardService->getMoodTrends(
+            'mood_trends' => $this->dashboardService->getMoodTrends(
                 $request->query('trendPeriod'),
-                $request->query('trendSection'),
+                $request->query('trendProgram'),
             ),
         ]);
     }

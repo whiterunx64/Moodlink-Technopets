@@ -14,7 +14,7 @@ withDefaults(defineProps<{
 
 const emit = defineEmits<{ submit: [form: PasswordForm] }>();
 
-const form = ref<PasswordForm>({ current: '', newPass: '', confirm: '' });
+const form = ref<PasswordForm>({ current: '', new_pass: '', confirm: '' });
 
 function submit() {
     emit('submit', { ...form.value });
@@ -22,7 +22,7 @@ function submit() {
 
 // Allow the parent to clear inputs after a successful submit.
 function reset() {
-    form.value = { current: '', newPass: '', confirm: '' };
+    form.value = { current: '', new_pass: '', confirm: '' };
 }
 
 defineExpose({ reset });
@@ -33,8 +33,8 @@ defineExpose({ reset });
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <FormField label="Current Password" v-model="form.current" type="password" placeholder="••••••••"
                 :error="errors.current" :show-error-text="false" />
-            <FormField label="New Password" v-model="form.newPass" type="password" placeholder="••••••••"
-                :error="errors.newPass" :show-error-text="false" />
+            <FormField label="New Password" v-model="form.new_pass" type="password" placeholder="••••••••"
+                :error="errors.new_pass" :show-error-text="false" />
             <FormField label="Confirm Password" v-model="form.confirm" type="password" placeholder="••••••••"
                 :error="errors.confirm" :show-error-text="false" />
         </div>
