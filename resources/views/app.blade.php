@@ -8,7 +8,7 @@
     <title inertia>{{ config('app.name', 'Moodlink') }}</title>
 
     <!-- Scripts -->
-    @routes
+    @routes(nonce: Vite::cspNonce())
     @vite(['resources/js/app.ts', "resources/js/Pages/{$page['component']}.vue"])
     @inertiaHead
 </head>

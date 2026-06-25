@@ -6,15 +6,18 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Vite;
 use Symfony\Component\HttpFoundation\Response;
 
 class SetSecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
+        $nonce = Vite::useCspNonce();
+
         $response = $next($request);
 
-        $this->preventClickjacking($response);
+        $this->setContentSecurityPolicy($response, $nonce);
         $this->preventMimeTypeSniffing($response);
         $this->limitReferrerInformationLeakage($response);
         $this->restrictBrowserFeaturePermissions($response);
@@ -28,11 +31,11 @@ class SetSecurityHeaders
         return $response;
     }
 
-    private function preventClickjacking(Response $response): void
+    private function setContentSecurityPolicy(Response $response, string $nonce): void
     {
         $csp = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline'",
+            "script-src 'self' 'nonce-{$nonce}'",
             "style-src 'self' 'unsafe-inline'",
             "connect-src 'self' https://*.supabase.co",
             "img-src 'self' data: https://xyxjbqmvxtopeemdxjnq.supabase.co",

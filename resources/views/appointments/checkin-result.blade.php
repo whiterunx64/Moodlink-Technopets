@@ -215,7 +215,6 @@
             class="ver-toggle"
             id="ver-toggle"
             type="button"
-            onclick="toggleVerification()"
             aria-expanded="false"
             aria-controls="ver-body"
         >
@@ -252,7 +251,7 @@
 
 </div>
 
-<script>
+<script nonce="{{ Vite::cspNonce() }}">
     function toggleVerification() {
         const btn  = document.getElementById('ver-toggle');
         const body = document.getElementById('ver-body');
@@ -261,6 +260,8 @@
         body.classList.toggle('open', !open);
         btn.setAttribute('aria-expanded', String(!open));
     }
+
+    document.getElementById('ver-toggle').addEventListener('click', toggleVerification);
 </script>
 
 </body>

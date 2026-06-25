@@ -194,10 +194,10 @@ $retryable whether to show the retry button — defaults true
         --}}
         <div class="actions">
             @if($retryable)
-                <button type="button" class="btn btn-primary" onclick="go('{{ url()->current() }}')">Try again</button>
-                <button type="button" class="btn btn-secondary" onclick="go('{{ url('/') }}')">Return to dashboard</button>
+                <button type="button" class="btn btn-primary" data-go="{{ url()->current() }}">Try again</button>
+                <button type="button" class="btn btn-secondary" data-go="{{ url('/') }}">Return to dashboard</button>
             @else
-                <button type="button" class="btn btn-primary" onclick="go('{{ url('/') }}')">Return to dashboard</button>
+                <button type="button" class="btn btn-primary" data-go="{{ url('/') }}">Return to dashboard</button>
             @endif
         </div>
 
@@ -206,7 +206,7 @@ $retryable whether to show the retry button — defaults true
         </p>
     </main>
 
-    <script>
+    <script nonce="{{ Vite::cspNonce() }}">
         // Navigate the top-level window so the buttons work whether this page is
         // standalone or embedded in Inertia's error-modal iframe.
         function go(url) {
@@ -216,6 +216,12 @@ $retryable whether to show the retry button — defaults true
                 window.location.href = url;
             }
         }
+
+        document.querySelectorAll('[data-go]').forEach(function (el) {
+            el.addEventListener('click', function () {
+                go(el.getAttribute('data-go'));
+            });
+        });
     </script>
 </body>
 
