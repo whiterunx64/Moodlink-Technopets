@@ -14,11 +14,12 @@ class SetSecurityHeaders
     {
         $response = $next($request);
 
-        $this->preventClickjackingWithFrameOptions($response);
+        $this->preventClickjacking($response);
         $this->preventMimeTypeSniffing($response);
         $this->limitReferrerInformationLeakage($response);
         $this->restrictBrowserFeaturePermissions($response);
         $this->hideFrameworkFingerprintHeaders($response);
+        $this->addCrossOriginProtection($response);
 
         if ($this->requestIsServedOverHttps($request)) {
             $this->enforceHttpsWithStrictTransportSecurity($response);
@@ -27,9 +28,10 @@ class SetSecurityHeaders
         return $response;
     }
 
-    private function preventClickjackingWithFrameOptions(Response $response): void
+    private function preventClickjacking(Response $response): void
     {
-        $response->headers->set('X-Frame-Options', 'DENY'); // Prevent iframe-based clickjacking
+        // $response->headers->set('X-Frame-Options', 'SAMEORIGIN'); // Prevent iframe-based clickjacking
+        $response->headers->set('Content-Security-Policy', "default-src 'self'; frame-ancestors 'self'; object-src 'none'; base-uri 'self';");
     }
 
     private function preventMimeTypeSniffing(Response $response): void
@@ -54,6 +56,13 @@ class SetSecurityHeaders
     {
         $response->headers->remove('X-Powered-By'); // Hide framework information
         $response->headers->remove('Server'); // Hide server information
+    }
+
+    private function addCrossOriginProtection(Response $response): void
+    {
+        $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
+        $response->headers->set('Cross-Origin-Resource-Policy', 'same-origin');
+        $response->headers->set('X-Permitted-Cross-Domain-Policies', 'none');
     }
 
     private function enforceHttpsWithStrictTransportSecurity(Response $response): void
