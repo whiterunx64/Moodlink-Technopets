@@ -11,7 +11,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class StudentCredentialsMail extends Mailable
+class InitialPasswordMailable extends Mailable
 {
     use Queueable, SerializesModels;
 

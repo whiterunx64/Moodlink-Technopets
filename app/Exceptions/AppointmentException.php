@@ -33,6 +33,14 @@ final class AppointmentException extends DomainException
         );
     }
 
+    public static function appointmentCheckInOutsideWindow(): self
+    {
+        return new self(
+            'This session can only be checked in during its scheduled time window.',
+            Response::HTTP_UNPROCESSABLE_ENTITY,
+        );
+    }
+
     // ── Booking conflicts ─────────────────────────────────────────────────────
 
     public static function studentAlreadyHasBookedSlot(): self

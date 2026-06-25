@@ -7,13 +7,13 @@ namespace App\Models;
 use App\Enums\StudentStatus;
 use App\Enums\YearLevel;
 use App\Traits\HasFilters;
+use App\Support\PhTime;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -27,7 +27,6 @@ use Illuminate\Support\Facades\DB;
  * @property int $year_level
  * @property string $program
  * @property string|null $daily_result
- * @property Carbon|null $risk_start_date
  * @property string|null $personal_email
  * @property string|null $contact_number
  *
@@ -132,7 +131,7 @@ class Student extends Model
             return match ($this->status) {
                 StudentStatus::Verified => 'active',
                 StudentStatus::Suspended => 'suspended',
-                StudentStatus::Pending => 'pending',
+                StudentStatus::Pending, StudentStatus::Unverified => 'pending',
             };
         });
     }
@@ -156,7 +155,7 @@ class Student extends Model
             }
 
             return (int) $this->risk_start_date->copy()->startOfDay()
-                ->diffInDays(Carbon::now()->startOfDay()) + 1;
+                ->diffInDays(PhTime::now()->startOfDay()) + 1;
         });
     }
 
@@ -217,6 +216,13 @@ class Student extends Model
             return $query;
         }
 
+        if ($tab === StudentStatus::Pending->value) {
+            return $query->whereIn('status', [
+                StudentStatus::Pending->value,
+                StudentStatus::Unverified->value,
+            ]);
+        }
+
         $status = StudentStatus::tryFrom($tab);
 
         if ($status === null) {
@@ -232,11 +238,12 @@ class Student extends Model
             ->filter($filters)
             ->selectRaw(
                 'COUNT(*) AS total,
-             SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS pending,
+             SUM(CASE WHEN status IN (?, ?) THEN 1 ELSE 0 END) AS pending,
              SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS verified,
              SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS suspended',
                 [
                     StudentStatus::Pending->value,
+                    StudentStatus::Unverified->value,
                     StudentStatus::Verified->value,
                     StudentStatus::Suspended->value,
                 ],

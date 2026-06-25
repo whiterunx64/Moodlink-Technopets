@@ -3,6 +3,7 @@
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostManagementController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SummaryReportController;
@@ -35,6 +36,27 @@ Route::get(config('supabase-auth.monitoring.health_checks.endpoint'), [HealthCon
 //        'time_seconds' => $duration,
 //    ];
 //});
+
+
+Route::get('/preview/appointment-reminder', function () {
+
+    $student = (object) [
+        'first_name' => 'Juan',
+    ];
+
+    $appointment = (object) [
+        'display_date' => 'June 30, 2026',
+        'display_time' => '10:00 AM',
+    ];
+
+    return view('mail.appointment-reminder-mail', [
+        'student' => $student,
+        'appointment' => $appointment,
+        'logoData' => null,
+    ]);
+
+})->name('preview.appointment.reminder');
+
 Route::get('/preview/approve-appointment-mail', function () {
     abort_unless(app()->environment('local'), 403);
 
@@ -81,7 +103,7 @@ Route::get('/preview/student-account-password', function () {
         'last_name' => 'Santos',
     ]);
 
-    return new App\Mail\StudentCredentialsMail(
+    return new App\Mail\InitialPasswordMailable(
         $student,
         'maria.santos@student.feu.edu.ph',
         'Tmp-9f2K7xQ4',
@@ -100,6 +122,9 @@ Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-acce
 
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])
+        ->name('notifications.index');
 
     Route::get('/student-accounts', [UserAccountController::class, 'index'])
         ->name('student-accounts.index');
@@ -139,8 +164,6 @@ Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-acce
         ->name('appointments.approve');
     Route::patch('/appointments/{appointment}/reject-request', [AppointmentController::class, 'reject'])
         ->name('appointments.reject');
-    Route::patch('/appointments/{appointment}/mark-completed', [AppointmentController::class, 'complete'])
-        ->name('appointments.complete');
     Route::post('/appointments/schedule-slots', [AppointmentController::class, 'storeSlot'])
         ->name('appointments.slots.store');
     Route::delete('/appointments/schedule-slots/{slot}', [AppointmentController::class, 'destroySlot'])
@@ -161,5 +184,9 @@ Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-acce
         ->middleware('supabase.revalidate')
         ->name('profile.account.destroy');
 });
+
+Route::get('/appointments/{appointment}/check-in', [AppointmentController::class, 'checkIn'])
+    ->middleware('signed')
+    ->name('appointments.checkin');
 
 require __DIR__ . '/auth.php';

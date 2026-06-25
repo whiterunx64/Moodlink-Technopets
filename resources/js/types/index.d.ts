@@ -22,6 +22,20 @@ export type PageProps<T extends Record<string, unknown> = Record<string, unknown
     };
 };
 
+export interface AdminNotification {
+    id: number;
+    title: string | null;
+    content: string | null;
+    type: string;
+    is_seen: boolean;
+    datetime: string | null;
+}
+
+export interface AdminNotificationFeed {
+    notifications: AdminNotification[];
+    unread: number;
+}
+
 export interface FormErrors {
     email?: string;
     password?: string;
@@ -257,6 +271,9 @@ export interface Appointment {
     time: string;
     status: AppointmentStatus;
     student_profile: AppointmentStudentProfile;
+    can_check_in?: boolean;
+    checkin_url?: string | null;
+    checkin_expires_at?: string | null;
 }
 
 export interface AvailableSlot {
@@ -264,6 +281,15 @@ export interface AvailableSlot {
     date: string;
     start_time: string;
     taken: boolean;
+}
+
+export interface CheckInReadyAppointment {
+    id: number;
+    student_name: string;
+    date: string;
+    time: string;
+    checkin_url: string | null;
+    checkin_expires_at?: string | null;
 }
 
 export interface AppointmentStudentProfile {
