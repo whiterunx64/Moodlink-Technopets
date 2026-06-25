@@ -3,6 +3,7 @@
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HealthController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PostManagementController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SummaryReportController;
@@ -35,6 +36,27 @@ Route::get(config('supabase-auth.monitoring.health_checks.endpoint'), [HealthCon
 //        'time_seconds' => $duration,
 //    ];
 //});
+
+
+Route::get('/preview/appointment-reminder', function () {
+
+    $student = (object) [
+        'first_name' => 'Juan',
+    ];
+
+    $appointment = (object) [
+        'display_date' => 'June 30, 2026',
+        'display_time' => '10:00 AM',
+    ];
+
+    return view('mail.appointment-reminder-mail', [
+        'student' => $student,
+        'appointment' => $appointment,
+        'logoData' => null,
+    ]);
+
+})->name('preview.appointment.reminder');
+
 Route::get('/preview/approve-appointment-mail', function () {
     abort_unless(app()->environment('local'), 403);
 
@@ -81,7 +103,7 @@ Route::get('/preview/student-account-password', function () {
         'last_name' => 'Santos',
     ]);
 
-    return new App\Mail\StudentCredentialsMail(
+    return new App\Mail\InitialPasswordMailable(
         $student,
         'maria.santos@student.feu.edu.ph',
         'Tmp-9f2K7xQ4',
@@ -97,67 +119,74 @@ Route::get('/test-password', function () {
 });
 
 Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-access', 'supabase.single-session'])->group(function () {
+
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
+    Route::get('/notifications', [NotificationController::class, 'index'])
+        ->name('notifications.index');
+
     Route::get('/student-accounts', [UserAccountController::class, 'index'])
         ->name('student-accounts.index');
-    Route::post('/student-accounts/{student}/registration', [UserAccountController::class, 'createRegistrationAccount'])
+    Route::post('/student-accounts/{student}/registration', [UserAccountController::class, 'storeRegistration'])
         ->name('student-accounts.registration.store');
-    Route::patch('/student-accounts/{student}/registration/accept', [UserAccountController::class, 'acceptStudentRegistration'])
+    Route::patch('/student-accounts/{student}/registration/accept', [UserAccountController::class, 'acceptRegistration'])
         ->name('student-accounts.registration.accept');
-    Route::delete('/student-accounts/{student}/registration', [UserAccountController::class, 'destroyStudentRegistration'])
+    Route::delete('/student-accounts/{student}/registration', [UserAccountController::class, 'destroyRegistration'])
         ->name('student-accounts.registration.destroy');
-    Route::patch('/student-accounts/{authUserId}/restrict-access', [UserAccountController::class, 'restrictStudentAccountAccess'])
+    Route::patch('/student-accounts/{studentUuid}/restrict-access', [UserAccountController::class, 'restrictAccess'])
         ->name('student-accounts.restrict-access');
-    Route::patch('/student-accounts/{authUserId}/restore-access', [UserAccountController::class, 'restoreStudentAccountAccess'])
+    Route::patch('/student-accounts/{studentUuid}/restore-access', [UserAccountController::class, 'restoreAccess'])
         ->name('student-accounts.restore-access');
-    Route::delete('/student-accounts/{student}', [UserAccountController::class, 'destroyStudentAccount'])
+    Route::delete('/student-accounts/{student}', [UserAccountController::class, 'destroy'])
         ->name('student-accounts.destroy');
 
+
     Route::get('/post-management', [PostManagementController::class, 'index'])
-        ->name('post-management.index');
-    Route::patch('/post-management/{post}/flagPost', [PostManagementController::class, 'flagPost'])
-        ->name('post-management.flagPost');
-    Route::patch('/post-management/{post}/unflagPost', [PostManagementController::class, 'unflagPost'])
-        ->name('post-management.unflagPost');
+        ->name('posts.index');
+    Route::patch('/post-management/{post}/mark-as-flagged', [PostManagementController::class, 'flag'])
+        ->name('posts.flag');
+    Route::patch('/post-management/{post}/mark-as-unflagged', [PostManagementController::class, 'unflag'])
+        ->name('posts.unflag');
 
     Route::get('/summary-reports', [SummaryReportController::class, 'index'])
-        ->name('summary-reports.index');
-    Route::get('/summary-reports/section/{section}', [SummaryReportController::class, 'showSectionAggregatedReport'])
-        ->name('summary-reports.section-aggregated-report');
-    Route::get('/summary-reports/students/{studentId}', [SummaryReportController::class, 'showStudentReport'])
-        ->name('summary-reports.student-mood-report');
-    Route::post('/summary-reports/{student}/consult', [SummaryReportController::class, 'consult'])
-        ->name('summary-reports.consult');
+        ->name('reports.index');
+    Route::get('/summary-reports/program/{program}', [SummaryReportController::class, 'showProgram'])
+        ->name('reports.programs.show');
+    Route::get('/summary-reports/students/{studentUuid}', [SummaryReportController::class, 'showStudent'])
+        ->name('reports.students.show');
+    Route::post('/summary-reports/{studentUuid}/consult', [SummaryReportController::class, 'consult'])
+        ->name('reports.consult');
 
     Route::get('/appointments', [AppointmentController::class, 'index'])
         ->name('appointments.index');
-    Route::patch('/appointments/{appointment}/approve-request', [AppointmentController::class, 'approveAppointmentRequest'])
-        ->name('appointments.approve-request');
-    Route::patch('/appointments/{appointment}/reject-request', [AppointmentController::class, 'rejectAppointmentRequest'])
-        ->name('appointments.reject-request');
-    Route::patch('/appointments/{appointment}/mark-completed', [AppointmentController::class, 'markAppointmentAsCompleted'])
-        ->name('appointments.mark-completed');
-    Route::post('/appointments/schedule-slots', [AppointmentController::class, 'createScheduleSlot'])
-        ->name('appointments.schedule-slots.store');
-    Route::delete('/appointments/schedule-slots/{schedule}', [AppointmentController::class, 'destroyScheduleSlot'])
-        ->name('appointments.schedule-slots.destroy');
+    Route::patch('/appointments/{appointment}/approve-request', [AppointmentController::class, 'approve'])
+        ->name('appointments.approve');
+    Route::patch('/appointments/{appointment}/reject-request', [AppointmentController::class, 'reject'])
+        ->name('appointments.reject');
+    Route::post('/appointments/schedule-slots', [AppointmentController::class, 'storeSlot'])
+        ->name('appointments.slots.store');
+    Route::delete('/appointments/schedule-slots/{slot}', [AppointmentController::class, 'destroySlot'])
+        ->name('appointments.slots.destroy');
 
     Route::get('/profile', [ProfileController::class, 'settings'])
         ->name('profile.settings');
-    Route::patch('/profile/change-metadata', [ProfileController::class, 'update'])
-        ->name('profile.update');
-    Route::put('/profile/change-password', [ProfileController::class, 'updatePassword'])
+    Route::patch('/profile/admin', [ProfileController::class, 'updateMetadata'])
+        ->name('profile.metadata.update');
+    Route::put('/profile/admin/update-password', [ProfileController::class, 'updatePassword'])
         ->middleware('supabase.revalidate')
         ->name('profile.password.update');
     Route::patch('/profile/preferences', [ProfileController::class, 'updatePreferences'])
         ->name('profile.preferences.update');
-    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])
+    Route::post('/profile/admin/update-avatar', [ProfileController::class, 'updateAvatar'])
         ->name('profile.avatar.update');
-    Route::delete('/profile/account', [ProfileController::class, 'destroy'])
+    Route::delete('/profile/admin', [ProfileController::class, 'destroyAccount'])
         ->middleware('supabase.revalidate')
-        ->name('profile.account.delete');
+        ->name('profile.account.destroy');
 });
+
+Route::get('/appointments/{appointment}/check-in', [AppointmentController::class, 'checkIn'])
+    ->middleware('signed')
+    ->name('appointments.checkin');
 
 require __DIR__ . '/auth.php';

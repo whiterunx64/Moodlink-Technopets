@@ -51,5 +51,8 @@ export function usePolling(callback: () => void, options: PollingOptions = {}) {
 }
 
 export function usePollingReload(only: string[], options: PollingOptions = {}) {
-    return usePolling(() => router.reload({ only, preserveUrl: true }), options);
+    return usePolling(
+        () => router.reload({ only, preserveUrl: true }),
+        options,
+    );
 }

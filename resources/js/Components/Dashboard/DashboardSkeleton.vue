@@ -53,7 +53,7 @@
                     <div class="flex gap-1 bg-gray-100 rounded-lg p-1">
                         <div v-for="i in 3" :key="i" class="flex-1 h-7 bg-gray-200 rounded-md" />
                     </div>
-                    <!-- Section pills -->
+                    <!-- Program pills -->
                     <div class="flex gap-1.5 flex-wrap">
                         <div v-for="i in 4" :key="i" class="h-6 bg-gray-100 rounded-full w-12" />
                     </div>

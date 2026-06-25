@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\PostMood;
+use App\Enums\PostStatus;
 use App\Support\PhTime;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -40,7 +41,7 @@ final class AdminDashboardService
     $flaggedPosts = DB::table('posts')
       ->join('students', 'posts.student_id', '=', 'students.id')
       ->where('students.status', 'verified')
-      ->where('posts.status', 'flagged')
+      ->where('posts.status', PostStatus::Flagged->value)
       ->where('posts.datetime', '>=', $todayStart)
       ->count();
 
@@ -53,7 +54,7 @@ final class AdminDashboardService
     $moodEntries = DB::table('posts')
       ->join('students', 'posts.student_id', '=', 'students.id')
       ->where('students.status', 'verified')
-      ->whereIn('posts.status', ['safe', 'flagged'])
+      ->whereIn('posts.status', [PostStatus::Safe->value, PostStatus::Flagged->value])
       ->where('posts.datetime', '>=', $todayStart)
       ->orderByDesc('posts.datetime')
       ->limit(20)
@@ -76,8 +77,8 @@ final class AdminDashboardService
           'mood' => $row->mood,
           'message' => $row->content,
           'time' => $time->format('g:i A'),
-          'flagged' => $row->status === 'flagged',
-          'name' => $row->status === 'flagged'
+          'flagged' => $row->status === PostStatus::Flagged->value,
+          'name' => $row->status === PostStatus::Flagged->value
             ? trim(" ({$row->anonymous_name}) {$row->first_name} {$row->last_name}")
             : ($row->anonymous_name ?: 'Anonymous (not set)'),
         ];
@@ -121,42 +122,42 @@ final class AdminDashboardService
       });
 
     return [
-      'moodLogsToday' => $moodLogsToday,
-      'activeStudents' => $activeStudents,
-      'flaggedPosts' => $flaggedPosts,
-      'escalationRequests' => $escalationRequests,
-      'moodEntries' => $moodEntries,
+      'mood_logs_today' => $moodLogsToday,
+      'active_students' => $activeStudents,
+      'flagged_posts' => $flaggedPosts,
+      'escalation_requests' => $escalationRequests,
+      'mood_entries' => $moodEntries,
       'appointments' => $appointments,
     ];
   }
 
-  public function getMoodTrends(?string $period = null, ?string $section = null): array
+  public function getMoodTrends(?string $period = null, ?string $program = null): array
   {
     $period = in_array($period, self::TREND_PERIODS, true) ? $period : 'Today';
 
-    $sections = Cache::remember(
-      'dashboard.trend_sections',
+    $programs = Cache::remember(
+      'dashboard.trend_programs',
       now()->addMinutes(5),
       fn() =>
       DB::table('students')
         ->where('status', 'verified')
-        ->whereNotNull('section')
+        ->whereNotNull('program')
         ->distinct()
-        ->orderBy('section')
-        ->pluck('section')
+        ->orderBy('program')
+        ->pluck('program')
         ->all()
     );
 
-    $section = ($section !== null && in_array($section, $sections, true)) ? $section : 'All';
+    $program = ($program !== null && in_array($program, $programs, true)) ? $program : 'All';
 
     $query = DB::table('posts')
       ->join('students', 'posts.student_id', '=', 'students.id')
       ->where('students.status', 'verified')
-      ->whereIn('posts.status', ['safe', 'flagged'])
+      ->whereIn('posts.status', [PostStatus::Safe->value, PostStatus::Flagged->value])
       ->where('posts.datetime', '>=', $this->periodStart($period));
 
-    if ($section !== 'All') {
-      $query->where('students.section', $section);
+    if ($program !== 'All') {
+      $query->where('students.program', $program);
     }
 
     $counts = $query
@@ -180,8 +181,8 @@ final class AdminDashboardService
 
     return [
       'period' => $period,
-      'section' => $section,
-      'sections' => ['All', ...$sections],
+      'program' => $program,
+      'programs' => ['All', ...$programs],
       'total' => $total,
       'distribution' => $distribution,
     ];

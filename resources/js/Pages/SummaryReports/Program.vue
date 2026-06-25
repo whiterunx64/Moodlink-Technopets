@@ -10,10 +10,10 @@ import {
 } from '@heroicons/vue/24/outline';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import PeriodFilter from '@/Components/SummaryReports/PeriodFilter.vue';
-import type { SectionDetail, SummaryPeriod } from '@/types';
+import type { ProgramDetail, SummaryPeriod } from '@/types';
 
 const props = defineProps<{
-    detail: SectionDetail;
+    detail: ProgramDetail;
     filters: { period: SummaryPeriod; search: string | null };
 }>();
 
@@ -47,26 +47,26 @@ function barPct(count: number): string {
 }
 
 function onPeriodChange(p: SummaryPeriod) {
-    router.get(route('summary-reports.section-aggregated-report', props.detail.section), { period: p }, {
+    router.get(route('reports.programs.show', props.detail.program), { period: p }, {
         preserveState: true,
         replace: true,
     });
 }
 
 function goBack() {
-    router.get(route('summary-reports.index'), { period: props.filters.period, tab: 'sections' });
+    router.get(route('reports.index'), { period: props.filters.period, tab: 'programs' });
 }
 
 function openStudent(studentId: number) {
-    router.get(route('summary-reports.student-mood-report', studentId), { period: props.filters.period });
+    router.get(route('reports.students.show', studentId), { period: props.filters.period });
 }
 </script>
 
 <template>
 
-    <Head :title="`Section ${detail.section}`" />
+    <Head :title="`Program ${detail.program}`" />
 
-    <AdminLayout :title="`Section ${detail.section}`">
+    <AdminLayout :title="`Program ${detail.program}`">
         <div class="space-y-5">
 
             <PeriodFilter :model-value="filters.period" @update:model-value="onPeriodChange" />
@@ -78,7 +78,7 @@ function openStudent(studentId: number) {
                     <ArrowLeftIcon class="w-4 h-4 text-text-secondary" />
                 </button>
                 <div>
-                    <h2 class="text-lg font-bold text-text-primary">Section {{ detail.section }}</h2>
+                    <h2 class="text-lg font-bold text-text-primary">Program {{ detail.program }}</h2>
                     <p class="text-xs text-text-muted">Mood summary and student list</p>
                 </div>
             </div>

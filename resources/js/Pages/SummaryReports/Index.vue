@@ -3,7 +3,7 @@ import MoodDistributionCard from '@/Components/SummaryReports/MoodDistributionCa
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import type {
     AtRiskStudent,
-    SectionSummary,
+    ProgramSummary,
     SummaryFilters,
     SummaryOverview,
     SummaryPeriod,
@@ -36,7 +36,7 @@ const props = withDefaults(
     defineProps<{
         filters: SummaryFilters;
         overview?: SummaryOverview;
-        sections?: SectionSummary[];
+        programs?: ProgramSummary[];
         atRiskStudents?: AtRiskStudent[];
     }>(),
     {
@@ -47,7 +47,7 @@ const props = withDefaults(
             appointments_set: 0,
             distribution: [],
         }),
-        sections: () => [],
+        programs: () => [],
         atRiskStudents: () => [],
     },
 );
@@ -84,7 +84,7 @@ const MOOD_STYLE: Record<
 
 function onPeriodChange(p: SummaryPeriod) {
     router.get(
-        route('summary-reports.index'),
+        route('reports.index'),
         { period: p, tab: activeTab.value },
         {
             preserveState: true,
@@ -98,7 +98,7 @@ const activeTab = computed<string>(() => props.filters.tab ?? 'overview');
 
 const tabs: Array<{ key: string; label: string; icon: Component }> = [
     { key: 'overview', label: 'Overview', icon: GlobeAltIcon },
-    { key: 'sections', label: 'Section Reports', icon: ListBulletIcon },
+    { key: 'programs', label: 'Program Reports', icon: ListBulletIcon },
     {
         key: 'at-risk',
         label: 'At-Risk Students',
@@ -112,7 +112,7 @@ function changeTab(tab: string) {
     }
 
     router.get(
-        route('summary-reports.index'),
+        route('reports.index'),
         { period: props.filters.period, tab },
         {
             preserveState: true,
@@ -122,8 +122,8 @@ function changeTab(tab: string) {
     );
 }
 
-function openSection(section: string) {
-    router.get(route('summary-reports.section-aggregated-report', section), {
+function openProgram(program: string) {
+    router.get(route('reports.programs.show', program), {
         period: props.filters.period,
     });
 }
@@ -163,7 +163,7 @@ function submitConsult() {
     }
 
     consultForm.post(
-        route('summary-reports.consult', consultStudent.value.id),
+        route('reports.consult', consultStudent.value.id),
         {
             preserveScroll: true,
             onSuccess: () => {
@@ -300,7 +300,7 @@ function miniBarWidth(count: number, total: number): string {
                 />
             </template>
 
-            <template v-else-if="activeTab === 'sections'">
+            <template v-else-if="activeTab === 'programs'">
                 <div
                     class="border-border-light rounded-2xl border bg-white shadow-sm"
                 >
@@ -311,10 +311,10 @@ function miniBarWidth(count: number, total: number): string {
                             <h3
                                 class="text-text-primary text-base font-semibold"
                             >
-                                Section-Based Mood Reports
+                                Program-Based Mood Reports
                             </h3>
                             <p class="text-text-muted mt-0.5 text-xs">
-                                Click a section to view its students and mood
+                                Click a program to view its students and mood
                                 details
                             </p>
                         </div>
@@ -342,7 +342,7 @@ function miniBarWidth(count: number, total: number): string {
                                 <th
                                     class="text-text-muted px-6 py-3 text-left text-xs font-medium"
                                 >
-                                    Section
+                                    Program
                                 </th>
                                 <th
                                     class="text-text-muted px-4 py-3 text-left text-xs font-medium"
@@ -383,15 +383,15 @@ function miniBarWidth(count: number, total: number): string {
                         </thead>
                         <tbody class="divide-border-light divide-y">
                             <tr
-                                v-for="sec in sections"
-                                :key="sec.section"
+                                v-for="sec in programs"
+                                :key="sec.program"
                                 class="cursor-pointer transition-colors hover:bg-gray-50"
-                                @click="openSection(sec.section)"
+                                @click="openProgram(sec.program)"
                             >
                                 <td
                                     class="text-sidebar px-6 py-4 font-semibold"
                                 >
-                                    {{ sec.section }}
+                                    {{ sec.program }}
                                 </td>
                                 <td class="text-text-primary px-4 py-4">
                                     {{ sec.total }}
@@ -471,12 +471,12 @@ function miniBarWidth(count: number, total: number): string {
                                 </td>
                             </tr>
 
-                            <tr v-if="sections.length === 0">
+                            <tr v-if="programs.length === 0">
                                 <td
                                     colspan="8"
                                     class="text-text-muted px-6 py-16 text-center text-sm"
                                 >
-                                    No section data available for this period.
+                                    No program data available for this period.
                                 </td>
                             </tr>
                         </tbody>
@@ -548,7 +548,7 @@ function miniBarWidth(count: number, total: number): string {
                                     >
                                     <span class="text-text-muted text-xs"
                                         >· {{ student.student_number }} ·
-                                        {{ student.section }}</span
+                                        {{ student.program }}</span
                                     >
                                 </div>
                                 <div

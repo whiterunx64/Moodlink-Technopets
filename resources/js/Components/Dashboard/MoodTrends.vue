@@ -12,17 +12,17 @@ const tabs = ['Today', 'Weekly', 'Monthly'] as const;
 
 const loading = ref(false);
 const pendingPeriod = ref<string | null>(null);
-const pendingSection = ref<string | null>(null);
+const pendingProgram = ref<string | null>(null);
 
 const activePeriod = computed(() => pendingPeriod.value ?? props.data.period);
-const activeSection = computed(
-    () => pendingSection.value ?? props.data.section,
+const activeProgram = computed(
+    () => pendingProgram.value ?? props.data.program,
 );
 
 let inflightController: AbortController | null = null;
 
-function applyFilter(period: string, section: string) {
-    if (period === activePeriod.value && section === activeSection.value)
+function applyFilter(period: string, program: string) {
+    if (period === activePeriod.value && program === activeProgram.value)
         return;
 
     // Cancel any in-flight request before firing a new one
@@ -30,17 +30,17 @@ function applyFilter(period: string, section: string) {
     inflightController = new AbortController();
 
     pendingPeriod.value = period;
-    pendingSection.value = section;
+    pendingProgram.value = program;
     loading.value = true;
 
     router.reload({
-        only: ['moodTrends'],
-        data: { trendPeriod: period, trendSection: section },
+        only: ['mood_trends'],
+        data: { trendPeriod: period, trendProgram: program },
         preserveUrl: true,
         onFinish: () => {
             loading.value = false;
             pendingPeriod.value = null;
-            pendingSection.value = null;
+            pendingProgram.value = null;
             inflightController = null;
         },
     });
@@ -74,16 +74,16 @@ function applyFilter(period: string, section: string) {
                     activePeriod === tab
                         ? 'text-text-primary bg-white shadow-sm'
                         : 'text-text-muted hover:text-text-secondary',
-                ]" @click="applyFilter(tab, activeSection)">
+                ]" @click="applyFilter(tab, activeProgram)">
                     {{ tab }}
                 </button>
             </div>
 
-            <!-- Section Pills -->
+            <!-- Program Pills -->
             <div class="flex flex-wrap gap-1.5">
-                <button v-for="s in props.data.sections" :key="s" type="button" :disabled="loading" :class="[
+                <button v-for="s in props.data.programs" :key="s" type="button" :disabled="loading" :class="[
                     'rounded-full px-3 py-1 text-xs font-medium transition-all duration-150 disabled:cursor-not-allowed',
-                    activeSection === s
+                    activeProgram === s
                         ? 'bg-sidebar text-white'
                         : 'bg-pill-inactive-bg text-pill-inactive-text hover:bg-pill-inactive-bg-hover',
                 ]" @click="applyFilter(activePeriod, s)">

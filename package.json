@@ -31,7 +31,9 @@
     },
     "dependencies": {
         "@heroicons/vue": "^2.2.0",
+        "@types/qrcode": "^1.5.6",
         "echarts": "^6.1.0",
+        "qrcode": "^1.5.4",
         "vue-echarts": "^8.0.1",
         "vue-sonner": "^2.0.9"
     }

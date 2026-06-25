@@ -10,9 +10,7 @@ use App\Exceptions\CircuitBreakerException;
 use App\Exceptions\StudentAccountException;
 use App\Models\Notification;
 use App\Models\Student;
-use App\Mail\StudentCredentialsMail;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
+use App\Mail\InitialPasswordMailable;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -25,6 +23,7 @@ final class StudentAccountService
 {
     public function __construct(
         private readonly SupabaseAuthInterface $supabase,
+        private readonly StudentMailer $mailer,
     ) {
     }
 
@@ -240,44 +239,22 @@ final class StudentAccountService
 
     private function sendInitialPasswordToPersonalEmail(Student $student, string $email, string $password): void
     {
-        if (!$student->personal_email) {
-            Log::channel('mail')->warning('Unable to send initial password email: student has no personal email address', [
-                'student_id' => $student->id,
-            ]);
-
-            return;
-        }
-
-        try {
-            Mail::to($student->personal_email)
-                ->send(new StudentCredentialsMail($student, $email, $password));
-
-            Log::channel('mail')->info('Student initial password notification successfully processed and delivered', [
-                'student_id' => $student->id,
-                'recipient_email' => $student->personal_email,
-                'mail_event' => 'initial_password_delivery_success',
-            ]);
-
-        } catch (Throwable $e) {
-            // Don't fail account creation if email delivery fails
-            Log::channel('mail')->warning('Failed to email student crendetials', [
-                'student_id' => $student->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        $this->mailer->send(
+            $student,
+            new InitialPasswordMailable($student, $email, $password),
+            'student-initial-password',
+        );
     }
 
     private function notifyStudentToChangeInitialPassword(Student $student): void
     {
         try {
-            Notification::create([
-                'student_id' => $student->id,
-                'title' => 'Initial Password Change Required',
-                'content' => 'Your account is currently using an initial password. For your account security, please change your password to a secure, unique one that only you know in order to protect your account. Changing your original password lowers the possibility of account compromise, credential exposure, and unauthorized access.',
-                'type' => 'security_alert',
-                'is_seen' => DB::raw('false'),
-                'datetime' => now(),
-            ]);
+            Notification::studentAlert(
+                $student->id,
+                'Initial Password Change Required',
+                'Your account is currently using an initial password. For your account security, please change your password to a secure, unique one that only you know in order to protect your account. Changing your original password lowers the possibility of account compromise, credential exposure, and unauthorized access.',
+                'security_alert',
+            );
         } catch (Throwable $e) {
             // Don't fail account creation if the notification cannot be stored.
             Log::warning('Failed to create initial password notification', [

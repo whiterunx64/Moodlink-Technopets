@@ -13,7 +13,6 @@ use App\Services\SummaryReportService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
-use function in_array;
 
 class SummaryReportController extends Controller
 {
@@ -30,8 +29,8 @@ class SummaryReportController extends Controller
 
         $props = ['filters' => $filters];
 
-        if ($filters['tab'] === 'sections') {
-            $props['sections'] = $this->perSectionMoodCounts($period);
+        if ($filters['tab'] === 'programs') {
+            $props['programs'] = $this->perProgramMoodCounts($period);
         } elseif ($filters['tab'] === 'at-risk') {
             $props['atRiskStudents'] = $this->report->atRiskStudents();
         } else {
@@ -41,29 +40,33 @@ class SummaryReportController extends Controller
         return Inertia::render('SummaryReports/Index', $props);
     }
 
-    public function showSectionAggregatedReport(SummaryReportFilterRequest $request, string $section): Response
+    public function showProgram(SummaryReportFilterRequest $request, string $program): Response
     {
         $filters = $request->filters();
 
-        return Inertia::render('SummaryReports/Section', [
-            'detail' => $this->sectionMoodAndStudents($section, $filters['period']),
+        return Inertia::render('SummaryReports/Program', [
+            'detail' => $this->programMoodAndStudents($program, $filters['period']),
             'filters' => $filters,
         ]);
     }
 
-    public function showStudentReport(SummaryReportFilterRequest $request, int $studentId): Response
+    public function showStudent(SummaryReportFilterRequest $request, string $studentUuid): Response
     {
+        $student = Student::findBySupabaseAuthId($studentUuid) ?? abort(404);
+
         $filters = $request->filters();
-        $trendDays = in_array((int) $request->query('trendDays'), [7, 30]) ? (int) $request->query('trendDays') : 7;
+        $trendDays = $request->trendDays();
 
         return Inertia::render('SummaryReports/Student', [
-            'studentReport' => $this->studentMoodTrendAndLogs($studentId, $trendDays),
+            'studentReport' => $this->studentMoodTrendAndLogs($student, $trendDays),
             'filters' => array_merge($filters, ['trendDays' => $trendDays]),
         ]);
     }
 
-    public function consult(StoreConsultationRequest $request, Student $student): RedirectResponse
+    public function consult(StoreConsultationRequest $request, string $studentUuid): RedirectResponse
     {
+        $student = Student::findBySupabaseAuthId($studentUuid) ?? abort(404);
+
         try {
             $this->service->scheduleConsultationForStudent($student, $request->scheduledAt());
         } catch (AppointmentException $exception) {
@@ -75,19 +78,19 @@ class SummaryReportController extends Controller
 
     // ── Placeholder data (no real source yet) ──────────────────────────────────
 
-    private function perSectionMoodCounts(string $period): array
+    private function perProgramMoodCounts(string $period): array
     {
         return [
-            ['section' => 'DW31', 'total' => 88, 'excited' => 38, 'content' => 22, 'stressed' => 15, 'drained' => 13, 'at_risk' => 2],
-            ['section' => 'DX30', 'total' => 72, 'excited' => 28, 'content' => 20, 'stressed' => 14, 'drained' => 10, 'at_risk' => 1],
-            ['section' => 'DX31A', 'total' => 88, 'excited' => 35, 'content' => 25, 'stressed' => 16, 'drained' => 12, 'at_risk' => 2],
+            ['program' => 'BSIT', 'total' => 88, 'excited' => 38, 'content' => 22, 'stressed' => 15, 'drained' => 13, 'at_risk' => 2],
+            ['program' => 'BSITWMA', 'total' => 72, 'excited' => 28, 'content' => 20, 'stressed' => 14, 'drained' => 10, 'at_risk' => 1],
+            ['program' => 'BSCS', 'total' => 88, 'excited' => 35, 'content' => 25, 'stressed' => 16, 'drained' => 12, 'at_risk' => 2],
         ];
     }
 
-    private function sectionMoodAndStudents(string $section, string $period): array
+    private function programMoodAndStudents(string $program, string $period): array
     {
         return [
-            'section' => $section,
+            'program' => $program,
             'total' => 88,
             'excited' => 38,
             'content' => 22,
@@ -101,7 +104,7 @@ class SummaryReportController extends Controller
         ];
     }
 
-    private function studentMoodTrendAndLogs(int $studentId, int $trendDays): array
+    private function studentMoodTrendAndLogs(Student $student, int $trendDays): array
     {
         $trendData = $trendDays === 7
             ? [
@@ -116,12 +119,12 @@ class SummaryReportController extends Controller
             : array_map(fn($i) => ['label' => 'D' . ($i + 1), 'score' => 2.0 + ($i % 4) * 0.3], range(0, 29));
 
         return [
-            'id' => $studentId,
+            'id' => $student->id,
             'name' => 'Dela Cruz, Juan',
             'full_name' => 'Anonymous Tabayoyon',
             'student_number' => '202610139',
             'year_level' => '3rd Year',
-            'section' => 'DW31',
+            'program' => 'BSITWMA',
             'initials' => 'JD',
             'mood_summary' => ['excited' => 1, 'content' => 1, 'stressed' => 3, 'drained' => 2],
             'summary_stats' => ['total_mood_logs' => 7, 'total_posts' => 3, 'flagged_posts' => 1],

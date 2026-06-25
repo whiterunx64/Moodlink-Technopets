@@ -23,16 +23,16 @@ const props = defineProps<ProfileSettingsPageProps>();
 const { add } = useToast();
 
 const NOTIFICATION_DEFAULTS: NotificationPreferences = {
-    newFlags: true,
+    new_flags: true,
     appointments: true,
     escalations: true,
-    weeklyReports: false,
-    systemUpdates: false,
+    weekly_reports: false,
+    system_updates: false,
 };
 
 const profile = ref<AdminProfile>({
-    firstName: props.admin?.firstName ?? '',
-    lastName: props.admin?.lastName ?? '',
+    first_name: props.admin?.first_name ?? '',
+    last_name: props.admin?.last_name ?? '',
     phone: props.admin?.phone ?? '',
     role: props.admin?.role ?? '',
     department: '',
@@ -74,8 +74,8 @@ function onChangeAvatar(file: File) {
 
 const showProfileModal = ref(false);
 const profileForm = useForm({
-    firstName: profile.value.firstName,
-    lastName: profile.value.lastName,
+    first_name: profile.value.first_name,
+    last_name: profile.value.last_name,
     phone: profile.value.phone,
 });
 
@@ -83,8 +83,8 @@ const profileForm = useForm({
 function onSaveProfile(updated: AdminProfile) {
     profile.value = updated;
 
-    profileForm.firstName = updated.firstName;
-    profileForm.lastName = updated.lastName;
+    profileForm.first_name = updated.first_name;
+    profileForm.last_name = updated.last_name;
     profileForm.phone = updated.phone;
 
     showProfileModal.value = true;
@@ -95,11 +95,11 @@ function closeProfileModal() {
 }
 
 function confirmProfileUpdate() {
-    profileForm.patch(route('profile.update'), {
+    profileForm.patch(route('profile.metadata.update'), {
         preserveScroll: true,
         onSuccess: () => add({ type: 'success', message: 'Profile updated successfully.' }),
         onError: (errors) => {
-            const message = errors.firstName ?? errors.lastName ?? errors.phone ?? errors.profile
+            const message = errors.first_name ?? errors.last_name ?? errors.phone ?? errors.profile
                 ?? 'Unable to update profile. Please try again.';
             add({ type: 'error', message });
         },
@@ -122,7 +122,7 @@ const passwordForm = useForm({
 // relevant inputs are highlighted while the message is surfaced via a toast.
 const passwordErrors = computed<Partial<Record<keyof PasswordForm, string>>>(() => ({
     current: passwordForm.errors.current_password,
-    newPass: passwordForm.errors.password,
+    new_pass: passwordForm.errors.password,
 }));
 
 // Stash the entered values and ask the user to confirm before submitting.
@@ -141,7 +141,7 @@ function confirmPasswordChange() {
     if (form === null) return;
 
     passwordForm.current_password = form.current;
-    passwordForm.password = form.newPass;
+    passwordForm.password = form.new_pass;
     passwordForm.password_confirmation = form.confirm;
 
     passwordForm.put(route('profile.password.update'), {
@@ -182,7 +182,7 @@ function closeDeleteModal() {
 
 function submitDeleteAccount(password: string) {
     deleteForm.password = password;
-    deleteForm.delete(route('profile.account.delete'), {
+    deleteForm.delete(route('profile.account.destroy'), {
         preserveScroll: true,
         onError: () => { },
         onFinish: () => deleteForm.reset(),
@@ -193,7 +193,7 @@ function submitDeleteAccount(password: string) {
 <template>
     <AdminLayout title="Settings">
         <div class="max-w-4xl space-y-6">
-            <ProfileCard :first-name="profile.firstName" :last-name="profile.lastName" :role="profile.role"
+            <ProfileCard :first-name="profile.first_name" :last-name="profile.last_name" :role="profile.role"
                 :status="admin?.status ?? 'inactive'" :avatar-url="admin?.avatar ?? null"
                 :uploading="avatarForm.processing" @change-avatar="onChangeAvatar" />
 

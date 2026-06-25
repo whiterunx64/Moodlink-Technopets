@@ -6,11 +6,11 @@ import type { NotificationPreferences } from '@/types';
 type NotifKey = keyof NotificationPreferences;
 
 const LABELS: Record<NotifKey, { label: string; description: string }> = {
-    newFlags: { label: 'New Flags', description: 'Get notified when a post is flagged' },
+    new_flags: { label: 'New Flags', description: 'Get notified when a post is flagged' },
     appointments: { label: 'Appointments', description: 'Reminders for upcoming appointments' },
     escalations: { label: 'Escalations', description: 'Alerts for new escalation requests' },
-    weeklyReports: { label: 'Weekly Reports', description: 'Weekly summary report delivered to email' },
-    systemUpdates: { label: 'System Updates', description: 'Platform announcements and updates' },
+    weekly_reports: { label: 'Weekly Reports', description: 'Weekly summary report delivered to email' },
+    system_updates: { label: 'System Updates', description: 'Platform announcements and updates' },
 };
 
 const model = defineModel<NotificationPreferences>({ required: true });

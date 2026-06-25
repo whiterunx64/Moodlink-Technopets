@@ -90,7 +90,7 @@ export function useMarketingLandingContent() {
             position: 2,
             badgeTone: 'amber',
             title: 'Verify with the GCU',
-            detail: 'Submit your name, year, section, and student number. The Guidance & Counseling Unit reviews and approves your account.',
+            detail: 'Submit your name, year, program, and student number. The Guidance & Counseling Unit reviews and approves your account.',
         },
         {
             position: 3,

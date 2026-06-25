@@ -1,37 +1,38 @@
 import { useToast } from '@/composables/useToast';
 import { usePage, useForm } from '@inertiajs/vue3';
 
-export function useAdminLoginSubmission(initialStatusMessage?: string) {
+/**
+ * Login form state + submission for the admin login page.
+ * Shows flashed errors and the optional one-time status message as toasts.
+ */
+export function useAdminLoginSubmission(statusMessage?: string) {
     const { add } = useToast();
     const page = usePage();
 
-    const credentials = useForm({
+    const form = useForm({
         email: '',
         password: '',
     });
 
-    const surfaceFlashedError = () => {
-        const flashedError = page.props.flash?.error;
-        if (flashedError) add({ type: 'error', message: flashedError });
-    };
+    function showFlashError() {
+        const error = page.props.flash?.error;
+        if (error) add({ type: 'error', message: error });
+    }
 
-    const announceInitialFeedback = () => {
-        if (initialStatusMessage) add({ type: 'success', message: initialStatusMessage });
-        surfaceFlashedError();
-    };
+    /** Call once on mount: shows the status message, then any flashed error. */
+    function showInitialMessages() {
+        if (statusMessage) add({ type: 'success', message: statusMessage });
+        showFlashError();
+    }
 
-    const submitCredentials = () => {
-        credentials.post(route('login'), {
+    function submit() {
+        form.post(route('login'), {
             onFinish: () => {
-                credentials.reset('password');
-                surfaceFlashedError();
+                form.reset('password');
+                showFlashError();
             },
         });
-    };
+    }
 
-    return {
-        credentials,
-        submitCredentials,
-        announceInitialFeedback,
-    };
+    return { form, submit, showInitialMessages };
 }

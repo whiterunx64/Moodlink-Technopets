@@ -1,3 +1,5 @@
+// ── Shared / Core ─────────────────────────────────────────────────────────────
+
 export interface User {
     id: number;
     name: string;
@@ -6,9 +8,7 @@ export interface User {
     email_verified_at?: string;
 }
 
-export type PageProps<
-    T extends Record<string, unknown> = Record<string, unknown>,
-> = T & {
+export type PageProps<T extends Record<string, unknown> = Record<string, unknown>> = T & {
     auth: {
         user: User;
     };
@@ -22,18 +22,91 @@ export type PageProps<
     };
 };
 
-export type Mood = 'Drained' | 'Stressed' | 'Content' | 'Excited';
-export type PostStatus = 'flagged' | 'safe';
-export type PostFilter = 'All' | 'Flagged' | 'Safe';
+export interface AdminNotification {
+    id: number;
+    title: string | null;
+    content: string | null;
+    type: string;
+    is_seen: boolean;
+    datetime: string | null;
+}
+
+export interface AdminNotificationFeed {
+    notifications: AdminNotification[];
+    unread: number;
+}
 
 export interface FormErrors {
     email?: string;
     password?: string;
     [key: string]: string | undefined;
 }
+
+export interface Paginated<T> {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    from: number | null;
+    to: number | null;
+    total: number;
+    per_page: number;
+}
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+
+export interface LoginPageProps {
+    can_reset_password?: boolean;
+    status?: string;
+}
+
+// ── Profile & Admin ───────────────────────────────────────────────────────────
+
+export interface AdminProfile {
+    first_name: string;
+    last_name: string;
+    phone: string;
+    role: string;
+    department: string;
+}
+
+export interface AdminSummary {
+    first_name: string;
+    last_name: string;
+    phone: string | null;
+    avatar: string | null;
+    role: string;
+    status: string;
+}
+
+export interface PasswordForm {
+    current: string;
+    new_pass: string;
+    confirm: string;
+}
+
+export interface NotificationPreferences {
+    new_flags: boolean;
+    appointments: boolean;
+    escalations: boolean;
+    weekly_reports: boolean;
+    system_updates: boolean;
+}
+
+export interface ProfileSettingsPageProps {
+    admin: AdminSummary | null;
+    notifications?: Partial<NotificationPreferences>;
+    status?: string;
+}
+
+// ── Posts / MoodSpace ─────────────────────────────────────────────────────────
+
+export type Mood = 'Drained' | 'Stressed' | 'Content' | 'Excited';
+export type PostStatus = 'flagged' | 'safe';
+export type PostFilter = 'all' | 'flagged' | 'safe';
+
 export interface PostFilters {
     status: string | null;
-    section: string | null;
+    program: string | null;
     mood: string | null;
     sort: string | null;
 }
@@ -43,60 +116,19 @@ export interface Post {
     anonymous_name: string | null;
     last_name: string;
     first_name: string;
-    section: string;
+    program: string;
     time: string;
     date: string;
     mood: string;
     status: 'flagged' | 'safe';
     content: string | null;
 }
-export interface AdminProfile {
-    firstName: string;
-    lastName: string;
-    phone: string;
-    role: string;
-    department: string;
-}
 
-export interface AdminSummary {
-    firstName: string;
-    lastName: string;
-    phone: string | null;
-    avatar: string | null;
-    role: string;
-    status: string;
-}
-
-// ── Auth ───────────────────────────────────────────────────────────────────────
-
-export interface LoginPageProps {
-    canResetPassword?: boolean;
-    status?: string;
-}
-
-export interface ProfileSettingsPageProps {
-    admin: AdminSummary | null;
-    notifications?: Partial<NotificationPreferences>;
-    status?: string;
-}
-
-export interface PasswordForm {
-    current: string;
-    newPass: string;
-    confirm: string;
-}
-
-export interface NotificationPreferences {
-    newFlags: boolean;
-    appointments: boolean;
-    escalations: boolean;
-    weeklyReports: boolean;
-    systemUpdates: boolean;
-}
+// ── Students / User Accounts ──────────────────────────────────────────────────
 
 export type VerificationStatus = 'pending' | 'verified' | 'unverified';
 export type AccountStatus = 'active' | 'suspended';
-export type StudentTab = 'All' | 'Pending' | 'Verified' | 'Suspended';
+export type StudentTab = 'all' | 'pending' | 'verified' | 'suspended';
 
 export interface Student {
     id: number;
@@ -108,7 +140,7 @@ export interface Student {
     personal_email: string | null;
     contact_number: string | null;
     year_level: string;
-    section: string;
+    program: string;
     verification_status: VerificationStatus;
     account_status: AccountStatus;
 }
@@ -117,16 +149,6 @@ export interface StudentAccountFilters {
     search: string | null;
     year_level: number | null;
     tab: string;
-}
-
-export interface Paginated<T> {
-    data: T[];
-    current_page: number;
-    last_page: number;
-    from: number | null;
-    to: number | null;
-    total: number;
-    per_page: number;
 }
 
 // ── Summary Reports ───────────────────────────────────────────────────────────
@@ -152,8 +174,8 @@ export interface SummaryOverview {
     distribution: MoodDistributionItem[];
 }
 
-export interface SectionSummary {
-    section: string;
+export interface ProgramSummary {
+    program: string;
     total: number;
     excited: number;
     content: number;
@@ -166,7 +188,7 @@ export interface AtRiskStudent {
     id: number;
     name: string;
     student_number: string;
-    section: string;
+    program: string;
     moods: string[];
     days_at_risk: number;
     last_log: string;
@@ -175,7 +197,7 @@ export interface AtRiskStudent {
     has_consultation: boolean;
 }
 
-export interface SectionStudentRow {
+export interface ProgramStudentRow {
     id: number;
     name: string;
     initials: string;
@@ -184,15 +206,15 @@ export interface SectionStudentRow {
     trend: 'Declining' | 'Stable' | 'Improving';
 }
 
-export interface SectionDetail {
-    section: string;
+export interface ProgramDetail {
+    program: string;
     total: number;
     excited: number;
     content: number;
     stressed: number;
     drained: number;
     at_risk: number;
-    students: SectionStudentRow[];
+    students: ProgramStudentRow[];
 }
 
 export interface MoodTrendPoint {
@@ -207,7 +229,31 @@ export interface RecentMoodLog {
     date: string;
 }
 
-// ── Appointments ─────────────────────────────────────────────────────────────
+export interface StudentMoodReport {
+    id: number;
+    name: string;
+    full_name: string;
+    student_number: string;
+    year_level: string;
+    program: string;
+    initials: string;
+    mood_summary: {
+        excited: number;
+        content: number;
+        stressed: number;
+        drained: number;
+    };
+    summary_stats: {
+        total_mood_logs: number;
+        total_posts: number;
+        flagged_posts: number;
+    };
+    trend: 'Declining' | 'Stable' | 'Improving';
+    trend_data: MoodTrendPoint[];
+    recent_logs: RecentMoodLog[];
+}
+
+// ── Appointments ──────────────────────────────────────────────────────────────
 
 export type AppointmentTab = 'requests' | 'scheduled' | 'history' | 'rejected' | 'missed';
 export type AppointmentStatus =
@@ -225,6 +271,9 @@ export interface Appointment {
     time: string;
     status: AppointmentStatus;
     student_profile: AppointmentStudentProfile;
+    can_check_in?: boolean;
+    checkin_url?: string | null;
+    checkin_expires_at?: string | null;
 }
 
 export interface AvailableSlot {
@@ -234,9 +283,18 @@ export interface AvailableSlot {
     taken: boolean;
 }
 
+export interface CheckInReadyAppointment {
+    id: number;
+    student_name: string;
+    date: string;
+    time: string;
+    checkin_url: string | null;
+    checkin_expires_at?: string | null;
+}
+
 export interface AppointmentStudentProfile {
     initials: string;
-    section: string;
+    program: string;
     year_level: string;
     email: string;
     student_id: string;
@@ -262,31 +320,7 @@ export interface AppointmentFilters {
     tab: AppointmentTab;
 }
 
-export interface StudentMoodReport {
-    id: number;
-    name: string;
-    full_name: string;
-    student_number: string;
-    year_level: string;
-    section: string;
-    initials: string;
-    mood_summary: {
-        excited: number;
-        content: number;
-        stressed: number;
-        drained: number;
-    };
-    summary_stats: {
-        total_mood_logs: number;
-        total_posts: number;
-        flagged_posts: number;
-    };
-    trend: 'Declining' | 'Stable' | 'Improving';
-    trend_data: MoodTrendPoint[];
-    recent_logs: RecentMoodLog[];
-}
-
-// ── Dashboard ────────────────────────────────────────────────────────────────
+// ── Dashboard ─────────────────────────────────────────────────────────────────
 
 export interface DashboardMoodEntry {
     id: number;
@@ -314,19 +348,19 @@ export interface MoodDistributionBar {
 
 export interface MoodTrendsData {
     period: 'Today' | 'Weekly' | 'Monthly';
-    section: string;
-    sections: string[];
+    program: string;
+    programs: string[];
     total: number;
     distribution: MoodDistributionBar[];
 }
 
 /** Props for the Dashboard page. */
 export interface DashboardPageProps {
-    moodLogsToday: number;
-    activeStudents: number;
-    flaggedPosts: number;
-    escalationRequests: number;
-    moodEntries: DashboardMoodEntry[];
+    mood_logs_today: number;
+    active_students: number;
+    flagged_posts: number;
+    escalation_requests: number;
+    mood_entries: DashboardMoodEntry[];
     appointments: DashboardAppointment[];
-    moodTrends: MoodTrendsData;
+    mood_trends: MoodTrendsData;
 }

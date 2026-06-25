@@ -1,7 +1,12 @@
-import { computed, ref, unref, type MaybeRefOrGetter } from 'vue';
+import { computed, ref, toValue, type MaybeRefOrGetter } from 'vue';
 import type { Student, StudentTab } from '@/types';
 
-export const STUDENT_TABS: StudentTab[] = ['All', 'Pending', 'Verified', 'Suspended'];
+export const STUDENT_TABS: { value: StudentTab; label: string }[] = [
+    { value: 'all', label: 'All' },
+    { value: 'pending', label: 'Pending' },
+    { value: 'verified',  label: 'Active' },
+    { value: 'suspended', label: 'Suspended' },
+];
 export const YEAR_LEVELS = ['All', '1st Year', '2nd Year', '3rd Year', '4th Year'];
 
 /** Year-level select options for server-side filtering (value = DB integer). */
@@ -14,16 +19,12 @@ export const YEAR_LEVEL_OPTIONS: { value: string; label: string }[] = [
 ];
 
 function matchesTab(student: Student, tab: StudentTab): boolean {
-    switch (tab) {
-        case 'Pending':
-            return student.verification_status === 'pending';
-        case 'Verified':
-            return student.verification_status === 'verified' && student.account_status === 'active';
-        case 'Suspended':
-            return student.account_status === 'suspended';
-        default:
-            return true;
-    }
+    if (tab === 'all') return true;
+    if (tab === 'pending')   return student.verification_status === 'pending';
+    if (tab === 'verified')  return student.verification_status === 'verified' 
+    && student.account_status === 'active';
+    if (tab === 'suspended') return student.account_status === 'suspended';
+    return true;
 }
 
 /**
@@ -33,19 +34,17 @@ function matchesTab(student: Student, tab: StudentTab): boolean {
 export function useStudentFilters(source: MaybeRefOrGetter<Student[]>) {
     const search = ref('');
     const yearFilter = ref('All');
-    const activeTab = ref<StudentTab>('All');
+    const activeTab = ref<StudentTab>('all');
 
-    const all = computed<Student[]>(() =>
-        typeof source === 'function' ? (source as () => Student[])() : unref(source),
-    );
+    const all = computed<Student[]>(() => toValue(source));
 
     const afterSearch = computed(() => {
-        const q = search.value.trim().toLowerCase();
-        if (!q) return all.value;
+        const query = search.value.trim().toLowerCase();
+        if (!query) return all.value;
         return all.value.filter(s =>
-            s.student_id.toLowerCase().includes(q) ||
-            s.name.toLowerCase().includes(q) ||
-            s.year_level.toLowerCase().includes(q),
+            s.student_id.toLowerCase().includes(query) ||
+            s.name.toLowerCase().includes(query) ||
+            s.year_level.toLowerCase().includes(query),
         );
     });
 
@@ -56,10 +55,10 @@ export function useStudentFilters(source: MaybeRefOrGetter<Student[]>) {
     );
 
     const tabCounts = computed<Record<StudentTab, number>>(() => ({
-        All: afterYear.value.length,
-        Pending: afterYear.value.filter(s => matchesTab(s, 'Pending')).length,
-        Verified: afterYear.value.filter(s => matchesTab(s, 'Verified')).length,
-        Suspended: afterYear.value.filter(s => matchesTab(s, 'Suspended')).length,
+        all: afterYear.value.length,
+        pending: afterYear.value.filter(s => matchesTab(s, 'pending')).length,
+        verified: afterYear.value.filter(s => matchesTab(s, 'verified')).length,
+        suspended: afterYear.value.filter(s => matchesTab(s, 'suspended')).length,
     }));
 
     const filtered = computed(() => afterYear.value.filter(s => matchesTab(s, activeTab.value)));

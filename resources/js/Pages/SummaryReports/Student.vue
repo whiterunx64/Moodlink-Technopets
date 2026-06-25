@@ -48,7 +48,7 @@ const moodBars = computed(() => {
 
 function onPeriodChange(p: SummaryPeriod) {
     router.get(
-        route('summary-reports.student-mood-report', props.studentReport.id),
+        route('reports.students.show', props.studentReport.id),
         { period: p, trendDays: props.filters.trendDays },
         { preserveState: true, replace: true },
     );
@@ -56,7 +56,7 @@ function onPeriodChange(p: SummaryPeriod) {
 
 function onTrendDaysChange(days: number) {
     router.get(
-        route('summary-reports.student-mood-report', props.studentReport.id),
+        route('reports.students.show', props.studentReport.id),
         { period: props.filters.period, trendDays: days },
         { preserveState: true, replace: true, only: ['studentReport', 'filters'] },
     );
@@ -64,7 +64,7 @@ function onTrendDaysChange(days: number) {
 
 function goBack() {
     router.get(
-        route('summary-reports.section-aggregated-report', props.studentReport.section),
+        route('reports.programs.show', props.studentReport.program),
         { period: props.filters.period },
     );
 }
@@ -88,7 +88,7 @@ function goBack() {
                 <div>
                     <h2 class="text-lg font-bold text-text-primary">Student Mood Report</h2>
                     <p class="text-xs text-text-muted">
-                        {{ studentReport.name }} · {{ studentReport.section }}
+                        {{ studentReport.name }} · {{ studentReport.program }}
                     </p>
                 </div>
             </div>
@@ -116,8 +116,8 @@ function goBack() {
                             <p class="text-sm font-semibold text-text-primary mt-0.5">{{ studentReport.year_level }}</p>
                         </div>
                         <div>
-                            <p class="text-xs text-text-muted">Section</p>
-                            <p class="text-sm font-semibold text-text-primary mt-0.5">{{ studentReport.section }}</p>
+                            <p class="text-xs text-text-muted">Program</p>
+                            <p class="text-sm font-semibold text-text-primary mt-0.5">{{ studentReport.program }}</p>
                         </div>
                     </div>
                 </div>

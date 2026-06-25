@@ -7,15 +7,14 @@ namespace App\Models;
 use App\Enums\StudentStatus;
 use App\Enums\YearLevel;
 use App\Traits\HasFilters;
+use App\Support\PhTime;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 /**
  * @property int $id
@@ -26,9 +25,8 @@ use Illuminate\Support\Str;
  * @property string|null $anonymous_name
  * @property StudentStatus $status
  * @property int $year_level
- * @property string $section
+ * @property string $program
  * @property string|null $daily_result
- * @property \Illuminate\Support\Carbon|null $risk_start_date
  * @property string|null $personal_email
  * @property string|null $contact_number
  *
@@ -37,12 +35,9 @@ use Illuminate\Support\Str;
  * @property-read string $studentNameInitials
  * @property-read int $days_at_risk
  * @property-read string $year_level_label
- * @property-read string $account_status
- * @property-read string $verification_status
  * @property-read Collection<int, \App\Models\Appointment> $appointments
  *
  * @method static Builder|Student whereStatusIsVerified()
- * @method static Builder|Student whereStatus(\App\Enums\StudentStatus $status)
  * @method static Builder|Student matchingSearch(string $search)
  * @method static Builder|Student byYearLevel(int $yearLevel)
  * @method static Builder|Student byTab(string $tab)
@@ -64,7 +59,7 @@ class Student extends Model
         'anonymous_name',
         'status',
         'year_level',
-        'section',
+        'program',
         'daily_result',
         'risk_start_date',
         'personal_email',
@@ -87,16 +82,13 @@ class Student extends Model
      */
     public static function findBySupabaseAuthId(string $authUserId): ?self
     {
-        $email = DB::table('auth.users')
-            ->where('id', $authUserId)
-            ->value('email');
-
-        if ($email === null) {
-            return null;
-        }
-
         return static::query()
-            ->where('student_number', Str::before((string) $email, '@'))
+            ->whereExists(function ($query) use ($authUserId) {
+                $query->selectRaw('1')
+                    ->from('auth.users')
+                    ->where('id', $authUserId)
+                    ->whereRaw("email = students.student_number || '@moodlink.com'");
+            })
             ->first();
     }
 
@@ -136,23 +128,19 @@ class Student extends Model
     protected function accountStatus(): Attribute
     {
         return Attribute::make(get: function (): string {
-            if ($this->status === StudentStatus::Verified) {
-                return 'active';
-            }
-
-            return 'suspended';
+            return match ($this->status) {
+                StudentStatus::Verified => 'active',
+                StudentStatus::Suspended => 'suspended',
+                StudentStatus::Pending, StudentStatus::Unverified => 'pending',
+            };
         });
     }
 
     protected function verificationStatus(): Attribute
     {
-        return Attribute::make(get: function (): string {
-            if ($this->status === StudentStatus::Suspended) {
-                return StudentStatus::Verified->value;
-            }
-
-            return $this->status->value;
-        });
+        return Attribute::make(
+            get: fn(): string => $this->status->value,
+        );
     }
 
     /**
@@ -167,7 +155,7 @@ class Student extends Model
             }
 
             return (int) $this->risk_start_date->copy()->startOfDay()
-                ->diffInDays(Carbon::now()->startOfDay()) + 1;
+                ->diffInDays(PhTime::now()->startOfDay()) + 1;
         });
     }
 
@@ -194,11 +182,6 @@ class Student extends Model
         return $query->where('status', StudentStatus::Verified->value);
     }
 
-    public function scopeWhereStatus(Builder $query, StudentStatus $status): Builder
-    {
-        return $query->where('status', $status->value);
-    }
-
     public function scopeMatchingSearch(Builder $query, string $search): Builder
     {
         return $query->where(
@@ -209,6 +192,19 @@ class Student extends Model
         );
     }
 
+    public function scopeFilter(Builder $query, array $filters): Builder
+    {
+        if ($search = str($filters['search'] ?? '')->squish()->toString()) {
+            $query->matchingSearch($search);
+        }
+
+        if (filled($filters['year_level'] ?? null)) {
+            $query->byYearLevel($filters['year_level']);
+        }
+
+        return $query;
+    }
+
     public function scopeByYearLevel(Builder $query, int $yearLevel): Builder
     {
         return $query->where('year_level', $yearLevel);
@@ -216,57 +212,54 @@ class Student extends Model
 
     public function scopeByTab(Builder $query, string $tab): Builder
     {
-        if ($tab === 'All' || $tab === '') {
+        if ($tab === '' || $tab === 'all') {
             return $query;
         }
 
-        $status = StudentStatus::tryFrom(strtolower($tab));
+        if ($tab === StudentStatus::Pending->value) {
+            return $query->whereIn('status', [
+                StudentStatus::Pending->value,
+                StudentStatus::Unverified->value,
+            ]);
+        }
 
-        if ($status !== null) {
-            return $query->whereStatus($status);
-        } else {
+        $status = StudentStatus::tryFrom($tab);
+
+        if ($status === null) {
             return $query;
         }
+
+        return $query->where('status', $status->value);
     }
-    protected static function queryFilteredBySearchAndYearLevel(array $filters): Builder
-    {
-        $search = str($filters['search'] ?? '')->squish()->toString();
 
+    public static function tabCounts(array $filters): object
+    {
         return static::query()
-            ->when(
-                $search !== '',
-                fn(Builder $q) => $q->matchingSearch($search)
+            ->filter($filters)
+            ->selectRaw(
+                'COUNT(*) AS total,
+             SUM(CASE WHEN status IN (?, ?) THEN 1 ELSE 0 END) AS pending,
+             SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS verified,
+             SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS suspended',
+                [
+                    StudentStatus::Pending->value,
+                    StudentStatus::Unverified->value,
+                    StudentStatus::Verified->value,
+                    StudentStatus::Suspended->value,
+                ],
             )
-            ->when(
-                filled($filters['year_level'] ?? null),
-                fn(Builder $q) => $q->byYearLevel($filters['year_level'])
-            );
-    }
-
-    /**
-     * @return \Illuminate\Support\Collection<string, int>
-     */
-    public static function statusCountsForFilters(array $filters): \Illuminate\Support\Collection
-    {
-        $base = static::queryFilteredBySearchAndYearLevel($filters);
-
-        return (clone $base)
-            ->selectRaw('status, count(*) as aggregate')
-            ->groupBy('status')
-            ->pluck('aggregate', 'status')
-            ->put('All', (clone $base)->count());
+            ->first();
     }
 
     public static function paginatedListWithFilters(array $filters): LengthAwarePaginator
     {
-        // Correlated subquery: the Supabase auth.users UUID for this student,
-        // matched on the deterministic login email (null while still pending).
         $authUserId = DB::table('auth.users')
             ->select('id')
             ->whereRaw("email = students.student_number || '@moodlink.com'")
             ->limit(1);
 
-        return static::queryFilteredBySearchAndYearLevel($filters)
+        return static::query()
+            ->filter($filters)
             ->byTab($filters['tab'] ?? 'All')
             ->select('students.*')
             ->selectSub($authUserId, 'auth_user_id')
@@ -276,11 +269,6 @@ class Student extends Model
             ->withQueryString();
     }
 
-    /**
-     * Verified students currently flagged At Risk (sticky risk_start_date),
-     * excluding those already in a consultation. Call RiskMonitor::refresh()
-     * first so the flags reflect the latest mood logs.
-     */
     public function scopeFlaggedAtRisk(Builder $query): Builder
     {
         return $query
@@ -294,9 +282,6 @@ class Student extends Model
         return static::query()->flaggedAtRisk()->count();
     }
 
-    /**
-     * At-risk students, longest at risk first (oldest risk_start_date).
-     */
     public static function atRiskList(): Collection
     {
         return static::query()

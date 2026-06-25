@@ -111,7 +111,7 @@ class ProfileService
             $metadata['phone'] = $data['phone'];
         }
 
-        $fullName = trim("{$data['firstName']} {$data['lastName']}");
+        $fullName = trim("{$data['first_name']} {$data['last_name']}");
 
         if ($fullName !== '') {
             $metadata['full_name'] = $fullName;

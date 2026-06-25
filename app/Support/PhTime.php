@@ -26,6 +26,11 @@ final class PhTime
         return Carbon::now(self::TIMEZONE);
     }
 
+    public static function nowUtc(): Carbon
+    {
+        return Carbon::now('UTC');
+    }
+
     public static function todayStartUtc(): Carbon
     {
         return Carbon::today(self::TIMEZONE)->utc();

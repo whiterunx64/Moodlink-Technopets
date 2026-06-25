@@ -188,10 +188,10 @@ function onDeleted() {
 
               <div>
                 <p class="text-xs font-bold uppercase tracking-wide text-slate-500">
-                  Section
+                  Program
                 </p>
                 <p class="mt-2 border-b-2 border-slate-800 pb-2 text-sm font-medium">
-                  {{ student.section || '—' }}
+                  {{ student.program || '—' }}
                 </p>
               </div>
 

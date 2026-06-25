@@ -125,7 +125,7 @@ final class InfrastructureException extends Exception implements HttpExceptionIn
      * failure modes Supabase produces when a project pauses, the pooler is
      * saturated, or a pooled link is recycled.
      */
-    public static function fromDatabaseError(QueryException|PDOException $e): ?self
+    public static function fromDatabaseError(QueryException|\PDOException $e): ?self
     {
         $sqlState = self::sqlState($e);
         $message = strtolower($e->getMessage());
@@ -180,7 +180,7 @@ final class InfrastructureException extends Exception implements HttpExceptionIn
         ], true);
     }
 
-    private static function sqlState(QueryException|PDOException $e): ?string
+    private static function sqlState(QueryException|\PDOException $e): ?string
     {
         // QueryException nests the PDOException; both expose SQLSTATE as the
         // first element of errorInfo, falling back to the string $code.

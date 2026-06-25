@@ -137,7 +137,7 @@ const barOption = computed<EChartsOption>(() => ({
         <div class="flex flex-wrap items-center justify-between gap-3 px-6 pt-5 pb-4 border-b border-border-light">
             <div>
                 <h3 class="text-base font-semibold text-text-primary">Mood Distribution</h3>
-                <p class="text-xs text-text-muted mt-0.5">Emotional breakdown across all sections</p>
+                <p class="text-xs text-text-muted mt-0.5">Emotional breakdown across all programs</p>
             </div>
 
             <div class="flex items-center gap-2 flex-wrap">

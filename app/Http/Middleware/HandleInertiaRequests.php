@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Admin;
+use App\Models\Notification;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 

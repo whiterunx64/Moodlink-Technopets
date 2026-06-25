@@ -25,10 +25,10 @@ const adminName = computed(() => {
 });
 
 type StatKey =
-    | 'moodLogsToday'
-    | 'activeStudents'
-    | 'flaggedPosts'
-    | 'escalationRequests';
+    | 'mood_logs_today'
+    | 'active_students'
+    | 'flagged_posts'
+    | 'escalation_requests';
 
 const STAT_CARDS: Array<{
     key: StatKey;
@@ -38,28 +38,28 @@ const STAT_CARDS: Array<{
     changeUp: boolean;
 }> = [
         {
-            key: 'moodLogsToday',
+            key: 'mood_logs_today',
             title: 'Mood Logs Today',
             icon: HeartIcon,
             color: 'blue',
             changeUp: true,
         },
         {
-            key: 'activeStudents',
+            key: 'active_students',
             title: 'Active Students',
             icon: AcademicCapIcon,
             color: 'green',
             changeUp: true,
         },
         {
-            key: 'flaggedPosts',
+            key: 'flagged_posts',
             title: 'Flagged Posts',
             icon: ExclamationTriangleIcon,
             color: 'red',
             changeUp: false,
         },
         {
-            key: 'escalationRequests',
+            key: 'escalation_requests',
             title: 'Escalation Requests',
             icon: ClockIcon,
             color: 'orange',
@@ -76,11 +76,11 @@ const statCards = computed(() =>
 );
 
 usePollingReload([
-    'moodLogsToday',
-    'activeStudents',
-    'flaggedPosts',
-    'escalationRequests',
-    'moodEntries',
+    'mood_logs_today',
+    'active_students',
+    'flagged_posts',
+    'escalation_requests',
+    'mood_entries',
     'appointments',
 ]);
 
@@ -139,17 +139,17 @@ onMounted(() => {
                         </div>
 
                         <div class="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
-                            <MoodEntry v-for="entry in moodEntries" :key="entry.id" :name="entry.name"
+                            <MoodEntry v-for="entry in mood_entries" :key="entry.id" :name="entry.name"
                                 :time="entry.time" :mood="entry.mood" :message="entry.message"
                                 :flagged="entry.flagged" />
-                            <div v-if="moodEntries.length === 0"
+                            <div v-if="mood_entries.length === 0"
                                 class="text-text-muted flex flex-1 items-center justify-center text-sm">
                                 No mood entries today
                             </div>
                         </div>
 
                         <div class="border-border-light shrink-0 border-t px-5 py-3">
-                            <a :href="route('post-management.index')"
+                            <a :href="route('posts.index')"
                                 class="text-sidebar text-xs font-medium hover:underline">
                                 View all posts →
                             </a>
@@ -157,7 +157,7 @@ onMounted(() => {
                     </div>
 
                     <div class="min-h-0">
-                        <MoodTrends :data="moodTrends" />
+                        <MoodTrends :data="mood_trends" />
                     </div>
                 </div>
 
