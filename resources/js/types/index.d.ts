@@ -189,11 +189,11 @@ export interface AtRiskStudent {
     name: string;
     student_number: string;
     program: string;
+    window_a_count: number;
     moods: string[];
-    days_at_risk: number;
+    warning_mood_counts: Record<string, number>;
+    time_at_risk: string;
     last_log: string;
-    risk_start_day: string | null;
-    level: 'monitor' | 'recommend' | 'consult';
     has_consultation: boolean;
 }
 

@@ -189,11 +189,6 @@ class AppointmentService
     return $sent;
   }
 
-  /**
-   * Whether the appointment can currently be checked in: it is Scheduled and the present
-   * moment falls within [datetime, datetime + grace].
-   */
-
   public function isWithinCheckInWindow(Appointment $appointment): bool
   {
     if ($appointment->status !== AppointmentStatus::Scheduled) {
@@ -380,8 +375,6 @@ class AppointmentService
 
   private function ensureSlotIsWithinWorkingHours(Carbon $phTime): void
   {
-
-    return;
     $minutes = $phTime->hour * 60 + $phTime->minute;
 
     // 8:00 AM = 480 min, 6:00 PM = 1080 min

@@ -50,10 +50,8 @@ class SummaryReportController extends Controller
         ]);
     }
 
-    public function showStudent(SummaryReportFilterRequest $request, string $studentUuid): Response
+    public function showStudent(SummaryReportFilterRequest $request, Student $student): Response
     {
-        $student = Student::findBySupabaseAuthId($studentUuid) ?? abort(404);
-
         $filters = $request->filters();
         $trendDays = $request->trendDays();
 
@@ -63,10 +61,8 @@ class SummaryReportController extends Controller
         ]);
     }
 
-    public function consult(StoreConsultationRequest $request, string $studentUuid): RedirectResponse
+    public function consult(StoreConsultationRequest $request, Student $student): RedirectResponse
     {
-        $student = Student::findBySupabaseAuthId($studentUuid) ?? abort(404);
-
         try {
             $this->service->scheduleConsultationForStudent($student, $request->scheduledAt());
         } catch (AppointmentException $exception) {
