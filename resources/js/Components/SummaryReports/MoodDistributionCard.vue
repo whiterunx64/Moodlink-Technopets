@@ -1,19 +1,30 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { use } from 'echarts/core';
-import VChart from 'vue-echarts';
-import { CanvasRenderer } from 'echarts/renderers';
-import { PieChart, BarChart } from 'echarts/charts';
+import { Doughnut, Line } from 'vue-chartjs';
 import {
-    GridComponent,
-    TooltipComponent,
-    LegendComponent,
-} from 'echarts/components';
-import type { EChartsOption } from 'echarts';
+    Chart as ChartJS,
+    ArcElement,
+    LineElement,
+    PointElement,
+    CategoryScale,
+    LinearScale,
+    Tooltip,
+    Legend,
+} from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import type { MoodDistributionItem, SummaryPeriod } from '@/types';
 import { ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
 
-use([CanvasRenderer, PieChart, BarChart, GridComponent, TooltipComponent, LegendComponent]);
+ChartJS.register(
+    ArcElement,
+    LineElement,
+    PointElement,
+    CategoryScale,
+    LinearScale,
+    Tooltip,
+    Legend,
+    ChartDataLabels,
+);
 
 const props = defineProps<{
     distribution: MoodDistributionItem[];
@@ -55,93 +66,189 @@ const totalLogs = computed(() =>
     props.distribution.reduce((sum, d) => sum + d.count, 0),
 );
 
-const donutOption = computed<EChartsOption>(() => ({
-    tooltip: {
-        trigger: 'item',
-        formatter: (p: any) => `<b>${p.name}</b><br/>${p.value} logs (${p.percent}%)`,
-    },
-    series: [
+/* -----------------------------------
+   Doughnut Chart
+----------------------------------- */
+
+const doughnutData = computed(() => ({
+    labels: props.distribution.map((d) => d.label),
+    datasets: [
         {
-            type: 'pie',
-            radius: ['52%', '78%'],
-            avoidLabelOverlap: false,
-            label: { show: false },
-            emphasis: {
-                scale: true,
-                scaleSize: 6,
-                itemStyle: { shadowBlur: 12, shadowColor: 'rgba(0,0,0,0.15)' },
-            },
-            data: props.distribution.map((d) => ({
-                name: d.label,
-                value: d.count,
-                itemStyle: { color: MOOD_COLOR[d.label] ?? '#d1d5db' },
-            })),
+            data: props.distribution.map((d) => d.count),
+            backgroundColor: props.distribution.map(
+                (d) => MOOD_COLOR[d.label] ?? '#d1d5db',
+            ),
+            borderWidth: 0,
+            hoverOffset: 8,
         },
     ],
 }));
 
-const barOption = computed<EChartsOption>(() => ({
-    grid: { left: 74, right: 72, top: 8, bottom: 8, containLabel: false },
-    tooltip: {
-        trigger: 'axis',
-        axisPointer: { type: 'none' },
-        formatter: (params: any) => {
-            const p = Array.isArray(params) ? params[0] : params;
-            const item = props.distribution.find((d) => d.label === p.name);
-            return `<b>${p.name}</b>: ${item?.count ?? 0} logs (${item?.pct ?? 0}%)`;
+const doughnutOptions = computed(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+    cutout: '70%',
+    plugins: {
+        legend: {
+            display: false,
         },
-    },
-    xAxis: { type: 'value', max: 100, show: false },
-    yAxis: {
-        type: 'category',
-        data: [...props.distribution].reverse().map((d) => d.label),
-        axisLabel: { color: '#6b7280', fontSize: 12, fontWeight: 500 },
-        axisLine: { show: false },
-        axisTick: { show: false },
-    },
-    series: [
-        {
-            type: 'bar',
-            data: [...props.distribution].reverse().map((d) => ({
-                value: d.pct,
-                itemStyle: {
-                    color: MOOD_COLOR[d.label] ?? '#d1d5db',
-                    borderRadius: [0, 4, 4, 0],
-                },
-            })),
-            barMaxWidth: 20,
-            label: {
-                show: true,
-                position: 'right',
-                formatter: (p: any) => {
-                    const item = props.distribution.find(
-                        (d) => d.label === [...props.distribution].reverse()[p.dataIndex]?.label,
-                    );
-                    return `{pct|${item?.pct ?? 0}%}  {cnt|(${item?.count ?? 0})}`;
-                },
-                rich: {
-                    pct: { fontWeight: 700, fontSize: 12, color: '#374151' },
-                    cnt: { fontSize: 11, color: '#9ca3af' },
+        datalabels: {
+            display: false,
+        },
+        tooltip: {
+            callbacks: {
+                label(context: any) {
+                    const total = totalLogs.value;
+                    const value = Number(context.raw);
+
+                    const pct = total
+                        ? ((value / total) * 100).toFixed(0)
+                        : '0';
+
+                    return `${context.label}: ${value} logs (${pct}%)`;
                 },
             },
-            backgroundStyle: { color: '#f3f4f6', borderRadius: [0, 4, 4, 0] },
-            showBackground: true,
+        },
+    },
+}));
+
+/* -----------------------------------
+   Multi Axis Line Chart
+----------------------------------- */
+
+const lineData = computed(() => ({
+    labels: props.distribution.map((d) => d.label),
+
+    datasets: [
+        {
+            label: 'Percentage (%)',
+            data: props.distribution.map((d) => d.pct),
+
+            borderColor: '#f43f5e',
+            backgroundColor: '#f43f5e',
+            pointBackgroundColor: '#f43f5e',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+
+            tension: 0.35,
+
+            yAxisID: 'y',
+        },
+
+        {
+            label: 'Logs',
+            data: props.distribution.map((d) => d.count),
+
+            borderColor: '#3b82f6',
+            backgroundColor: '#3b82f6',
+            pointBackgroundColor: '#3b82f6',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+
+            tension: 0.35,
+
+            yAxisID: 'y1',
         },
     ],
+}));
+
+const lineOptions = computed(() => ({
+    responsive: true,
+    maintainAspectRatio: false,
+
+    interaction: {
+        mode: 'index' as const,
+        intersect: false,
+    },
+
+    plugins: {
+        datalabels: {
+            display: false,
+        },
+
+        legend: {
+            position: 'top' as const,
+            labels: {
+                usePointStyle: true,
+            },
+        },
+
+        tooltip: {
+            callbacks: {
+                label(context: any) {
+                    const label = context.dataset.label;
+                    const value = context.raw;
+
+                    return `${label}: ${value}`;
+                },
+            },
+        },
+    },
+
+    scales: {
+        x: {
+            grid: {
+                color: '#e5e7eb',
+            },
+        },
+
+        y: {
+            type: 'linear' as const,
+            position: 'left' as const,
+
+            beginAtZero: true,
+            max: 100,
+
+            title: {
+                display: true,
+                text: 'Percentage (%)',
+            },
+
+            ticks: {
+                stepSize: 20,
+            },
+
+            grid: {
+                color: '#e5e7eb',
+            },
+        },
+
+        y1: {
+            type: 'linear' as const,
+            position: 'right' as const,
+
+            beginAtZero: true,
+
+            title: {
+                display: true,
+                text: 'Logs',
+            },
+
+            grid: {
+                drawOnChartArea: false,
+            },
+        },
+    },
 }));
 </script>
 
 <template>
     <div class="bg-white rounded-2xl border border-border-light shadow-sm overflow-hidden">
-        <!-- Header with embedded period filter -->
         <div class="flex flex-wrap items-center justify-between gap-3 px-6 pt-5 pb-4 border-b border-border-light">
             <div>
-                <h3 class="text-base font-semibold text-text-primary">Mood Distribution</h3>
-                <p class="text-xs text-text-muted mt-0.5">Emotional breakdown across all programs</p>
+                <h3 class="text-base font-semibold text-text-primary">
+                    Mood Distribution
+                </h3>
+                <p class="text-xs text-text-muted mt-0.5">
+                    Emotional breakdown across all programs
+                </p>
             </div>
 
             <div class="flex items-center gap-2 flex-wrap">
-                <!-- Period pills -->
                 <div class="flex items-center gap-1.5">
                     <button v-for="p in PERIODS" :key="p.key" type="button" :class="[
                         'px-3.5 py-1.5 rounded-full text-xs font-medium border transition-colors',
@@ -155,7 +262,6 @@ const barOption = computed<EChartsOption>(() => ({
 
                 <div class="w-px h-5 bg-border-light" />
 
-                <!-- Export PDF -->
                 <button type="button"
                     class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium border border-border-light bg-white text-text-secondary hover:bg-gray-50 transition-colors">
                     <ArrowDownTrayIcon class="w-3.5 h-3.5" />
@@ -169,41 +275,69 @@ const barOption = computed<EChartsOption>(() => ({
         </div>
 
         <div v-else class="grid grid-cols-1 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-border-light">
+            <!-- Doughnut -->
 
-            <!-- Donut chart -->
             <div class="lg:col-span-2 flex flex-col items-center justify-center px-6 py-6 gap-2">
-                <div class="relative w-full max-w-50">
-                    <VChart :option="donutOption" style="width: 100%; height: 200px;" autoresize />
+                <div class="relative w-full max-w-[220px] h-[220px]">
+                    <Doughnut :data="doughnutData" :options="doughnutOptions" />
+
                     <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span class="text-3xl font-extrabold text-text-primary">{{ totalLogs }}</span>
-                        <span class="text-xs text-text-muted font-medium">Total Logs</span>
+                        <span class="text-3xl font-extrabold text-text-primary">
+                            {{ totalLogs }}
+                        </span>
+
+                        <span class="text-xs text-text-muted font-medium">
+                            Total Logs
+                        </span>
                     </div>
                 </div>
 
-                <!-- Mood pills -->
-                <div class="flex flex-wrap justify-center gap-2 mt-1">
-                    <span v-for="item in distribution" :key="item.label"
-                        :class="['flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold', MOOD_BG[item.label]]">
+                <div class="flex flex-wrap justify-center gap-2 mt-2">
+                    <span v-for="item in distribution" :key="item.label" :class="[
+                        'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold',
+                        MOOD_BG[item.label],
+                    ]">
                         <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: MOOD_COLOR[item.label] }" />
-                        <span :class="MOOD_TEXT[item.label]">{{ item.label }}</span>
+
+                        <span :class="MOOD_TEXT[item.label]">
+                            {{ item.label }}
+                        </span>
                     </span>
                 </div>
             </div>
 
-            <!-- Bar chart + stat rows -->
+            <!-- Multi Axis Line Chart -->
+
             <div class="lg:col-span-3 flex flex-col justify-center px-6 py-6 gap-5">
-                <VChart :option="barOption" style="width: 100%; height: 140px;" autoresize />
+                <div class="h-[320px]">
+                    <Line :data="lineData" :options="lineOptions" />
+                </div>
 
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div v-for="item in distribution" :key="item.label"
-                        :class="['rounded-xl p-3 text-center', MOOD_BG[item.label]]">
-                        <p :class="['text-xl font-extrabold', MOOD_TEXT[item.label]]">{{ item.pct }}%</p>
-                        <p class="text-xs text-text-muted mt-0.5">{{ item.label }}</p>
-                        <p :class="['text-xs font-semibold mt-0.5', MOOD_TEXT[item.label]]">{{ item.count }} logs</p>
+                    <div v-for="item in distribution" :key="item.label" :class="[
+                        'rounded-xl p-3 text-center',
+                        MOOD_BG[item.label],
+                    ]">
+                        <p :class="[
+                            'text-xl font-extrabold',
+                            MOOD_TEXT[item.label],
+                        ]">
+                            {{ item.pct }}%
+                        </p>
+
+                        <p class="text-xs text-text-muted mt-0.5">
+                            {{ item.label }}
+                        </p>
+
+                        <p :class="[
+                            'text-xs font-semibold mt-0.5',
+                            MOOD_TEXT[item.label],
+                        ]">
+                            {{ item.count }} logs
+                        </p>
                     </div>
                 </div>
             </div>
-
         </div>
     </div>
 </template>
