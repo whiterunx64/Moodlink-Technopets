@@ -7,48 +7,83 @@ namespace App\Services;
 use App\Models\StatusDay;
 use App\Models\Student;
 use App\Support\PhTime;
+use Illuminate\Support\Collection;
 
-/**
- * Keeps the sticky At Risk flag (students.risk_start_date) in sync with the
- * latest mood logs. Mood logs are written outside this app, so there is no
- * create hook to ride on — instead this runs lazily whenever the guidance
- * dashboard reads at-risk data.
- *
- * Two transitions (see SummaryReportService for the rules):
- *   - Entry (Window 1): warning moods reach the threshold  → stamp risk_start_date.
- *   - Recovery (Window 2): recovery moods reach the threshold → clear risk_start_date.
- *
- * The consultation exit is handled separately in AppointmentService.
- */
+use function count;
 final class RiskMonitor
 {
-    public function refresh(): void
+
+    // ─────────────────────────────────────────────────────────────
+    // Public Methods
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * @return int  how many markers changed
+     */
+    public function updateStudentAtRiskStatusFromWindowAScore(): int
     {
-        $this->applyRiskWindow();
-        $this->applyRecoveryWindow();
+        $verifiedStudents = Student::getVerifiedStudents();
+        $allStudentMoodCheckIns = StatusDay::moodCheckInsForStudents(
+            $verifiedStudents->pluck('id')->all()
+        );
+
+        // Store students becoming or exiting At Risk based on their Window A score.
+        $studentsEnteringAtRisk = [];
+        $studentsExitingFromRisk = [];
+
+        foreach ($verifiedStudents as $student) {
+            $moodCheckIns = $allStudentMoodCheckIns->get($student->id) ?? new Collection();
+            $windowACount = SummaryReportService::calculateWindowCounts($moodCheckIns)['window_a'];
+
+            $isAtRisk = SummaryReportService::isWindowAAtRisk($windowACount);
+            $isCurrentlyAtRisk = $student->risk_start_date !== null;
+
+            // Check if Window A reached the risk threshold and the student is not marked At Risk yet.
+            if ($isAtRisk && !$isCurrentlyAtRisk) {
+                $studentsEnteringAtRisk[] = $student->id;
+            }
+
+            // Check if Window A dropped below the risk threshold and the student is still marked At Risk.
+            if (!$isAtRisk && $isCurrentlyAtRisk) {
+                $studentsExitingFromRisk[] = $student->id;
+            }
+        }
+
+        $this->markStudentsAsAtRisk($studentsEnteringAtRisk);
+        $this->clearRecoveredStudents($studentsExitingFromRisk);
+
+        return count($studentsEnteringAtRisk) + count($studentsExitingFromRisk);
     }
 
-    /** Window 1: flag students entering the risk window. */
-    private function applyRiskWindow(): void
+    // ─────────────────────────────────────────────────────────────
+    // Private Methods
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * @param array<int> $studentIds
+     */
+    private function markStudentsAsAtRisk(array $studentIds): void
     {
-        $since = PhTime::now()->startOfDay()->subDays(SummaryReportService::RISK_WINDOW_DAYS);
-
-        $entering = StatusDay::studentsEnteringRiskWindow($since);
-
-        if ($entering !== []) {
-            Student::whereIn('id', $entering)
-                ->update(['risk_start_date' => PhTime::now()->toDateString()]);
+        if ($studentIds === []) {
+            return;
         }
+        Student::whereIn('id', $studentIds)
+            ->update([
+                'risk_start_date' => PhTime::now()->toDateString(),
+            ]);
     }
 
-    /** Window 2: clear students who recovered in the recovery window. */
-    private function applyRecoveryWindow(): void
+    /**
+     * @param array<int> $studentIds
+     */
+    private function clearRecoveredStudents(array $studentIds): void
     {
-        $recovered = StatusDay::studentsRecoveredInWindow();
-
-        if ($recovered !== []) {
-            Student::whereIn('id', $recovered)
-                ->update(['risk_start_date' => null]);
+        if ($studentIds === []) {
+            return;
         }
+        Student::whereIn('id', $studentIds)
+            ->update([
+                'risk_start_date' => null,
+            ]);
     }
 }

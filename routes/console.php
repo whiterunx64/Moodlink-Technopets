@@ -27,3 +27,6 @@ Schedule::command('appointments:notify-completed')
 Schedule::command('appointments:send-reminders')
     ->everyMinute()
     ->withoutOverlapping();
+
+Schedule::command('students:sync-at-risk')
+    ->everyFifteenMinutes();

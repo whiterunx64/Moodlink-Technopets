@@ -19,4 +19,9 @@ enum PostMood: string
             self::Drained => 'bg-red-400',
         };
     }
+
+    public static function availableMoods(): array
+    {
+        return self::cases();
+    }
 }

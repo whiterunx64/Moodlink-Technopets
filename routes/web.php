@@ -155,9 +155,9 @@ Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-acce
         ->name('reports.index');
     Route::get('/summary-reports/program/{program}', [SummaryReportController::class, 'showProgram'])
         ->name('reports.programs.show');
-    Route::get('/summary-reports/students/{studentUuid}', [SummaryReportController::class, 'showStudent'])
+    Route::get('/summary-reports/students/{student}', [SummaryReportController::class, 'showStudent'])
         ->name('reports.students.show');
-    Route::post('/summary-reports/{studentUuid}/consult', [SummaryReportController::class, 'consult'])
+    Route::post('/summary-reports/{student}/consult', [SummaryReportController::class, 'consult'])
         ->name('reports.consult');
 
     Route::get('/appointments', [AppointmentController::class, 'index'])

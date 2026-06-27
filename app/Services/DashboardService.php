@@ -255,8 +255,8 @@ final class DashboardService
     {
         $total = $counts->sum();
 
-        return collect(PostMood::cases())
-            ->map(fn (PostMood $mood) => [
+        return collect(PostMood::availableMoods())
+            ->map(fn(PostMood $mood) => [
                 'label' => $mood->value,
                 'pct' => $total
                     ? round(($counts[$mood->value] ?? 0) / $total * 100)

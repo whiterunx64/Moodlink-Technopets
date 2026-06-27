@@ -7,7 +7,6 @@ namespace App\Models;
 use App\Enums\StudentStatus;
 use App\Enums\YearLevel;
 use App\Traits\HasFilters;
-use App\Support\PhTime;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
@@ -29,11 +28,11 @@ use Illuminate\Support\Facades\DB;
  * @property string|null $daily_result
  * @property string|null $personal_email
  * @property string|null $contact_number
+ * @property \Illuminate\Support\Carbon|null $risk_start_date
  *
  * @property-read string|null $auth_user_id
  * @property-read string $name
  * @property-read string $studentNameInitials
- * @property-read int $days_at_risk
  * @property-read string $year_level_label
  * @property-read Collection<int, \App\Models\Appointment> $appointments
  *
@@ -144,22 +143,6 @@ class Student extends Model
     }
 
     /**
-     * Whole days since the student was flagged At Risk (1 on the first day),
-     * or 0 when not flagged. Drives the escalation label.
-     */
-    protected function daysAtRisk(): Attribute
-    {
-        return Attribute::make(get: function (): int {
-            if ($this->risk_start_date === null) {
-                return 0;
-            }
-
-            return (int) $this->risk_start_date->copy()->startOfDay()
-                ->diffInDays(PhTime::now()->startOfDay()) + 1;
-        });
-    }
-
-    /**
      * @return HasMany<Appointment, $this>
      */
 
@@ -203,6 +186,13 @@ class Student extends Model
         }
 
         return $query;
+    }
+
+    public function scopeFlaggedAtRisk(Builder $query): Builder
+    {
+        return $query
+            ->whereStatusIsVerified()
+            ->whereNotNull('risk_start_date');
     }
 
     public function scopeByYearLevel(Builder $query, int $yearLevel): Builder
@@ -269,20 +259,29 @@ class Student extends Model
             ->withQueryString();
     }
 
-    public function scopeFlaggedAtRisk(Builder $query): Builder
+    /**
+     * @return Collection<int, Student>
+     */
+    public static function getVerifiedStudents(): Collection
     {
-        return $query
+        return static::query()
             ->whereStatusIsVerified()
-            ->whereNotNull('risk_start_date')
-            ->whereDoesntHave('appointments', fn(Builder $q) => $q->openConsultation());
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
     }
 
-    public static function getAtRiskCount(): int
+    public static function flaggedAtRiskCount(): int
     {
-        return static::query()->flaggedAtRisk()->count();
+        return static::query()
+            ->flaggedAtRisk()
+            ->count();
     }
 
-    public static function atRiskList(): Collection
+    /**
+     * @return Collection<int, Student>
+     */
+    public static function flaggedAtRiskList(): Collection
     {
         return static::query()
             ->flaggedAtRisk()
