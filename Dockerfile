@@ -46,7 +46,7 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
 RUN echo "expose_php = Off" > /usr/local/etc/php/conf.d/security.ini
 
 RUN a2enmod rewrite headers reqtimeout
-RUN a2dismod autoindex status
+RUN a2dismod -f autoindex status || true
 
 # Hide Apache version
 RUN echo "ServerTokens Prod\nServerSignature Off" \
@@ -91,8 +91,8 @@ RUN printf '%s\n' \
   '<Location "/server-info">' \
   '    Require all denied' \
   '</Location>' \
-  > /etc/apache2/conf-available/server-status.conf \
-  && a2enconf server-status
+  > /etc/apache2/conf-available/server-restrictions.conf \
+  && a2enconf server-restrictions
 
 # Limit upload/request size (10 MB)
 RUN echo "LimitRequestBody 10485760" \
