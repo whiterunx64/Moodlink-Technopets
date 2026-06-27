@@ -13,7 +13,6 @@ use App\Traits\HasFilters;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 /**
@@ -22,7 +21,7 @@ use Illuminate\Support\Facades\DB;
  * @property PostMood|null $mood
  * @property string|null $summary
  * @property string|null $journal
- * @property Carbon $date
+ * @property \DateTimeInterface $date
  *
  * @property-read Student|null $student
  */
@@ -66,6 +65,14 @@ class StatusDay extends Model
         });
     }
 
+    public function scopeRecordedOnOrAfter(Builder $query, ?\DateTimeInterface $startDate): Builder
+    {
+        return $query->when(
+            $startDate,
+            fn(Builder $q) => $q->where('status_days.date', '>=', $startDate)
+        );
+    }
+
     public function scopeWhereStudentAtRisk(Builder $query): Builder
     {
         return $query->whereIn('mood', [PostMood::Stressed->value, PostMood::Drained->value]);
@@ -92,7 +99,7 @@ class StatusDay extends Model
      *
      * @return list<int>  student ids
      */
-    public static function studentsEnteringRiskWindow(\Carbon\Carbon $since): array
+    public static function studentsEnteringRiskWindow(\DateTimeInterface $since): array
     {
         return static::query()
             ->join('students', 'students.id', '=', 'status_days.account_id')
@@ -145,7 +152,7 @@ class StatusDay extends Model
      * @param  array<int>  $studentIds
      * @return Collection<int, Collection<int, StatusDay>>
      */
-    public static function entriesForStudents(array $studentIds, ?Carbon $from): Collection
+    public static function entriesForStudents(array $studentIds, ?\DateTimeInterface $from): Collection
     {
         if (empty($studentIds)) {
             return new Collection();
@@ -175,13 +182,28 @@ class StatusDay extends Model
     }
 
     /**
-     * @return \Illuminate\Support\Collection<string, int>
+     * @return Collection<string, int>
      */
-    public static function getMoodCounts(string $period): \Illuminate\Support\Collection
+    public static function getMoodCounts(string $period): Collection
+    {
+        return static::moodCountsSince(static::summaryReportPeriodStart($period));
+    }
+
+    /**
+     * Mood-count tallies for verified students from $start onward, optionally
+     * narrowed to a single program. Keyed by mood value.
+     *
+     * @return Collection<string, int>
+     */
+    public static function moodCountsSince(?\DateTimeInterface $start, ?string $program = null): Collection
     {
         return static::query()
             ->whereStudentIsVerified()
-            ->recordedOnOrAfter(static::summaryReportPeriodStart($period))
+            ->when($program, fn(Builder $query) => $query->whereHas(
+                'student',
+                fn(Builder $student) => $student->where('program', $program),
+            ))
+            ->recordedOnOrAfter($start)
             ->whereNotNull('mood')
             ->selectRaw('mood, count(*) as total')
             ->groupBy('mood')

@@ -267,4 +267,19 @@ class Appointment extends Model
             ->startingFrom($from)
             ->count();
     }
+
+    /**
+     * @return Collection<int, Appointment>
+     */
+    public static function dashboardUpcoming(): Collection
+    {
+        return static::query()
+            ->with('student')
+            ->whereHas('student', fn(Builder $query) => $query->whereStatusIsVerified())
+            ->whereIn('status', [AppointmentStatus::Scheduled->value])
+            ->where('datetime', '>=', PhTime::todayStartUtc())
+            ->orderBy('datetime')
+            ->limit(5)
+            ->get();
+    }
 }

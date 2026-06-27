@@ -6,6 +6,7 @@ import StatCard from '@/Components/Dashboard/StatCard.vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import {
     AcademicCapIcon,
+    CalendarIcon,
     ClockIcon,
     ExclamationTriangleIcon,
     HeartIcon,
@@ -106,8 +107,10 @@ onMounted(() => {
             <div v-else class="space-y-6">
 
                 <!-- Welcome banner -->
-                <div class="flex items-center gap-4 rounded-2xl border border-border-light bg-white px-6 py-4 shadow-sm">
-                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sidebar text-lg font-bold text-white">
+                <div
+                    class="flex items-center gap-4 rounded-2xl border border-border-light bg-white px-6 py-4 shadow-sm">
+                    <div
+                        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sidebar text-lg font-bold text-white">
                         {{ adminName.charAt(0).toUpperCase() }}
                     </div>
                     <div>
@@ -120,14 +123,16 @@ onMounted(() => {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div class="grid grid-cols-4 gap-4">
                     <StatCard v-for="card in statCards" :key="card.key" :title="card.title" :value="card.value"
                         :icon="card.icon" :color="card.color" :change="card.change" :change-up="card.changeUp" />
                 </div>
 
-                <div class="grid grid-cols-1 gap-6 xl:h-136 xl:grid-cols-3">
-                    <div class="border-border-light flex h-112 flex-col rounded-2xl border bg-white shadow-sm xl:col-span-2 xl:h-full">
-                        <div class="border-border-light flex shrink-0 items-center justify-between border-b px-5 pt-5 pb-4">
+                <div class="grid h-136 grid-cols-3 gap-6">
+                    <div
+                        class="border-border-light col-span-2 flex h-full flex-col rounded-2xl border bg-white shadow-sm">
+                        <div
+                            class="border-border-light flex shrink-0 items-center justify-between border-b px-5 pt-5 pb-4">
                             <div>
                                 <h3 class="text-text-primary text-base font-semibold">
                                     MoodSpace Feed
@@ -143,20 +148,20 @@ onMounted(() => {
                                 :time="entry.time" :mood="entry.mood" :message="entry.message"
                                 :flagged="entry.flagged" />
                             <div v-if="mood_entries.length === 0"
-                                class="text-text-muted flex flex-1 items-center justify-center text-sm">
+                                class="text-text-muted flex flex-1 flex-col items-center justify-center gap-3 text-sm">
+                                <HeartIcon class="h-16 w-16 text-blue-500/60" aria-hidden="true" />
                                 No mood entries today
                             </div>
                         </div>
 
                         <div class="border-border-light shrink-0 border-t px-5 py-3">
-                            <a :href="route('posts.index')"
-                                class="text-sidebar text-xs font-medium hover:underline">
+                            <a :href="route('posts.index')" class="text-sidebar text-xs font-medium hover:underline">
                                 View all posts →
                             </a>
                         </div>
                     </div>
 
-                    <div class="min-h-0">
+                    <div class="h-full">
                         <MoodTrends :data="mood_trends" />
                     </div>
                 </div>
@@ -167,7 +172,7 @@ onMounted(() => {
                             Upcoming Appointments
                         </h3>
                     </div>
-                    <div class="divide-border-light max-h-80 divide-y overflow-y-auto sm:max-h-96">
+                    <div class="divide-border-light flex h-128 flex-col divide-y overflow-y-auto">
                         <div v-for="apt in appointments" :key="apt.id"
                             class="flex items-center justify-between gap-3 px-5 py-3.5 transition-colors hover:bg-gray-50">
                             <div class="flex min-w-0 items-center gap-3">
@@ -191,7 +196,9 @@ onMounted(() => {
                                 {{ apt.label }}
                             </span>
                         </div>
-                        <div v-if="appointments.length === 0" class="text-text-muted py-12 text-center text-sm">
+                        <div v-if="appointments.length === 0"
+                            class="text-text-muted flex flex-1 flex-col items-center justify-center gap-3 text-sm">
+                            <CalendarIcon class="h-16 w-16 text-blue-500/60" aria-hidden="true" />
                             No upcoming appointments
                         </div>
                     </div>

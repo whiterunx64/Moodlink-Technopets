@@ -9,4 +9,14 @@ enum PostMood: string
     case Content = 'Content';
     case Excited = 'Excited';
 
+    /** Tailwind background class used for this mood in charts and badges. */
+    public function color(): string
+    {
+        return match ($this) {
+            self::Excited => 'bg-green-400',
+            self::Content => 'bg-blue-400',
+            self::Stressed => 'bg-yellow-400',
+            self::Drained => 'bg-red-400',
+        };
+    }
 }

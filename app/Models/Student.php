@@ -290,4 +290,18 @@ class Student extends Model
             ->get();
     }
 
+    /**
+     * @return list<string>
+     */
+    public static function verifiedPrograms(): array
+    {
+        return static::query()
+            ->whereStatusIsVerified()
+            ->whereNotNull('program')
+            ->distinct()
+            ->orderBy('program')
+            ->pluck('program')
+            ->all();
+    }
+
 }

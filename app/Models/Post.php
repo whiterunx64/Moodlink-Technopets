@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\PostMood;
 use App\Enums\PostStatus;
+use App\Support\PhTime;
 use App\Traits\HasDateTimeDisplay;
 use App\Traits\HasFilters;
 use Illuminate\Database\Eloquent\Builder;
@@ -162,5 +163,23 @@ class Post extends Model
             ->orderByDesc('datetime')
             ->get(['student_id', 'mood', 'datetime'])
             ->groupBy('student_id');
+    }
+
+    /**
+     * Today's safe/flagged posts from verified students, newest first, with the
+     * student loaded for display.
+     *
+     * @return Collection<int, Post>
+     */
+    public static function dashboardRecentEntries(): Collection
+    {
+        return static::query()
+            ->with('student')
+            ->fromVerifiedStudents()
+            ->whereIn('status', [PostStatus::Safe->value, PostStatus::Flagged->value])
+            ->where('datetime', '>=', PhTime::todayStartUtc())
+            ->orderByDesc('datetime')
+            ->limit(20)
+            ->get();
     }
 }

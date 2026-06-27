@@ -10,14 +10,6 @@ use Illuminate\Support\Carbon;
 
 trait HasFilters
 {
-    public function scopeRecordedOnOrAfter(Builder $query, ?Carbon $startDate): Builder
-    {
-        return $query->when(
-            $startDate,
-            fn (Builder $q) => $q->where('status_days.date', '>=', $startDate)
-        );
-    }
-
     public static function summaryReportPeriodStart(string $period): ?Carbon
     {
         if ($period === 'this_week') {

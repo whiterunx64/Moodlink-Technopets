@@ -35,4 +35,9 @@ final class PhTime
     {
         return Carbon::today(self::TIMEZONE)->utc();
     }
+
+    public static function startOfDaysAgo(int $days): Carbon
+    {
+        return self::now()->subDays($days)->startOfDay();
+    }
 }
