@@ -18,10 +18,14 @@ use App\Services\RateLimiter;
 use App\Services\AvatarStorage;
 use App\Services\SupabaseAuthApi;
 use App\Services\SupabaseClient;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\RateLimiter as LaravelRateLimiter;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -62,7 +66,29 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Force HTTPS URLs in production (fix Render mixed content issue)
+        LaravelRateLimiter::for('landing', function (Request $request) {
+            return Limit::perMinute(5)
+                ->by($request->ip())
+                ->response(function ($request, $headers) {
+
+                    Log::warning('Landing page rate limit exceeded', [
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                        'path' => $request->path(),
+                    ]);
+
+                    $retryAfter = (int) ($headers['Retry-After'] ?? 60);
+
+                    return response()
+                        ->view('errors.429', [
+                            'headers' => $headers,
+                            'retryAfter' => $retryAfter,
+                        ], 429)
+                        ->withHeaders($headers);
+                });
+        });
+
+        // Force HTTPS URLs in production
         if (app()->environment('production')) {
             URL::forceScheme('https');
         }

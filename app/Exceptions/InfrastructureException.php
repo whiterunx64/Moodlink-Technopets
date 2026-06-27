@@ -13,8 +13,9 @@ use Throwable;
 /**
  * Represents a failure in an underlying dependency rather than a user error:
  * the Supabase Postgres database is unreachable, a pooled connection was
- * dropped mid-request, an outbound network call failed, or the application
- * reached a state it does not know how to recover from.
+ * dropped mid-request, an outbound network call failed, the application
+ * reached a state it does not know how to recover from, or a rate limit has
+ * been exceeded.
  *
  * Each factory carries a stable machine-readable code (consumed by the error
  * page for tailored copy) plus a message that is safe to show an end user.
@@ -27,19 +28,21 @@ final class InfrastructureException extends Exception implements HttpExceptionIn
     public const CODE_DB_CONNECTION_LOST = 'DB_CONNECTION_LOST';
     public const CODE_NETWORK_FAILURE = 'NETWORK_FAILURE';
     public const CODE_UNEXPECTED_STATE = 'UNEXPECTED_STATE';
+    public const CODE_RATE_LIMITED = 'RATE_LIMIT_EXCEEDED';
 
     private function __construct(
         public readonly string $errorCode,
         string $userMessage,
         private readonly int $status,
         ?Throwable $previous = null,
+        private readonly array $extraHeaders = [],
     ) {
         parent::__construct($userMessage, $status, $previous);
     }
 
     /**
-     * The HTTP status Laravel should render this as (503/502/500), which also
-     * selects the matching resources/views/errors/{status}.blade.php.
+     * The HTTP status Laravel should render this as (429/503/502/500), which
+     * also selects the matching resources/views/errors/{status}.blade.php.
      */
     public function getStatusCode(): int
     {
@@ -51,7 +54,7 @@ final class InfrastructureException extends Exception implements HttpExceptionIn
      */
     public function getHeaders(): array
     {
-        return [];
+        return $this->extraHeaders;
     }
 
     /**
@@ -111,6 +114,45 @@ final class InfrastructureException extends Exception implements HttpExceptionIn
             "Something went wrong on our end{$detail}. Our team has been notified — please try again.",
             Response::HTTP_INTERNAL_SERVER_ERROR,
             $previous,
+        );
+    }
+
+    /**
+     * A rate limit was exceeded for the given limiter key (e.g. 'landing').
+     *
+     * Pass $retryAfter (seconds until the window resets) when known — it is
+     * forwarded as the standard Retry-After response header and used by the
+     * 429 error page to drive its countdown timer and auto-refresh.
+     *
+     * Usage inside a RateLimiter::for() response callback:
+     *
+     *   ->response(function ($request, $headers) use ($limiterKey) {
+     *       throw InfrastructureException::rateLimited(
+     *           limiter: $limiterKey,
+     *           retryAfter: (int) ($headers['Retry-After'] ?? 60),
+     *       );
+     *   });
+     *
+     * Or return a response directly by catching it in the handler and calling
+     * {@see toResponse()}.
+     */
+    public static function rateLimited(
+        string $limiter = 'default',
+        ?int $retryAfter = null,
+        ?Throwable $previous = null,
+    ): self {
+        $headers = ['X-RateLimit-Limiter' => $limiter];
+
+        if ($retryAfter !== null) {
+            $headers['Retry-After'] = (string) $retryAfter;
+        }
+
+        return new self(
+            self::CODE_RATE_LIMITED,
+            "You've sent too many requests. Please wait a moment before trying again.",
+            Response::HTTP_TOO_MANY_REQUESTS,
+            $previous,
+            $headers,
         );
     }
 
@@ -177,7 +219,15 @@ final class InfrastructureException extends Exception implements HttpExceptionIn
             self::CODE_DB_UNAVAILABLE,
             self::CODE_DB_CONNECTION_LOST,
             self::CODE_NETWORK_FAILURE,
+            self::CODE_RATE_LIMITED,
         ], true);
+    }
+
+    public function retryAfter(): ?int
+    {
+        $value = $this->extraHeaders['Retry-After'] ?? null;
+
+        return $value !== null ? (int) $value : null;
     }
 
     private static function sqlState(QueryException|\PDOException $e): ?string

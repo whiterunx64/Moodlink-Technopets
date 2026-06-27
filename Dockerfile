@@ -102,7 +102,7 @@ RUN echo "LimitRequestBody 10485760" \
 # Allow only required HTTP methods
 RUN printf '%s\n' \
   '<Location "/">' \
-  '    <LimitExcept GET POST HEAD OPTIONS>' \
+  '    <LimitExcept GET POST PATCH PUT DELETE HEAD OPTIONS>' \
   '        Require all denied' \
   '    </LimitExcept>' \
   '</Location>' \

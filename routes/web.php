@@ -11,7 +11,9 @@ use App\Http\Controllers\UserAccountController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-Route::get('/', fn() => Inertia::render('Landing'))->name('landing');
+Route::get('/', fn() => Inertia::render('Landing'))
+    ->middleware('throttle:landing')
+    ->name('landing');
 
 Route::get(config('supabase-auth.monitoring.health_checks.endpoint'), [HealthController::class, 'check'])
     ->name('health');
