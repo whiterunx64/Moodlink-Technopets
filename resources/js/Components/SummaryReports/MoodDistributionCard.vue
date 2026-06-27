@@ -278,7 +278,7 @@ const lineOptions = computed(() => ({
             <!-- Doughnut -->
 
             <div class="lg:col-span-2 flex flex-col items-center justify-center px-6 py-6 gap-2">
-                <div class="relative w-full max-w-[220px] h-[220px]">
+                <div class="relative w-full max-w-55 h-55">
                     <Doughnut :data="doughnutData" :options="doughnutOptions" />
 
                     <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
@@ -309,7 +309,7 @@ const lineOptions = computed(() => ({
             <!-- Multi Axis Line Chart -->
 
             <div class="lg:col-span-3 flex flex-col justify-center px-6 py-6 gap-5">
-                <div class="h-[320px]">
+                <div class="h-80">
                     <Line :data="lineData" :options="lineOptions" />
                 </div>
 

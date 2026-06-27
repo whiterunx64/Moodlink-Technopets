@@ -103,7 +103,7 @@ const chartOptions = {
                 </button>
             </div>
             <select
-                class="ml-2 w-auto max-w-[150px] shrink-0 rounded-lg border border-border-light bg-post-card-bg px-3 py-2 text-sm font-medium text-text-primary focus:outline-none focus:ring-2 focus:ring-sidebar/30"
+                class="ml-2 w-auto max-w-37.5 shrink-0 rounded-lg border border-border-light bg-post-card-bg px-3 py-2 text-sm font-medium text-text-primary focus:outline-none focus:ring-2 focus:ring-sidebar/30"
                 :value="data.program" aria-label="Program" @change="selectProgram">
                 <option v-for="program in data.programs" :key="program" :value="program">
                     {{ program === 'All' ? 'All programs' : program }}
@@ -111,9 +111,9 @@ const chartOptions = {
             </select>
         </div>
         <!-- Chart area -->
-        <div class="relative flex flex-1 min-h-[180px] items-center justify-center px-5 py-6">
+        <div class="relative flex flex-1 min-h-45 items-center justify-center px-5 py-6">
             <template v-if="data.total > 0">
-                <div class="h-[200px] w-[200px] shrink-0" role="img"
+                <div class="h-50 w-50 shrink-0" role="img"
                     :aria-label="`Mood distribution doughnut chart. Dominant mood: ${dominantMood}`">
                     <Doughnut :data="chartData" :options="chartOptions" />
                 </div>

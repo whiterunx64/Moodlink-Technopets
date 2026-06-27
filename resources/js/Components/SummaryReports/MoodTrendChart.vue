@@ -6,6 +6,7 @@ import {
     Tooltip,
 } from 'chart.js';
 import { Doughnut } from 'vue-chartjs';
+import type { ChartData, ChartOptions } from 'chart.js';
 import type { MoodTrendPoint } from '@/types';
 
 // Only register what we use — faster init, no Legend bloat
@@ -38,22 +39,27 @@ const TREND_META = {
 // Highest-scored mood for the centre label
 const dominantMood = computed(() => {
     if (!props.data.length) return null;
-    const top = [...props.data].sort((a, b) => b.score - a.score)[0];
+    const top = [...props.data]
+        .filter((d): d is MoodTrendPoint & { score: number } => d.score !== null)
+        .sort((a, b) => b.score - a.score)[0];
+    if (!top) return 'Unknown';
     return MOOD_PALETTE[top.score]?.label ?? 'Unknown';
 });
 
-const chartData = computed(() => ({
-    labels: props.data.map(d => MOOD_PALETTE[d.score]?.label ?? 'Unknown'),
+// Fix 2: explicitly type as ChartData<'doughnut'> and replace null scores with 0
+const chartData = computed<ChartData<'doughnut', number[], unknown>>(() => ({
+    labels: props.data.map(d => (d.score !== null ? MOOD_PALETTE[d.score]?.label : undefined) ?? 'Unknown'),
     datasets: [{
-        data: props.data.map(d => d.score),
-        backgroundColor: props.data.map(d => MOOD_PALETTE[d.score]?.fill ?? '#898781'),
+        data: props.data.map(d => d.score ?? 0),          // null → 0
+        backgroundColor: props.data.map(d => (d.score !== null ? MOOD_PALETTE[d.score]?.fill : undefined) ?? '#898781'),
         borderColor: '#ffffff',
         borderWidth: 3,
         hoverOffset: 8,
     }],
 }));
 
-const chartOptions = computed(() => ({
+// Fix 3: explicitly type as ChartOptions<'doughnut'> and use a valid weight literal
+const chartOptions = computed<ChartOptions<'doughnut'>>(() => ({
     responsive: true,
     maintainAspectRatio: false,
     cutout: '70%',
@@ -64,12 +70,12 @@ const chartOptions = computed(() => ({
             bodyFont: {
                 size: 13,
                 family: "'IBM Plex Mono', monospace",
-                weight: '500',
+                weight: 'bold' as const,
             },
             padding: 10,
             cornerRadius: 2,
             callbacks: {
-                label(context: any) {
+                label(context) {
                     return `  ${context.label}: ${context.raw}`;
                 },
             },
