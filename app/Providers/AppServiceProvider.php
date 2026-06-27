@@ -19,8 +19,11 @@ use App\Services\AvatarStorage;
 use App\Services\SupabaseAuthApi;
 use App\Services\SupabaseClient;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\LazyLoadingViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\Facades\URL;
@@ -66,6 +69,18 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        Model::preventLazyLoading();
+
+        Model::handleLazyLoadingViolationUsing(function ($model, $relation) {
+            $exception = new LazyLoadingViolationException($model, $relation);
+
+            if (app()->environment('production')) {
+                report($exception);
+            } else {
+                throw $exception;
+            }
+        });
+
         LaravelRateLimiter::for('landing', function (Request $request) {
             return Limit::perMinute(5)
                 ->by($request->ip())
@@ -91,6 +106,9 @@ class AppServiceProvider extends ServiceProvider
         // Force HTTPS URLs in production
         if (app()->environment('production')) {
             URL::forceScheme('https');
+            DB::prohibitDestructiveCommands();
+
+            \Illuminate\Support\Facades\Request::macro('isSecure', fn() => true);
         }
 
         Vite::prefetch(concurrency: 3);
