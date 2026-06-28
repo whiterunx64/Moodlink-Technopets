@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * @property int $id
  * @property string|null $user_id
+ * @property string|null $uuid
  * @property string $student_number
  * @property string $first_name
  * @property string $last_name
@@ -52,6 +53,7 @@ class Student extends Model
 
     protected $fillable = [
         'user_id',
+        'uuid',
         'student_number',
         'first_name',
         'last_name',
@@ -74,20 +76,10 @@ class Student extends Model
         ];
     }
 
-    /**
-     * Resolve the student from a Supabase auth.users UUID via the auth user's
-     * email ("{student_number}@moodlink.com"). Lets routes be addressed by the
-     * non-enumerable auth UUID (IDOR-safe) instead of the integer id.
-     */
     public static function findBySupabaseAuthId(string $authUserId): ?self
     {
         return static::query()
-            ->whereExists(function ($query) use ($authUserId) {
-                $query->selectRaw('1')
-                    ->from('auth.users')
-                    ->where('id', $authUserId)
-                    ->whereRaw("email = students.student_number || '@moodlink.com'");
-            })
+            ->where('uuid', $authUserId)
             ->first();
     }
 

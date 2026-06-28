@@ -105,6 +105,8 @@ final class StudentAccountService
         $password = $this->generateInitialPassword();
         $supabaseUserId = $this->createSupabaseAuthAccountAndReturnUserId($student, $email, $password); // UUID from Supabase auth.users.
 
+        $student->update(['uuid' => $supabaseUserId]);
+
         // Automatically verify the student to allow mobile app access.
         $this->verifyStudent($student);
 
