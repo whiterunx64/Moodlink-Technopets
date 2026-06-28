@@ -3,7 +3,9 @@ import DashboardSkeleton from '@/Components/Dashboard/DashboardSkeleton.vue';
 import MoodEntry from '@/Components/Dashboard/MoodEntry.vue';
 import MoodTrends from '@/Components/Dashboard/MoodTrends.vue';
 import StatCard from '@/Components/Dashboard/StatCard.vue';
+import { usePollingReload } from '@/composables/usePolling';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
+import type { DashboardPageProps, PageProps } from '@/types';
 import {
     AcademicCapIcon,
     CalendarIcon,
@@ -11,11 +13,8 @@ import {
     ExclamationTriangleIcon,
     HeartIcon,
 } from '@heroicons/vue/24/outline';
-import { usePollingReload } from '@/composables/usePolling';
 import { Head, usePage } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref, type Component } from 'vue';
-import type { PageProps } from '@/types';
-import type { DashboardPageProps } from '@/types';
 
 const props = defineProps<DashboardPageProps>();
 
@@ -105,19 +104,18 @@ onMounted(() => {
             <DashboardSkeleton v-if="loading" />
 
             <div v-else class="space-y-6">
-
                 <!-- Welcome banner -->
                 <div
-                    class="flex items-center gap-4 rounded-2xl border border-border-light bg-white px-6 py-4 shadow-sm">
+                    class="border-border-light flex items-center gap-4 rounded-2xl border bg-white px-6 py-4 shadow-sm">
                     <div
-                        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-sidebar text-lg font-bold text-white">
+                        class="bg-sidebar flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white">
                         {{ adminName.charAt(0).toUpperCase() }}
                     </div>
                     <div>
-                        <p class="text-xl font-bold text-text-primary">
+                        <p class="text-text-primary text-xl font-bold">
                             Welcome back, {{ adminName }}!
                         </p>
-                        <p class="mt-0.5 text-sm text-text-muted">
+                        <p class="text-text-muted mt-0.5 text-sm">
                             Here's what's happening on MoodLink today.
                         </p>
                     </div>
@@ -128,9 +126,8 @@ onMounted(() => {
                         :icon="card.icon" :color="card.color" :change="card.change" :change-up="card.changeUp" />
                 </div>
 
-                <div class="grid h-136 grid-cols-3 gap-6">
-                    <div
-                        class="border-border-light col-span-2 flex h-full flex-col rounded-2xl border bg-white shadow-sm">
+                <div class="flex-row gap-6 md:flex md:h-136">
+                    <div class="border-border-light flex h-full flex-1 flex-col rounded-2xl border bg-white shadow-sm">
                         <div
                             class="border-border-light flex shrink-0 items-center justify-between border-b px-5 pt-5 pb-4">
                             <div>

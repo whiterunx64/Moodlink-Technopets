@@ -123,7 +123,7 @@ onUnmounted(() => {
           enter-to-class="opacity-100 translate-y-0" leave-active-class="transition duration-100"
           leave-from-class="opacity-100" leave-to-class="opacity-0">
           <div v-if="notificationsOpen"
-            class="absolute right-0 z-30 mt-2 w-[420px] overflow-hidden border-2 border-slate-400 bg-slate-50 shadow-2xl">
+            class="absolute right-0 z-30 mt-2 w-[calc(100vw-2rem)] sm:w-105 overflow-hidden border-2 border-slate-400 bg-slate-50 shadow-2xl">
             <!-- Header -->
             <div class="flex items-center justify-between border-b-2 border-slate-400 bg-slate-200 px-5 py-4">
               <div>
@@ -142,7 +142,7 @@ onUnmounted(() => {
             </div>
 
             <!-- Content -->
-            <div class="max-h-[350px] overflow-y-auto">
+            <div class="max-h-87.5 overflow-y-auto">
               <div v-if="notifications.length === 0" class="flex flex-col items-center justify-center py-16">
                 <BellIcon class="mb-3 h-10 w-10 text-slate-400" />
                 <p class="text-base font-bold text-slate-700">
