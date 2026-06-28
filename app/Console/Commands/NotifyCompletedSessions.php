@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Services\AppointmentService;
+use App\Services\AppointmentManager;
 use Illuminate\Console\Command;
 
 class NotifyCompletedSessions extends Command
@@ -13,7 +13,7 @@ class NotifyCompletedSessions extends Command
 
     protected $description = 'Notify students that their session is complete once its scheduled end time has passed.';
 
-    public function handle(AppointmentService $service): int
+    public function handle(AppointmentManager $service): int
     {
         $notified = $service->notifyCompletedSessions();
 

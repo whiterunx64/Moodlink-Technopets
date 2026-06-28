@@ -7,12 +7,12 @@ namespace App\Models;
 use App\Enums\AppointmentStatus;
 use App\Support\PhTime;
 use App\Traits\HasDateTimeDisplay;
+use Carbon\Carbon;
 use App\Traits\HasFilters;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Collection;
 
 /**
  * Appointment Model
@@ -111,6 +111,30 @@ class Appointment extends Model
         );
     }
 
+    /**
+     * The moment this appointment's check-in grace period closes.
+     */
+    public function checkInWindowEnd(): Carbon
+    {
+        return $this->datetime->copy()->addMinutes(self::CHECK_IN_GRACE_MINUTES);
+    }
+
+    /**
+     * Whether this scheduled appointment is currently inside its check-in window —
+     * it has started and the grace period has not yet elapsed.
+     */
+    public function isWithinCheckInWindow(): bool
+    {
+        if ($this->status !== AppointmentStatus::Scheduled) {
+            return false;
+        }
+
+        $now = PhTime::nowUtc();
+
+        return $now->greaterThanOrEqualTo($this->datetime)
+            && $now->lessThanOrEqualTo($this->checkInWindowEnd());
+    }
+
     public function scopePending(Builder $query): Builder
     {
         return $query->where('status', AppointmentStatus::Pending->value);
@@ -207,79 +231,4 @@ class Appointment extends Model
         return $query->where('student_id', $studentId);
     }
 
-    public static function getListForTab(string $tab): Collection
-    {
-        $status = AppointmentStatus::fromTab($tab);
-        $now = PhTime::nowUtc();
-
-        return static::query()
-            ->with('student.appointments')
-            ->where('status', $status->value)
-            ->when($tab === 'scheduled', fn($q) => $q->where('datetime', '>=', $now->copy()->subMinutes(self::CHECK_IN_GRACE_MINUTES)))
-            ->when($tab === 'missed', fn($q) => $q->where('datetime', '<', $now))
-            ->orderBy('datetime')
-            ->get();
-    }
-
-    /**
-     * @return array<string, int>
-     */
-    public static function tabCounts(): object
-    {
-        return static::query()
-            ->selectRaw(
-                'SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS requests,
-             SUM(CASE WHEN status = ? AND datetime >= ? THEN 1 ELSE 0 END) AS scheduled,
-             SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS history,
-             SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) AS rejected,
-             SUM(CASE WHEN status = ? AND datetime < NOW() THEN 1 ELSE 0 END) AS missed',
-                [
-                    AppointmentStatus::Pending->value,
-                    AppointmentStatus::Scheduled->value,
-                    PhTime::nowUtc()->subMinutes(self::CHECK_IN_GRACE_MINUTES),
-                    AppointmentStatus::Completed->value,
-                    AppointmentStatus::Rejected->value,
-                    AppointmentStatus::Missed->value,
-                ],
-            )
-            ->first();
-    }
-    public static function activeConsultationStudentIds(array $studentIds): array
-    {
-        if (empty($studentIds)) {
-            return [];
-        }
-
-        return static::query()
-            ->scheduledOrCompleted()
-            ->whereIn('student_id', $studentIds)
-            ->pluck('student_id')
-            ->unique()
-            ->all();
-    }
-
-    public static function getScheduledCount(string $period): int
-    {
-        $from = static::summaryReportPeriodStart($period); // Get report start date from filter period.
-
-        return static::query()
-            ->scheduledOrCompleted()
-            ->startingFrom($from)
-            ->count();
-    }
-
-    /**
-     * @return Collection<int, Appointment>
-     */
-    public static function dashboardUpcoming(): Collection
-    {
-        return static::query()
-            ->with('student')
-            ->whereHas('student', fn(Builder $query) => $query->whereStatusIsVerified())
-            ->whereIn('status', [AppointmentStatus::Scheduled->value])
-            ->where('datetime', '>=', PhTime::todayStartUtc())
-            ->orderBy('datetime')
-            ->limit(5)
-            ->get();
-    }
 }

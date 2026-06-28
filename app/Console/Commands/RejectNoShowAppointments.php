@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Services\AppointmentService;
+use App\Services\AppointmentManager;
 use Illuminate\Console\Command;
 
 class RejectNoShowAppointments extends Command
@@ -13,7 +13,7 @@ class RejectNoShowAppointments extends Command
 
     protected $description = 'Mark scheduled sessions as missed when the student has not checked in within the grace period.';
 
-    public function handle(AppointmentService $service): int
+    public function handle(AppointmentManager $service): int
     {
         $rejected = $service->rejectNoShowSessions();
 

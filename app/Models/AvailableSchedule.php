@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Support\PhTime;
 use App\Traits\HasDateTimeDisplay;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
 
 /**
  * @property int $id
@@ -54,11 +52,4 @@ class AvailableSchedule extends Model
         );
     }
 
-    public static function getAvailableSlotsList(): Collection
-    {
-        return static::query()
-            ->where('datetime', '>=', PhTime::now()->utc())
-            ->orderBy('datetime')
-            ->get();
-    }
 }

@@ -8,7 +8,7 @@ use App\Exceptions\AppointmentException;
 use App\Http\Requests\StoreConsultationRequest;
 use App\Http\Requests\SummaryReportFilterRequest;
 use App\Models\Student;
-use App\Services\AppointmentService;
+use App\Services\AppointmentManager;
 use App\Services\SummaryReportService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -17,7 +17,7 @@ use Inertia\Response;
 class SummaryReportController extends Controller
 {
     public function __construct(
-        private readonly AppointmentService $scheduler,
+        private readonly AppointmentManager $scheduler,
         private readonly SummaryReportService $reports,
     ) {
     }

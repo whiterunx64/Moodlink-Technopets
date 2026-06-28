@@ -31,6 +31,7 @@ const props = defineProps<{
     checkInReady: CheckInReadyAppointment[];
     checkInDebug?: unknown; // TEMP DEBUG — remove with the badge below
     filters: AppointmentFilters;
+    studentProfile?: AppointmentStudentProfile | null;
 }>();
 
 const TABS: { key: AppointmentTab; label: string }[] = [
@@ -166,10 +167,25 @@ watch(
 // Student Profile
 // ─────────────────────────────────────────────────────────────
 
-const selectedStudent = ref<(AppointmentStudentProfile & { name: string }) | null>(null);
+const profileOpen = ref(false);
+const profileLoading = ref(false);
 
 function openProfile(apt: Appointment) {
-    selectedStudent.value = { ...apt.student_profile, name: apt.student_name };
+    profileOpen.value = true;
+    profileLoading.value = true;
+
+    router.reload({
+        only: ['studentProfile'],
+        data: { student: apt.student_id },
+        onFinish: () => {
+            profileLoading.value = false;
+        },
+    });
+}
+
+function closeProfile() {
+    profileOpen.value = false;
+    profileLoading.value = false;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -208,31 +224,31 @@ function formatDateTime(date: string, time: string) {
 const STATS = computed(() => [
     {
         label: 'Pending Requests',
-        value: props.tabCounts.requests,
+        value: props.tabCounts.requests ?? 0,
         accent: 'text-red-500',
         border: 'border-l-red-400 border-r-red-400',
     },
     {
         label: 'Scheduled',
-        value: props.tabCounts.scheduled,
+        value: props.tabCounts.scheduled ?? 0,
         accent: 'text-green-600',
         border: 'border-l-green-500',
     },
     {
         label: 'Session History',
-        value: props.tabCounts.history,
+        value: props.tabCounts.history ?? 0,
         accent: 'text-amber-600',
         border: 'border-l-amber-400',
     },
     {
         label: 'Rejected',
-        value: props.tabCounts.rejected,
+        value: props.tabCounts.rejected ?? 0,
         accent: 'text-orange-500',
         border: 'border-l-orange-400',
     },
     {
         label: 'Missed',
-        value: props.tabCounts.missed,
+        value: props.tabCounts.missed ?? 0,
         accent: 'text-purple-600',
         border: 'border-l-purple-400',
     },
@@ -292,7 +308,7 @@ const STATS = computed(() => [
                         <button type="button"
                             class="bg-sidebar/10 hover:bg-sidebar/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors"
                             @click="openProfile(apt)">
-                            <span class="text-sidebar text-sm font-bold">{{ apt.student_profile.initials }}</span>
+                            <span class="text-sidebar text-sm font-bold">{{ apt.student_summary.initials }}</span>
                         </button>
 
                         <!-- Info -->
@@ -431,8 +447,8 @@ const STATS = computed(() => [
         <CheckInQrModal v-if="qrAppointment" :appointment="qrAppointment" :qr-data-url="qrDataUrl"
             :checked-in="qrCheckedIn" @close="closeCheckInQr" />
 
-        <StudentProfileModal v-if="selectedStudent" :student="selectedStudent" :status-badge="STATUS_BADGE"
-            @close="selectedStudent = null" />
+        <StudentProfileModal v-if="profileOpen" :student="studentProfile ?? null" :loading="profileLoading"
+            :status-badge="STATUS_BADGE" @close="closeProfile" />
 
         <AddSlotModal v-if="showScheduleModal" @close="showScheduleModal = false" @saved="showScheduleModal = false" />
     </AdminLayout>

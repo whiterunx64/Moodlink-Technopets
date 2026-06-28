@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Services\AppointmentService;
+use App\Services\AppointmentManager;
 use Illuminate\Console\Command;
 
 class NotifyAwaitingCheckIns extends Command
@@ -13,7 +13,7 @@ class NotifyAwaitingCheckIns extends Command
 
     protected $description = 'Raise an admin inbox alert for scheduled sessions that have started but are not yet checked in.';
 
-    public function handle(AppointmentService $service): int
+    public function handle(AppointmentManager $service): int
     {
         $created = $service->flagSessionsAwaitingCheckIn();
 

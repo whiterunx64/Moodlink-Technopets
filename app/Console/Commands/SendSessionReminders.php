@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Services\AppointmentService;
+use App\Services\AppointmentManager;
 use Illuminate\Console\Command;
 
 class SendSessionReminders extends Command
@@ -13,7 +13,7 @@ class SendSessionReminders extends Command
 
     protected $description = 'Email students whose scheduled session begins in about an hour.';
 
-    public function handle(AppointmentService $service): int
+    public function handle(AppointmentManager $service): int
     {
         $sent = $service->sendUpcomingSessionReminders();
 
