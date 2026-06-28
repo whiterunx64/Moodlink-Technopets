@@ -109,6 +109,7 @@ export interface PostFilters {
     program: string | null;
     mood: string | null;
     sort: string | null;
+    tab: string | null;
 }
 
 export interface Post {

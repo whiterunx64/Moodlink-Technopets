@@ -146,6 +146,9 @@ Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-acce
 
     Route::get('/post-management', [PostManagementController::class, 'index'])
         ->name('posts.index');
+
+    Route::get('/reported-posts', fn() => redirect()->route('posts.index', ['tab' => 'reported']))
+        ->name('reported-posts.index');
     Route::patch('/post-management/{post}/mark-as-flagged', [PostManagementController::class, 'flag'])
         ->name('posts.flag');
     Route::patch('/post-management/{post}/mark-as-unflagged', [PostManagementController::class, 'unflag'])

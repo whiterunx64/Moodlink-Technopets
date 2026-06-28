@@ -43,7 +43,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-layout-bg">
+  <div class="min-h-screen bg-layout-bg overflow-x-hidden">
 
     <!-- Keeps backdrop-filter GPU layer warm; prevents first-open blur delay on modals -->
     <div class="fixed w-0 h-0 backdrop-blur-sm pointer-events-none" aria-hidden="true" />

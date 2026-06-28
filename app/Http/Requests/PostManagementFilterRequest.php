@@ -22,6 +22,7 @@ class PostManagementFilterRequest extends FormRequest
             'program' => ['sometimes', 'nullable', 'string', 'max:100', 'regex:/^[\w\s\-]+$/', Rule::exists('students', 'program')],
             'mood' => ['sometimes', 'nullable', Rule::enum(PostMood::class)],
             'sort' => ['sometimes', 'nullable', Rule::in(['latest', 'oldest'])],
+            'tab' => ['sometimes', 'nullable', 'string', Rule::in(['reported', 'archives'])],
         ];
     }
     /**
@@ -30,10 +31,11 @@ class PostManagementFilterRequest extends FormRequest
     public function filters(): array
     {
         return [
-            'status' => $this->validated('status'),
+            'status'  => $this->validated('status'),
             'program' => $this->validated('program'),
-            'mood' => $this->validated('mood'),
-            'sort' => $this->validated('sort') ?? 'latest',
+            'mood'    => $this->validated('mood'),
+            'sort'    => $this->validated('sort') ?? 'latest',
+            'tab'     => $this->validated('tab'),
         ];
     }
 
