@@ -112,6 +112,47 @@ class StatusDay extends Model
             ->groupBy('account_id');
     }
 
+    /**
+     * @return Collection<int, StatusDay>
+     */
+    public static function recentMoodEntriesForStudent(int $studentId, int $limit = 5): Collection
+    {
+        return static::query()
+            ->where('account_id', $studentId)
+            ->whereNotNull('mood')
+            ->orderByDesc('date')
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get(['id', 'mood', 'journal', 'date']);
+    }
+
+    /**
+     * @return Collection<string, int>  mood value => entry count
+     */
+    public static function moodEntryCountsForStudent(int $studentId): Collection
+    {
+        return static::query()
+            ->where('account_id', $studentId)
+            ->whereNotNull('mood')
+            ->selectRaw('mood, count(*) as total')
+            ->groupBy('mood')
+            ->withCasts(['total' => 'integer'])
+            ->pluck('total', 'mood');
+    }
+
+    /**
+     * @return Collection<int, StatusDay>
+     */
+    public static function moodEntriesForStudentSince(int $studentId, \DateTimeInterface $start): Collection
+    {
+        return static::query()
+            ->where('account_id', $studentId)
+            ->whereNotNull('mood')
+            ->where('date', '>=', $start)
+            ->orderBy('date')
+            ->get(['mood', 'date']);
+    }
+
     public static function dailyLogStats(?\DateTimeInterface $start): object
     {
         return static::query()
@@ -136,6 +177,50 @@ class StatusDay extends Model
             ->whereNotNull('mood')
             ->selectRaw('mood, count(*) as total')
             ->groupBy('mood')
+            ->withCasts(['total' => 'integer'])
             ->pluck('total', 'mood');
+    }
+
+    /**
+     * @return Collection<int, StatusDay>  one row per program, ordered by program name
+     */
+    public static function StudentMoodSummaryByProgram(?\DateTimeInterface $start): Collection
+    {
+        return static::query()
+            ->join('students', 'students.id', '=', 'status_days.account_id')
+            ->where('students.status', StudentStatus::Verified->value)
+            ->whereNotNull('students.program')
+            ->whereNotNull('status_days.mood')
+            ->recordedOnOrAfter($start)
+            ->selectRaw(
+                '
+                students.program,
+                COUNT(*) AS total_mood_entries,
+                SUM(CASE WHEN status_days.mood = ? THEN 1 ELSE 0 END)
+                    as excited_count,
+                SUM(CASE WHEN status_days.mood = ? THEN 1 ELSE 0 END)
+                    as content_count,
+                SUM(CASE WHEN status_days.mood = ? THEN 1 ELSE 0 END)
+                    as stressed_count,
+                SUM(case when status_days.mood = ? THEN 1 ELSE 0 END)
+                    as drained_count
+                ',
+                [
+                    PostMood::Excited->value,
+                    PostMood::Content->value,
+                    PostMood::Stressed->value,
+                    PostMood::Drained->value
+                ],
+            )
+            ->groupBy('students.program')
+            ->orderBy('students.program')
+            ->withCasts([
+                'total_mood_entries' => 'integer',
+                'excited_count' => 'integer',
+                'content_count' => 'integer',
+                'stressed_count' => 'integer',
+                'drained_count' => 'integer',
+            ])
+            ->get();
     }
 }

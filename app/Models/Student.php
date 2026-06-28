@@ -263,10 +263,31 @@ class Student extends Model
             ->get();
     }
 
+    /**
+     * @return Collection<int, Student>
+     */
+    public static function verifiedListByProgram(string $program): Collection
+    {
+        return static::query()
+            ->whereStatusIsVerified()
+            ->where('program', $program)
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
+    }
+
     public static function flaggedAtRiskCount(): int
     {
         return static::query()
             ->flaggedAtRisk()
+            ->count();
+    }
+
+    public static function atRiskCountForProgram(string $program): int
+    {
+        return static::query()
+            ->flaggedAtRisk()
+            ->where('program', $program)
             ->count();
     }
 
@@ -279,6 +300,20 @@ class Student extends Model
             ->flaggedAtRisk()
             ->orderBy('risk_start_date')
             ->get();
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<string, int>  program => at-risk student count
+     */
+    public static function atRiskCountsGroupedByProgram(): \Illuminate\Support\Collection
+    {
+        return static::query()
+            ->flaggedAtRisk()
+            ->whereNotNull('program')
+            ->selectRaw('program, count(*) as at_risk_count')
+            ->groupBy('program')
+            ->withCasts(['at_risk_count' => 'integer'])
+            ->pluck('at_risk_count', 'program');
     }
 
     /**

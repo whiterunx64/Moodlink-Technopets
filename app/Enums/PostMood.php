@@ -20,6 +20,17 @@ enum PostMood: string
         };
     }
 
+    /** Wellbeing weight (higher is better) used to plot a mood on the trend chart. */
+    public function wellbeingScore(): float
+    {
+        return match ($this) {
+            self::Excited => 4.0,
+            self::Content => 3.0,
+            self::Stressed => 2.0,
+            self::Drained => 1.0,
+        };
+    }
+
     public static function availableMoods(): array
     {
         return self::cases();

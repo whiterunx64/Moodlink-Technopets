@@ -222,7 +222,7 @@ export interface MoodTrendPoint {
     score: number | null;
 }
 
-export interface RecentMoodLog {
+export interface RecentMoodEntry {
     id: number;
     mood: string;
     content: string | null;
@@ -244,13 +244,13 @@ export interface StudentMoodReport {
         drained: number;
     };
     summary_stats: {
-        total_mood_logs: number;
+        total_mood_entries: number;
         total_posts: number;
         flagged_posts: number;
     };
     trend: 'Declining' | 'Stable' | 'Improving';
     trend_data: MoodTrendPoint[];
-    recent_logs: RecentMoodLog[];
+    recent_entries: RecentMoodEntry[];
 }
 
 // ── Appointments ──────────────────────────────────────────────────────────────
