@@ -9,6 +9,17 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+if (!function_exists('infrastructureJsonResponse')) {
+    function infrastructureJsonResponse(InfrastructureException $e): Response
+    {
+        return response()->json([
+            'message' => $e->getMessage(),
+            'code' => $e->errorCode,
+            'retryable' => $e->isRetryable(),
+        ], $e->getStatusCode());
+    }
+}
+
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__ . '/../routes/web.php',
@@ -43,13 +54,6 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return redirect()->route('login')->with('flash_error', $e->getMessage());
         });
-
-        // Translate raw Supabase Postgres connectivity failures into a typed
-        // infrastructure exception carrying the right HTTP status and a safe
-        // user message, then re-throw it so Laravel renders it with that
-        // status (503/502) and the matching errors/{status}.blade.php — which
-        // Inertia shows in its built-in modal. Genuine query bugs (constraint
-        // violations, bad SQL) return null here and surface normally.
         $exceptions->render(function (QueryException|\PDOException $e, Request $request) {
             $infra = InfrastructureException::fromDatabaseError($e);
 
@@ -69,20 +73,6 @@ return Application::configure(basePath: dirname(__DIR__))
                 return infrastructureJsonResponse($e);
             }
 
-            // Let Laravel render the matching errors/{status} view; the typed
-            // exception's getStatusCode() drives both the status and the view.
             return null;
         });
     })->create();
-
-/**
- * JSON body describing an infrastructure failure for API clients.
- */
-function infrastructureJsonResponse(InfrastructureException $e): Response
-{
-    return response()->json([
-        'message' => $e->getMessage(),
-        'code' => $e->errorCode,
-        'retryable' => $e->isRetryable(),
-    ], $e->getStatusCode());
-}

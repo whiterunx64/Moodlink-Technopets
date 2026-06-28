@@ -107,6 +107,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Scheduler Trigger Key
+    |--------------------------------------------------------------------------
+    |
+    | Shared secret an external cron service (cron-job.org) must present in the
+    | "X-Cron-Key" header to trigger the scheduler via the "/cron/run" route.
+    | Keep this in sync with the CRON_KEY environment variable on each host.
+    |
+    */
+
+    'cron_key' => env('CRON_KEY'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Maintenance Mode Driver
     |--------------------------------------------------------------------------
     |

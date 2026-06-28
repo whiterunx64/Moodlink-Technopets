@@ -10,6 +10,8 @@ use App\Http\Controllers\SummaryReportController;
 use App\Http\Controllers\UserAccountController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 
 Route::get('/', fn() => Inertia::render('Landing'))
     ->middleware('throttle:landing')
@@ -189,6 +191,18 @@ Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-acce
         ->middleware('supabase.revalidate')
         ->name('profile.account.destroy');
 });
+
+Route::get('/cron/run', function (Request $request) {
+    $cronKey = config('app.cron_key');
+    abort_unless(
+        filled($cronKey) && hash_equals($cronKey, (string) $request->header('X-Cron-Key')),
+        403
+    );
+    Artisan::call('schedule:run');
+    return response()
+        ->json(['status' => 'ok', 'ran_at' => now()->toIso8601String()])
+        ->header('Cache-Control', 'no-store');
+})->middleware('throttle:10,1')->name('cron.run');
 
 Route::get('/appointments/{appointment}/check-in', [AppointmentController::class, 'checkIn'])
     ->middleware('signed')
