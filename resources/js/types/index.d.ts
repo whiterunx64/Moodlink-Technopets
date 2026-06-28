@@ -109,6 +109,7 @@ export interface PostFilters {
     program: string | null;
     mood: string | null;
     sort: string | null;
+    tab: string | null;
 }
 
 export interface Post {
@@ -222,7 +223,7 @@ export interface MoodTrendPoint {
     score: number | null;
 }
 
-export interface RecentMoodLog {
+export interface RecentMoodEntry {
     id: number;
     mood: string;
     content: string | null;
@@ -244,13 +245,13 @@ export interface StudentMoodReport {
         drained: number;
     };
     summary_stats: {
-        total_mood_logs: number;
+        total_mood_entries: number;
         total_posts: number;
         flagged_posts: number;
     };
     trend: 'Declining' | 'Stable' | 'Improving';
     trend_data: MoodTrendPoint[];
-    recent_logs: RecentMoodLog[];
+    recent_entries: RecentMoodEntry[];
 }
 
 // ── Appointments ──────────────────────────────────────────────────────────────
@@ -363,4 +364,51 @@ export interface DashboardPageProps {
     mood_entries: DashboardMoodEntry[];
     appointments: DashboardAppointment[];
     mood_trends: MoodTrendsData;
+}
+
+// ── Reported Posts ────────────────────────────────────────────────────────────
+
+export type ReportStatus = 'pending' | 'flagged' | 'resolved';
+
+export type ReportReason =
+    | 'Harassment'
+    | 'Offensive Language'
+    | 'Bullying'
+    | 'False Information'
+    | 'Spam'
+    | 'Other';
+
+export interface Reporter {
+    id: number;
+    name: string;
+    student_number: string;
+    program: string;
+    date_reported: string;
+    reason: ReportReason;
+    comment?: string;
+}
+
+export interface ReasonBreakdown {
+    harassment: number;
+    offensive_language: number;
+    bullying: number;
+    false_information: number;
+    spam: number;
+    other: number;
+}
+
+export interface ReportedPost {
+    id: number;
+    anonymous_name: string;
+    post_preview: string;
+    full_content: string;
+    date_posted: string;
+    program: string;
+    mood: string;
+    report_count: number;
+    top_reason: ReportReason;
+    latest_report_date: string;
+    status: ReportStatus;
+    reason_breakdown: ReasonBreakdown;
+    reporters: Reporter[];
 }

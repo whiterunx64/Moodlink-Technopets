@@ -166,6 +166,21 @@ class Post extends Model
     }
 
     /**
+     * @return object{total: int, flagged: int}
+     */
+    public static function totalAndFlaggedCountsForStudent(int $studentId): object
+    {
+        return static::query()
+            ->where('student_id', $studentId)
+            ->selectRaw(
+                'count(*) as total, sum(case when status = ? then 1 else 0 end) as flagged',
+                [PostStatus::Flagged->value],
+            )
+            ->withCasts(['total' => 'integer', 'flagged' => 'integer'])
+            ->first();
+    }
+
+    /**
      * Today's safe/flagged posts from verified students, newest first, with the
      * student loaded for display.
      *

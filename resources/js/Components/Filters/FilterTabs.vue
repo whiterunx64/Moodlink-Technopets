@@ -17,7 +17,8 @@ defineEmits<{
 </script>
 
 <template>
-    <div class="flex items-center gap-1 bg-bg-surface border border-border-light rounded-xl p-1 w-fit">
+    <div class="overflow-x-auto min-w-0">
+    <div class="flex items-center gap-1 bg-bg-surface border border-border-light rounded-xl p-1 min-w-max w-fit">
 
         <button v-for="tab in tabs" :key="tab.value" @click="$emit('update:modelValue', tab.value)" :class="[
             'px-5 py-2 text-sm font-medium rounded-lg transition-all duration-150 focus:outline-none focus:ring-0',
@@ -44,5 +45,6 @@ defineEmits<{
                 {{ tab.badge }}
             </span>
         </button>
+    </div>
     </div>
 </template>

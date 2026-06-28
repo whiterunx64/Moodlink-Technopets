@@ -38,6 +38,11 @@ class PostManagementController extends Controller
         return Inertia::render('PostManagement/Index', [
             'posts' => $posts,
             'filters' => $postFilters,
+            'counts' => [
+                'total'   => Post::count(),
+                'flagged' => Post::where('status', 'flagged')->count(),
+                'safe'    => Post::where('status', 'safe')->count(),
+            ],
         ]);
     }
 

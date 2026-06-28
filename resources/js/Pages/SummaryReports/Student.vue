@@ -20,8 +20,7 @@ const MOOD_STYLE: Record<string, { bar: string; dot: string }> = {
     Drained: { bar: 'bg-slate-400', dot: 'bg-slate-400' },
 };
 
-// Tag colors for the recent mood log list.
-const LOG_TAG: Record<string, string> = {
+const MOOD_TAG: Record<string, string> = {
     Excited: 'bg-green-100 text-green-700',
     Content: 'bg-blue-100 text-blue-700',
     Stressed: 'bg-orange-100 text-orange-700',
@@ -157,9 +156,9 @@ function goBack() {
 
                     <div class="space-y-5">
                         <div>
-                            <p class="text-xs text-text-muted">Total Mood Logs</p>
+                            <p class="text-xs text-text-muted">Total Mood Entries</p>
                             <p class="text-3xl font-extrabold text-text-primary mt-1">
-                                {{ studentReport.summary_stats.total_mood_logs }}
+                                {{ studentReport.summary_stats.total_mood_entries }}
                             </p>
                         </div>
                         <div class="border-t border-border-light" />
@@ -187,23 +186,23 @@ function goBack() {
             <!-- Recent Mood Logs -->
             <div class="bg-white rounded-2xl border border-border-light shadow-sm">
                 <div class="px-6 py-4 border-b border-border-light">
-                    <h3 class="text-sm font-semibold text-text-primary">Recent Mood Logs</h3>
+                    <h3 class="text-sm font-semibold text-text-primary">Recent Mood Entries</h3>
                 </div>
 
                 <div class="divide-y divide-border-light">
-                    <div v-for="log in studentReport.recent_logs" :key="log.id"
+                    <div v-for="entry in studentReport.recent_entries" :key="entry.id"
                         class="px-6 py-4 flex items-center gap-4">
                         <span
-                            :class="['px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 w-20 text-center', LOG_TAG[log.mood] ?? 'bg-gray-100 text-gray-600']">
-                            {{ log.mood }}
+                            :class="['px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 w-20 text-center', MOOD_TAG[entry.mood] ?? 'bg-gray-100 text-gray-600']">
+                            {{ entry.mood }}
                         </span>
-                        <p class="flex-1 text-sm text-text-secondary">{{ log.content }}</p>
-                        <span class="text-xs text-text-muted shrink-0">{{ log.date }}</span>
+                        <p class="flex-1 text-sm text-text-secondary">{{ entry.content }}</p>
+                        <span class="text-xs text-text-muted shrink-0">{{ entry.date }}</span>
                     </div>
 
-                    <div v-if="studentReport.recent_logs.length === 0"
+                    <div v-if="studentReport.recent_entries.length === 0"
                         class="px-6 py-12 text-center text-sm text-text-muted">
-                        No mood logs available.
+                        No mood entries available.
                     </div>
                 </div>
             </div>

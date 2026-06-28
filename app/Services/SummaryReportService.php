@@ -6,12 +6,15 @@ namespace App\Services;
 
 use App\Enums\PostMood;
 use App\Models\Appointment;
+use App\Models\Post;
 use App\Models\StatusDay;
 use App\Models\Student;
 use App\Support\PhTime;
 use App\Traits\HasFilters;
 use Illuminate\Support\Collection;
 
+use function array_slice;
+use function count;
 use function in_array;
 class SummaryReportService
 {
@@ -40,6 +43,54 @@ class SummaryReportService
             'at_risk_students' => Student::flaggedAtRiskCount(),
             'appointments_set' => Appointment::getScheduledCount($period),
             'distribution' => $moodDistribution,
+        ];
+    }
+
+    /**
+     * @return list<array{program: string, total: int, excited: int, content: int, stressed: int, drained: int, at_risk: int}>
+     */
+    public function perProgramMoodCounts(string $period): array
+    {
+        $periodStart = $this->summaryReportPeriodStart($period);
+        $programMoodRows = StatusDay::StudentMoodSummaryByProgram($periodStart);
+        $atRiskCountsByProgram = Student::atRiskCountsGroupedByProgram();
+
+        return $programMoodRows
+            ->map(fn(StatusDay $programRow): array => [
+                'program' => $programRow->program,
+                'total' => $programRow->total_mood_entries,
+                'excited' => $programRow->excited_count,
+                'content' => $programRow->content_count,
+                'stressed' => $programRow->stressed_count,
+                'drained' => $programRow->drained_count,
+                'at_risk' => $atRiskCountsByProgram->get($programRow->program, 0),
+            ])
+            ->values()
+            ->all();
+    }
+
+    public function programOverview(string $program, string $period): array
+    {
+        $moodCounts = StatusDay::moodCountsSince(
+            $this->summaryReportPeriodStart($period),
+            $program,
+        );
+
+        $students = Student::verifiedListByProgram($program);
+        $checkInsByStudentId = StatusDay::moodCheckInsForStudents($students->pluck('id')->all());
+
+        return [
+            'program' => $program,
+            'total' => $moodCounts->sum(),
+            'excited' => $moodCounts->get(PostMood::Excited->value, 0),
+            'content' => $moodCounts->get(PostMood::Content->value, 0),
+            'stressed' => $moodCounts->get(PostMood::Stressed->value, 0),
+            'drained' => $moodCounts->get(PostMood::Drained->value, 0),
+            'at_risk' => Student::atRiskCountForProgram($program),
+            'students' => $students
+                ->map(fn(Student $student): array => $this->programStudentRow($student, $checkInsByStudentId))
+                ->values()
+                ->all(),
         ];
     }
 
@@ -72,6 +123,44 @@ class SummaryReportService
             ->sortByDesc('window_a_count')
             ->values()
             ->all();
+    }
+
+    public function studentMoodReport(Student $student, int $trendDays): array
+    {
+        $moodEntryCounts = StatusDay::moodEntryCountsForStudent($student->id);
+        $postCounts = Post::totalAndFlaggedCountsForStudent($student->id);
+        $trendData = $this->dailyMoodTrendForStudent($student->id, $trendDays);
+
+        return [
+            'id' => $student->id,
+            'name' => $student->name,
+            'full_name' => $student->anonymous_name ?? $student->name,
+            'student_number' => $student->student_number,
+            'year_level' => $student->year_level_label,
+            'program' => $student->program,
+            'initials' => $student->studentNameInitials,
+            'mood_summary' => [
+                'excited' => $moodEntryCounts->get(PostMood::Excited->value, 0),
+                'content' => $moodEntryCounts->get(PostMood::Content->value, 0),
+                'stressed' => $moodEntryCounts->get(PostMood::Stressed->value, 0),
+                'drained' => $moodEntryCounts->get(PostMood::Drained->value, 0),
+            ],
+            'summary_stats' => [
+                'total_mood_entries' => $moodEntryCounts->sum(),
+                'total_posts' => $postCounts->total,
+                'flagged_posts' => $postCounts->flagged,
+            ],
+            'trend' => $this->moodTrendDirection($trendData),
+            'trend_data' => $trendData,
+            'recent_entries' => StatusDay::recentMoodEntriesForStudent($student->id)
+                ->map(fn(StatusDay $entry): array => [
+                    'id' => $entry->id,
+                    'mood' => $entry->mood->value,
+                    'content' => $entry->journal,
+                    'date' => $entry->date->format('M j, Y'),
+                ])
+                ->all(),
+        ];
     }
 
     /**
@@ -149,6 +238,25 @@ class SummaryReportService
         ], true);
     }
 
+    /**
+     * @param  Collection<int, Collection<int, StatusDay>>  $checkInsByStudentId
+     * @return array{id: int, name: string, initials: string, student_number: string, year_level: string, trend: string}
+     */
+    private function programStudentRow(Student $student, Collection $checkInsByStudentId): array
+    {
+        $checkIns = $checkInsByStudentId->get($student->id) ?? new Collection();
+        $windowCounts = self::calculateWindowCounts($checkIns);
+
+        return [
+            'id' => $student->id,
+            'name' => $student->name,
+            'initials' => $student->studentNameInitials,
+            'student_number' => $student->student_number,
+            'year_level' => $student->year_level_label,
+            'trend' => self::isWindowAAtRisk($windowCounts['window_a']) ? 'Declining' : 'Stable',
+        ];
+    }
+
     private function avgDailyLogs(string $period): int
     {
         $stats = StatusDay::dailyLogStats(
@@ -175,6 +283,60 @@ class SummaryReportService
             ->groupBy(fn(StatusDay $checkIn): string => $checkIn->mood->value)
             ->map(fn(Collection $group): int => $group->count())
             ->sortDesc();
+    }
+
+    /**
+     * @return list<array{label: string, score: float|null}>
+     */
+    private function dailyMoodTrendForStudent(int $studentId, int $trendDays): array
+    {
+        $trendWindowStart = PhTime::now()->startOfDay()->subDays($trendDays - 1);
+
+        $averageScoreByDate = StatusDay::moodEntriesForStudentSince($studentId, $trendWindowStart)
+            ->groupBy(fn(StatusDay $entry): string => $entry->date->toDateString())
+            ->map(fn(Collection $entriesOnDay): float => round(
+                $entriesOnDay->avg(fn(StatusDay $entry): float => $entry->mood->wellbeingScore()),
+                1,
+            ));
+
+        return collect(range(0, $trendDays - 1))
+            ->map(function (int $dayOffset) use ($trendWindowStart, $averageScoreByDate, $trendDays): array {
+                $day = $trendWindowStart->copy()->addDays($dayOffset);
+
+                return [
+                    'label' => $trendDays === 7 ? $day->format('D') : 'D' . ($dayOffset + 1),
+                    'score' => $averageScoreByDate->get($day->toDateString()),
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * @param  list<array{label: string, score: float|null}>  $trendData
+     */
+    private function moodTrendDirection(array $trendData): string
+    {
+        $scores = array_values(array_filter(
+            array_column($trendData, 'score'),
+            fn(?float $score): bool => $score !== null,
+        ));
+
+        if (count($scores) < 2) {
+            return 'Stable';
+        }
+
+        $midpoint = intdiv(count($scores), 2);
+        $earlierHalf = array_slice($scores, 0, $midpoint);
+        $laterHalf = array_slice($scores, $midpoint);
+
+        $delta = (array_sum($laterHalf) / count($laterHalf))
+            - (array_sum($earlierHalf) / count($earlierHalf));
+
+        return match (true) {
+            $delta > 0.25 => 'Improving',
+            $delta < -0.25 => 'Declining',
+            default => 'Stable',
+        };
     }
 
     /**
