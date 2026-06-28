@@ -147,16 +147,13 @@ class AppointmentService
     return $sessions->count();
   }
 
-  /**
-   * Confirm completion to students once their session's assumed end time has passed.
-   * Idempotent: a per-appointment marker on the notification prevents repeat alerts.
-   */
   public function notifyCompletedSessions(): int
   {
     $notified = 0;
 
     foreach (Appointment::completedSessionEnded()->with('student')->get() as $appointment) {
-      if (Notification::existsWithMarker('appointment_completed', $this->awaitingMarker($appointment))) {
+
+      if (Notification::existsWithMarker('session_completed', $this->awaitingMarker($appointment))) {
         continue;
       }
 
@@ -170,18 +167,20 @@ class AppointmentService
     return $notified;
   }
 
-  /**
-   * Email students whose scheduled session begins in about an hour. The one-minute
-   * reminder window (see Appointment::reminderDue) sends each reminder exactly once.
-   */
   public function sendUpcomingSessionReminders(): int
   {
     $sent = 0;
 
     foreach (Appointment::reminderDue()->with('student')->get() as $appointment) {
+
+      if (Notification::existsWithMarker('appointment_reminder', $this->awaitingMarker($appointment))) {
+        continue;
+      }
+
       $student = $appointment->student;
       if ($student !== null) {
         $this->sendStudentReminderEmail($student, $appointment);
+        $this->notifyStudentOfUpcomingSession($student, $appointment);
         $sent++;
       }
     }
@@ -201,7 +200,6 @@ class AppointmentService
       && $now->lessThanOrEqualTo($this->checkInWindowEnd($appointment));
   }
 
-  /** End of the check-in window — used as the signed-URL expiry, enforcing the upper bound. */
   public function checkInWindowEnd(Appointment $appointment): Carbon
   {
     return $appointment->datetime->copy()->addMinutes(Appointment::CHECK_IN_GRACE_MINUTES);
@@ -478,7 +476,7 @@ class AppointmentService
     Notification::studentAlert(
       $student->id,
       '🤝 Thank You for Attending Your Session',
-      "Your session scheduled on {$appointment->display_date} at {$appointment->display_time} has been completed. Thank you for taking the time to meet with the Guidance & Counseling Unit. We appreciate your trust and participation. If you are facing personal concerns, emotional difficulties, or simply need someone to talk to, you are welcome to set another appointment with us. A conversation with a counselor may help you better understand and manage your situation.",
+      "Your session scheduled on {$appointment->display_date} at {$appointment->display_time} has been completed. Thank you for taking the time to meet with the Guidance & Counseling Unit. We appreciate your trust and participation. If you are facing personal concerns, emotional difficulties, or simply need someone to talk to, you are welcome to set another appointment with us. A conversation with a counselor may help you better understand and manage your situation.\n\n" . $this->awaitingMarker($appointment),
       'session_completed',
     );
   }
@@ -490,6 +488,16 @@ class AppointmentService
       '⌛ Scheduled Session Not Attended',
       "We noticed that you were unable to attend your session scheduled on {$appointment->display_date} at {$appointment->display_time}. The session has been marked as missed because no check-in was recorded within " . Appointment::CHECK_IN_GRACE_MINUTES . " minutes of the scheduled start time. If something prevented you from attending or you are going through any concerns, you are welcome to set another appointment with the Guidance & Counseling Unit. We are here to listen and support you.",
       'session_missed',
+    );
+  }
+
+  private function notifyStudentOfUpcomingSession(Student $student, Appointment $appointment): void
+  {
+    Notification::studentAlert(
+      $student->id,
+      '⏰ Reminder: Your Counseling Session Is Coming Up',
+      "This is a reminder that your session is scheduled on {$appointment->display_date} at {$appointment->display_time}, about an hour from now. Please make sure to arrive on time at the Guidance & Counseling Unit.\n\n" . $this->awaitingMarker($appointment),
+      'appointment_reminder',
     );
   }
 

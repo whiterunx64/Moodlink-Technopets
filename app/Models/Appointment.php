@@ -131,8 +131,8 @@ class Appointment extends Model
         $now = PhTime::nowUtc();
 
         return $query->scheduled()
-            ->where('datetime', '>=', $now->copy()->addMinutes(60))
-            ->where('datetime', '<', $now->copy()->addMinutes(61));
+            ->where('datetime', '>=', $now->copy()->addMinutes(45))
+            ->where('datetime', '<=', $now->copy()->addMinutes(60));
     }
 
     public function scopeAwaitingCheckIn(Builder $query): Builder
