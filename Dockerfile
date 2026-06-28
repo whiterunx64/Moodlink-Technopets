@@ -122,16 +122,15 @@ RUN printf '%s\n' \
   > /etc/apache2/conf-available/request-headers.conf \
   && a2enconf request-headers
 
-# Defense in depth: duplicate static security headers
 RUN printf '%s\n' \
   'Header always unset X-Powered-By' \
-  'Header always set X-Content-Type-Options "nosniff"' \
-  'Header always set X-Frame-Options "SAMEORIGIN"' \
-  'Header always set Referrer-Policy "strict-origin-when-cross-origin"' \
-  'Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"' \
-  'Header always set Cross-Origin-Opener-Policy "same-origin"' \
-  'Header always set Cross-Origin-Resource-Policy "same-origin"' \
-  'Header always set X-Permitted-Cross-Domain-Policies "none"' \
+  'Header setifempty X-Content-Type-Options "nosniff"' \
+  'Header setifempty X-Frame-Options "SAMEORIGIN"' \
+  'Header setifempty Referrer-Policy "strict-origin-when-cross-origin"' \
+  'Header setifempty Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"' \
+  'Header setifempty Cross-Origin-Opener-Policy "same-origin"' \
+  'Header setifempty Cross-Origin-Resource-Policy "same-origin"' \
+  'Header setifempty X-Permitted-Cross-Domain-Policies "none"' \
   > /etc/apache2/conf-available/security-headers.conf \
   && a2enconf security-headers
 
