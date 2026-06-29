@@ -29,4 +29,4 @@ Schedule::command('appointments:send-reminders')
     ->withoutOverlapping();
 
 Schedule::command('students:sync-at-risk')
-    ->everyFifteenMinutes();
+    ->everyMinute();
