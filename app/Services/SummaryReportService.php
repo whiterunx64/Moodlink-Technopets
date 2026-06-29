@@ -41,7 +41,7 @@ class SummaryReportService
             'total_mood_logs' => array_sum(array_column($moodDistribution, 'count')), // Mood logs in the period.
             'avg_daily_logs' => $this->avgDailyLogs($period),
             'at_risk_students' => Student::flaggedAtRiskCount(),
-            'appointments_set' => Appointment::getScheduledCount($period),
+            'appointments_set' => $this->scheduledAppointmentCount($period),
             'distribution' => $moodDistribution,
         ];
     }
@@ -337,6 +337,16 @@ class SummaryReportService
             $delta < -0.25 => 'Declining',
             default => 'Stable',
         };
+    }
+
+    private function scheduledAppointmentCount(string $period): int
+    {
+        $from = $this->summaryReportPeriodStart($period);
+
+        return Appointment::query()
+            ->scheduledOrCompleted()
+            ->startingFrom($from)
+            ->count();
     }
 
     /**

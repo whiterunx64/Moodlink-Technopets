@@ -265,13 +265,14 @@ export type AppointmentStatus =
 
 export interface Appointment {
     id: number;
+    student_id: number;
     student_name: string;
     context: string;
     note: string | null;
     date: string;
     time: string;
     status: AppointmentStatus;
-    student_profile: AppointmentStudentProfile;
+    student_summary: AppointmentStudentSummary;
     can_check_in?: boolean;
     checkin_url?: string | null;
     checkin_expires_at?: string | null;
@@ -293,20 +294,30 @@ export interface CheckInReadyAppointment {
     checkin_expires_at?: string | null;
 }
 
-export interface AppointmentStudentProfile {
+export interface AppointmentStudentSummary {
     initials: string;
     program: string;
     year_level: string;
-    email: string;
     student_id: string;
     total_appointments: number;
-    history: Array<{
-        context: string;
-        date: string;
-        time: string;
-        note: string | null;
-        status: AppointmentStatus;
-    }>;
+}
+
+export interface AppointmentHistoryEntry {
+    context: string;
+    date: string;
+    time: string;
+    note: string | null;
+    status: AppointmentStatus;
+}
+
+export interface AppointmentStudentProfile {
+    name: string;
+    initials: string;
+    program: string;
+    year_level: string;
+    student_id: string;
+    total_appointments: number;
+    history: AppointmentHistoryEntry[];
 }
 
 export interface AppointmentTabCounts {

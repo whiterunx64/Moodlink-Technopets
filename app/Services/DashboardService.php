@@ -12,6 +12,7 @@ use App\Models\Post;
 use App\Models\StatusDay;
 use App\Models\Student;
 use App\Support\PhTime;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -127,7 +128,14 @@ final class DashboardService
      */
     public function upcomingAppointments(): array
     {
-        return Appointment::dashboardUpcoming()
+        return Appointment::query()
+            ->with('student')
+            ->whereHas('student', fn(Builder $query) => $query->whereStatusIsVerified())
+            ->where('status', AppointmentStatus::Scheduled->value)
+            ->where('datetime', '>=', PhTime::todayStartUtc())
+            ->orderBy('datetime')
+            ->limit(5)
+            ->get()
             ->map(fn(Appointment $appointment) => $this->formatAppointment($appointment))
             ->all();
     }

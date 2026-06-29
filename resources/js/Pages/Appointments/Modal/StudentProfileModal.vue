@@ -3,7 +3,8 @@ import type { AppointmentStudentProfile } from '@/types';
 import { XMarkIcon } from '@heroicons/vue/24/outline';
 
 defineProps<{
-  student: AppointmentStudentProfile & { name: string };
+  student: AppointmentStudentProfile | null;
+  loading: boolean;
   statusBadge: Record<string, string>;
 }>();
 
@@ -35,7 +36,12 @@ function formatDateTime(date: string, time: string) {
           <XMarkIcon class="h-4 w-4" />
         </button>
 
-        <div class="p-7">
+        <div v-if="loading || !student" class="flex flex-col items-center justify-center gap-3 p-12">
+          <div class="border-sidebar/30 border-t-sidebar h-8 w-8 animate-spin rounded-full border-2" />
+          <p class="text-text-muted text-sm">Loading profile…</p>
+        </div>
+
+        <div v-else-if="student" class="p-7">
           <!-- Profile Header -->
           <div class="mb-6 flex items-center gap-4">
             <div class="bg-sidebar/10 flex h-16 w-16 shrink-0 items-center justify-center rounded-full">
@@ -51,9 +57,6 @@ function formatDateTime(date: string, time: string) {
                 {{ student.student_id }} &bull;
                 {{ student.program }} &bull;
                 {{ student.year_level }}
-              </p>
-              <p class="text-text-muted text-sm">
-                {{ student.email }}
               </p>
             </div>
           </div>

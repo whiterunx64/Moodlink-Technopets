@@ -36,6 +36,7 @@ use Illuminate\Support\Facades\DB;
  * @property-read string $studentNameInitials
  * @property-read string $year_level_label
  * @property-read Collection<int, \App\Models\Appointment> $appointments
+ * @property-read int|null $appointments_count
  *
  * @method static Builder|Student whereStatusIsVerified()
  * @method static Builder|Student matchingSearch(string $search)
