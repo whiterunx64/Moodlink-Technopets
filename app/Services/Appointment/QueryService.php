@@ -22,12 +22,14 @@ class QueryService
     $status = AppointmentStatus::fromTab($tab);
     $now = PhTime::nowUtc();
 
+    $showsUpcoming = $tab === 'requests' || $tab === 'scheduled';
+
     return Appointment::query()
       ->with(['student' => fn($q) => $q->withCount('appointments')->withCasts(['appointments_count' => 'integer'])])
       ->where('status', $status->value)
       ->when($tab === 'scheduled', fn($q) => $q->where('datetime', '>=', $now->copy()->subMinutes(Appointment::CHECK_IN_GRACE_MINUTES)))
       ->when($tab === 'missed', fn($q) => $q->where('datetime', '<', $now))
-      ->orderBy('datetime')
+      ->orderBy('datetime', $showsUpcoming ? 'asc' : 'desc')
       ->get()
       ->map(fn(Appointment $appointment): array => [
         'id' => $appointment->id,

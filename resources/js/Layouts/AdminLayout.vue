@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { usePage } from '@inertiajs/vue3';
 import AppSidebar from '@/Components/AppSidebar.vue';
 import AppHeader from '@/Components/AppHeader.vue';
@@ -10,8 +10,16 @@ defineProps<{
 }>();
 
 const sidebar_open = ref(false);
+const sidebar_collapsed = ref(localStorage.getItem('sidebar_collapsed') === 'true');
+const is_desktop = ref(window.innerWidth >= 1024);
 const page = usePage();
 const { add: addToast } = useToast();
+
+const effective_collapsed = computed(() => sidebar_collapsed.value && is_desktop.value);
+
+watch(sidebar_collapsed, (val) => {
+  localStorage.setItem('sidebar_collapsed', String(val));
+});
 
 watch(
   () => page.props.flash,
@@ -24,6 +32,7 @@ watch(
 );
 
 function handleResize() {
+  is_desktop.value = window.innerWidth >= 1024;
   if (window.innerWidth >= 1024) sidebar_open.value = false;
 }
 
@@ -56,9 +65,14 @@ onUnmounted(() => {
         @click="sidebar_open = false" />
     </Transition>
 
-    <AppSidebar :open="sidebar_open" @close="sidebar_open = false" />
+    <AppSidebar
+      :open="sidebar_open"
+      :collapsed="effective_collapsed"
+      @close="sidebar_open = false"
+      @toggle-collapsed="sidebar_collapsed = !sidebar_collapsed"
+    />
 
-    <main class="flex flex-col min-h-screen lg:pl-64">
+    <main :class="['flex flex-col min-h-screen transition-all duration-300', sidebar_collapsed ? 'lg:pl-16' : 'lg:pl-64']">
       <AppHeader :title="title ?? 'MoodLink'" @toggle-sidebar="sidebar_open = !sidebar_open" />
 
       <div class="flex-1 p-4 sm:p-6">
