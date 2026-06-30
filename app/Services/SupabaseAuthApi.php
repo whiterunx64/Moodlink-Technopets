@@ -237,11 +237,33 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
     // ============================================================
 
     #[Override]
-    public function createStudentAccountApiCall(string $email, string $password, array $data = [], bool $emailConfirm = true): array
+    public function deleteAuthUser(string $authUserId): array
     {
-        // Create a new student account through the Supabase Admin API.
-        // Uses the service role key and bypasses normal user permissions.
-        $this->adminLogger->info('Student account creation attempt', [
+        $this->adminLogger->info('Auth user deletion attempt', [
+            'auth_user_id' => $authUserId
+        ]);
+
+        try {
+            $response = $this->client->request('DELETE', "/auth/v1/admin/users/{$authUserId}", [], useServiceKey: true);
+
+            $this->cache->invalidateUserCache($authUserId);
+            $this->adminLogger->info('Auth user deletion successful', ['auth_user_id' => $authUserId]);
+
+            return $response;
+
+        } catch (Exception $e) {
+            $this->adminLogger->error('Auth user deletion failed', [
+                'auth_user_id' => $authUserId,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    #[Override]
+    public function createAuthUser(string $email, string $password, array $data = [], bool $emailConfirm = true): array
+    {
+        $this->adminLogger->info('Auth user creation attempt', [
             'email' => $this->maskEmail($email),
             'email_confirm' => $emailConfirm,
         ]);
@@ -259,15 +281,15 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
 
             $response = $this->client->request('POST', '/auth/v1/admin/users', ['json' => $payload], useServiceKey: true);
 
-            $this->adminLogger->info('Student account creation successful', [
+            $this->adminLogger->info('Auth user creation successful', [
                 'email' => $this->maskEmail($email),
-                'user_id' => $response['id'] ?? 'unknown',
+                'auth_user_id' => $response['id'] ?? null,
             ]);
 
             return $response;
 
         } catch (Exception $e) {
-            $this->adminLogger->error('Student account creation failed', [
+            $this->adminLogger->error('Auth user creation failed', [
                 'email' => $this->maskEmail($email),
                 'error' => $e->getMessage(),
             ]);

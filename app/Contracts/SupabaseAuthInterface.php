@@ -22,10 +22,11 @@ interface SupabaseAuthInterface
 
     public function adminSignOutApiCall(string $accessToken): array;
 
-    // Admin User Management
-    public function createStudentAccountApiCall(string $email, string $password, array $data = [], bool $emailConfirm = true): array;
-
     public function deleteAdminAccountApiCall(string $userId): array;
+
+    public function createAuthUser(string $email, string $password, array $data = [], bool $emailConfirm = true): array;
+
+    public function deleteAuthUser(string $userId): array;
 
     // Token Validation
     public function verifyJwtTokenApiCall(string $token): array;

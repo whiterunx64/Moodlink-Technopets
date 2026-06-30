@@ -115,7 +115,7 @@ Route::get('/preview/student-account-password', function () {
 })->name('preview.student-account-password');
 
 Route::get('/test-password', function () {
-    $svc = app(App\Services\StudentAccountService::class);
+    $svc = app(App\Services\UserAccount\PasswordGenerator::class);
     $m = new ReflectionMethod($svc, 'generateInitialPassword');
     $m->setAccessible(true);
 
@@ -132,15 +132,15 @@ Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-acce
 
     Route::get('/student-accounts', [UserAccountController::class, 'index'])
         ->name('student-accounts.index');
-    Route::post('/student-accounts/{student}/registration', [UserAccountController::class, 'storeRegistration'])
+    Route::post('/student-accounts/{student}/registration', [UserAccountController::class, 'createSupabaseAccount'])
         ->name('student-accounts.registration.store');
     Route::patch('/student-accounts/{student}/registration/accept', [UserAccountController::class, 'acceptRegistration'])
         ->name('student-accounts.registration.accept');
-    Route::delete('/student-accounts/{student}/registration', [UserAccountController::class, 'destroyRegistration'])
+    Route::delete('/student-accounts/{student}/registration', [UserAccountController::class, 'rejectRegistration'])
         ->name('student-accounts.registration.destroy');
-    Route::patch('/student-accounts/{studentUuid}/restrict-access', [UserAccountController::class, 'restrictAccess'])
+    Route::patch('/student-accounts/{student}/restrict-access', [UserAccountController::class, 'restrictAccess'])
         ->name('student-accounts.restrict-access');
-    Route::patch('/student-accounts/{studentUuid}/restore-access', [UserAccountController::class, 'restoreAccess'])
+    Route::patch('/student-accounts/{student}/restore-access', [UserAccountController::class, 'restoreAccess'])
         ->name('student-accounts.restore-access');
     Route::delete('/student-accounts/{student}', [UserAccountController::class, 'destroy'])
         ->name('student-accounts.destroy');
