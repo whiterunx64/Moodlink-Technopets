@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\PostModerationException;
 use App\Http\Requests\PostManagementFilterRequest;
 use App\Models\Post;
-use App\Services\PostManagementService;
-use DomainException;
+use App\Services\PostManager;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -13,7 +13,7 @@ use Inertia\Response;
 class PostManagementController extends Controller
 {
     public function __construct(
-        private readonly PostManagementService $service,
+        private readonly PostManager $service,
     ) {
     }
 
@@ -21,28 +21,10 @@ class PostManagementController extends Controller
     {
         $postFilters = $request->filters();
 
-        $posts = Post::paginatedListWithFilters($postFilters)
-            ->through(fn(Post $post): array => [
-                'id' => $post->id,
-                'content' => $post->content,
-                'mood' => $post->mood?->value,
-                'status' => $post->status?->value,
-                'date' => $post->display_date,
-                'time' => $post->display_time,
-                'program' => $post->student?->program ?? '',
-                'anonymous_name' => $post->student?->anonymous_name,
-                'last_name' => $post->student?->last_name,
-                'first_name' => $post->student?->first_name,
-            ]);
-
         return Inertia::render('PostManagement/Index', [
-            'posts' => $posts,
+            'posts' => $this->service->paginatedPostList($postFilters),
             'filters' => $postFilters,
-            'counts' => [
-                'total'   => Post::count(),
-                'flagged' => Post::where('status', 'flagged')->count(),
-                'safe'    => Post::where('status', 'safe')->count(),
-            ],
+            'counts' => $this->service->statusCounts(),
         ]);
     }
 
@@ -50,7 +32,7 @@ class PostManagementController extends Controller
     {
         try {
             $this->service->flagPost($post);
-        } catch (DomainException $exception) {
+        } catch (PostModerationException $exception) {
             return back()->with('flash_error', $exception->getMessage());
         }
 
@@ -64,7 +46,7 @@ class PostManagementController extends Controller
     {
         try {
             $this->service->unflagPost($post);
-        } catch (DomainException $exception) {
+        } catch (PostModerationException $exception) {
             return back()->with('flash_error', $exception->getMessage());
         }
 

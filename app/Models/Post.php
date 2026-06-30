@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
-use function in_array;
 
 /**
  * @property int $id
@@ -30,6 +29,11 @@ use function in_array;
  *
  * @method static Builder|Post fromVerifiedStudents()
  * @method static Builder|Post fromProgram(string $program)
+ * @method static Builder|Post whereStatusIs(PostStatus $status)
+ * @method static Builder|Post whereArchivedTab(?string $tab)
+ * @method static Builder|Post whereStatusFilter(?string $status)
+ * @method static Builder|Post whereProgramFilter(?string $program)
+ * @method static Builder|Post whereMoodFilter(?string $mood)
  * @method static Builder|Post startingFrom(?\Illuminate\Support\Carbon $from)
  * @method static Builder|Post sortedByDateDirection(string $direction)
  *
@@ -93,6 +97,11 @@ class Post extends Model
         return $query->whereHas('student', fn(Builder $q) => $q->where('program', $program));
     }
 
+    public function scopeWhereStatusIs(Builder $query, PostStatus $status): Builder
+    {
+        return $query->where('status', $status->value);
+    }
+
     public function scopeStartingFrom(Builder $query, ?Carbon $from): Builder
     {
         return $query->when($from, fn(Builder $q) => $q->where('datetime', '>=', $from));
@@ -107,62 +116,83 @@ class Post extends Model
         return $query->orderByDesc('datetime');
     }
 
+    public function scopeWhereArchivedTab(Builder $query, ?string $tab): Builder
+    {
+        return $query->when(
+            $tab === 'archives',
+            fn(Builder $query) => $query->whereStatusIs(PostStatus::Archived)
+        );
+    }
+
+    public function scopeWhereStatusFilter(Builder $query, ?string $status): Builder
+    {
+        return $query->when(
+            $status,
+            fn(Builder $query, string $status) => $query->where('status', $status)
+        );
+    }
+
+    public function scopeWhereProgramFilter(Builder $query, ?string $program): Builder
+    {
+        return $query->when(
+            $program,
+            fn(Builder $query, string $program) => $query->fromProgram($program)
+        );
+    }
+
+    public function scopeWhereMoodFilter(Builder $query, ?string $mood): Builder
+    {
+        return $query->when(
+            $mood,
+            fn(Builder $query, string $mood) => $query->where('mood', $mood)
+        );
+    }
+
     public static function paginatedListWithFilters(array $filters): LengthAwarePaginator
     {
         return static::query()
             ->with('student')
             ->fromVerifiedStudents()
-            ->when($filters['status'] ?? null, fn(Builder $query, string $status) => $query->where('status', $status))
-            ->when($filters['program'] ?? null, fn(Builder $query, string $program) => $query->fromProgram($program))
-            ->when($filters['mood'] ?? null, fn(Builder $query, string $mood) => $query->where('mood', $mood))
-            ->sortedByDateDirection($filters['sort'] ?? 'latest')
+            ->whereArchivedTab($filters['tab'])
+            ->whereStatusFilter($filters['status'])
+            ->whereProgramFilter($filters['program'])
+            ->whereMoodFilter($filters['mood'])
+            ->sortedByDateDirection($filters['sort'])
             ->paginate(10)
             ->withQueryString();
     }
 
-    public function isAtRisk(?Carbon $from = null): bool
-    {
-        return in_array($this->mood, [PostMood::Stressed, PostMood::Drained], true)
-            && ($from === null || $this->datetime->greaterThanOrEqualTo($from));
-    }
-
-    public function daysAtRisk(): int
-    {
-        return (int) $this->datetime
-            ->copy()
-            ->startOfDay()
-            ->diffInDays(Carbon::now()->startOfDay()) + 1;
-    }
-
     /**
-     * @return \Illuminate\Support\Collection<string, int>
-     */
-    public static function getMoodCounts(string $period): \Illuminate\Support\Collection
-    {
-        $from = static::summaryReportPeriodStart($period);
-
-        return static::query()
-            ->fromVerifiedStudents()
-            ->startingFrom($from)
-            ->whereNotNull('mood')
-            ->selectRaw('mood, count(*) as total')
-            ->groupBy('mood')
-            ->pluck('total', 'mood');
-    }
-
-    /**
-     * All posts for the given students, grouped by student id and date-desc.
+     * Total, safe, flagged and archived post counts for the management index header.
      *
-     * @param  array<int>  $studentIds
-     * @return Collection<int, Collection<int, Post>>
+     * @return object{total: int, safe: int, flagged: int, archived: int}
      */
-    public static function getPostsForStudents(array $studentIds): Collection
+    public static function statusCount(): object
     {
         return static::query()
-            ->whereIn('student_id', $studentIds)
-            ->orderByDesc('datetime')
-            ->get(['student_id', 'mood', 'datetime'])
-            ->groupBy('student_id');
+            ->selectRaw(
+                '
+                COUNT(*) AS total,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END)
+                    AS safe,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END)
+                    AS flagged,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END)
+                    AS archived
+                ',
+                [
+                    PostStatus::Safe->value,
+                    PostStatus::Flagged->value,
+                    PostStatus::Archived->value,
+                ],
+            )
+            ->withCasts([
+                'total' => 'integer',
+                'safe' => 'integer',
+                'flagged' => 'integer',
+                'archived' => 'integer',
+            ])
+            ->first();
     }
 
     /**

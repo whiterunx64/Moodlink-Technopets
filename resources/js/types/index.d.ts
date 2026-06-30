@@ -125,6 +125,13 @@ export interface Post {
     content: string | null;
 }
 
+export interface PostStatusCounts {
+    total: number;
+    safe: number;
+    flagged: number;
+    archived: number;
+}
+
 // ── Students / User Accounts ──────────────────────────────────────────────────
 
 export type VerificationStatus = 'pending' | 'verified' | 'unverified';
