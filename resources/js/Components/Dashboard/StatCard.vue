@@ -69,29 +69,31 @@ const pillClass: Record<PillVariant, string> = {
         ]"
     >
         <!-- Icon + label -->
-        <div class="mb-3 flex items-center gap-2.5">
-            <div
-                v-if="icon"
-                :class="[
-                    'flex h-9 w-9 shrink-0 items-center justify-center',
-                    iconBg,
-                ]"
-            >
-                <component :is="icon" :class="['h-4 w-4', iconColor]" />
+        <div class="flex justify-between">
+            <div class="mb-3 flex items-center gap-2.5">
+                <div
+                    v-if="icon"
+                    :class="[
+                        'flex h-9 w-9 shrink-0 items-center justify-center',
+                        iconBg,
+                    ]"
+                >
+                    <component :is="icon" :class="['h-4 w-4', iconColor]" />
+                </div>
+                <p
+                    class="text-text-muted text-xs font-semibold tracking-widest uppercase"
+                >
+                    {{ label }}
+                </p>
             </div>
+
+            <!-- Count -->
             <p
-                class="text-text-muted text-xs font-semibold tracking-widest uppercase"
+                class="text-text-primary mb-4 text-4xl font-extrabold tracking-tight"
             >
-                {{ label }}
+                {{ value }}
             </p>
         </div>
-
-        <!-- Count -->
-        <p
-            class="text-text-primary mb-4 text-4xl font-extrabold tracking-tight"
-        >
-            {{ value }}
-        </p>
 
         <!-- Breakdown rows -->
         <div :class="['space-y-2 border-t pt-3', borderColor]">
