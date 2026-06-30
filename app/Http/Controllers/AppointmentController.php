@@ -83,13 +83,25 @@ class AppointmentController extends Controller
 
     public function storeSlot(StoreScheduleRequest $request): RedirectResponse
     {
-        try {
-            $this->service->addSlot($request->scheduledAt());
-        } catch (AppointmentException $exception) {
-            return back()->with('flash_error', $exception->getMessage());
+        $added = 0;
+        $errors = [];
+
+        foreach ($request->scheduledDatetimes() as $datetime) {
+            try {
+                $this->service->addSlot($datetime);
+                $added++;
+            } catch (AppointmentException $exception) {
+                $errors[] = $exception->getMessage();
+            }
         }
 
-        return back()->with('flash_success', 'Schedule slot added.');
+        if ($added === 0) {
+            return back()->with('flash_error', $errors[0] ?? 'No slots could be added.');
+        }
+
+        $message = $added === 1 ? '1 slot added.' : "{$added} slots added.";
+
+        return back()->with('flash_success', $message);
     }
 
     public function destroySlot(AvailableSchedule $slot): RedirectResponse

@@ -17,14 +17,18 @@ class StoreScheduleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'date' => ['required', 'date'],
-            'start_time' => ['required', 'date_format:H:i'],
+            'date'           => ['required', 'date'],
+            'start_times'    => ['required', 'array', 'min:1'],
+            'start_times.*'  => ['required', 'date_format:H:i'],
         ];
     }
 
-    /** The validated date and start time combined into a "Y-m-d H:i:s" string. */
-    public function scheduledAt(): string
+    /** Returns each selected time as a "Y-m-d H:i:s" datetime string. */
+    public function scheduledDatetimes(): array
     {
-        return "{$this->date} {$this->start_time}:00";
+        return array_map(
+            fn (string $t) => "{$this->date} {$t}:00",
+            $this->start_times,
+        );
     }
 }

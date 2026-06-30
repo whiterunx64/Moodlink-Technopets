@@ -27,6 +27,11 @@ class DashboardController extends Controller
                 $request->query('trendPeriod'),
                 $request->query('trendProgram'),
             ),
+            'mood_logs_breakdown' => $this->dashboard->moodLogsBreakdown(),
+            'students_breakdown' => $this->dashboard->studentsBreakdown(),
+            'posts_breakdown' => $this->dashboard->postsBreakdown(),
+            'appointments_breakdown' => $this->dashboard->appointmentsBreakdown(),
+            'activity_appointments' => $this->dashboard->recentActivityAppointments(),
         ]);
     }
 }

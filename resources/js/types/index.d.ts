@@ -366,6 +366,42 @@ export interface MoodTrendsData {
     distribution: MoodDistributionBar[];
 }
 
+export interface DashboardMoodLogsBreakdown {
+    total: number;
+    safe: number;
+    flagged: number;
+    leading: string | null;
+}
+
+export interface DashboardStudentsBreakdown {
+    total: number;
+    active: number;
+    pending: number;
+    suspended: number;
+}
+
+export interface DashboardPostsBreakdown {
+    total: number;
+    safe: number;
+    flagged: number;
+    flag_rate: number;
+}
+
+export interface DashboardAppointmentsBreakdown {
+    total: number;
+    scheduled: number;
+    pending: number;
+    missed: number;
+}
+
+export interface DashboardRecentAppointment {
+    id: number;
+    name: string;
+    context: string | null;
+    time: string;
+    status: 'Scheduled' | 'Pending' | 'Missed';
+}
+
 /** Props for the Dashboard page. */
 export interface DashboardPageProps {
     mood_logs_today: number;
@@ -375,6 +411,11 @@ export interface DashboardPageProps {
     mood_entries: DashboardMoodEntry[];
     appointments: DashboardAppointment[];
     mood_trends: MoodTrendsData;
+    mood_logs_breakdown: DashboardMoodLogsBreakdown;
+    students_breakdown: DashboardStudentsBreakdown;
+    posts_breakdown: DashboardPostsBreakdown;
+    appointments_breakdown: DashboardAppointmentsBreakdown;
+    activity_appointments: DashboardRecentAppointment[];
 }
 
 // ── Reported Posts ────────────────────────────────────────────────────────────

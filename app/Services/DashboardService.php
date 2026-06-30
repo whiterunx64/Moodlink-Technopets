@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\AppointmentStatus;
 use App\Enums\PostMood;
 use App\Enums\PostStatus;
+use App\Enums\StudentStatus;
 use App\Models\Appointment;
 use App\Models\Post;
 use App\Models\StatusDay;
@@ -270,6 +271,127 @@ final class DashboardService
                     ? round(($counts[$mood->value] ?? 0) / $total * 100)
                     : 0,
                 'color' => $mood->color(),
+            ])
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function moodLogsBreakdown(): array
+    {
+        $counts = StatusDay::query()
+            ->whereStudentIsVerified()
+            ->recordedOnOrAfter(PhTime::startOfDaysAgo(0))
+            ->whereNotNull('mood')
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw("SUM(CASE WHEN mood IN ('Content', 'Excited') THEN 1 ELSE 0 END) as safe")
+            ->selectRaw("SUM(CASE WHEN mood IN ('Stressed', 'Drained') THEN 1 ELSE 0 END) as flagged")
+            ->first();
+
+        $leading = StatusDay::query()
+            ->whereStudentIsVerified()
+            ->recordedOnOrAfter(PhTime::startOfDaysAgo(0))
+            ->whereNotNull('mood')
+            ->selectRaw('mood, COUNT(*) as cnt')
+            ->groupBy('mood')
+            ->orderByDesc('cnt')
+            ->value('mood');
+
+        return [
+            'total' => (int) ($counts?->total ?? 0),
+            'safe' => (int) ($counts?->safe ?? 0),
+            'flagged' => (int) ($counts?->flagged ?? 0),
+            'leading' => $leading,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function studentsBreakdown(): array
+    {
+        $counts = DB::table('students')
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active', [StudentStatus::Verified->value])
+            ->selectRaw('SUM(CASE WHEN status IN (?, ?) THEN 1 ELSE 0 END) as pending', [StudentStatus::Pending->value, StudentStatus::Unverified->value])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as suspended', [StudentStatus::Suspended->value])
+            ->first();
+
+        return [
+            'total' => (int) ($counts?->total ?? 0),
+            'active' => (int) ($counts?->active ?? 0),
+            'pending' => (int) ($counts?->pending ?? 0),
+            'suspended' => (int) ($counts?->suspended ?? 0),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function postsBreakdown(): array
+    {
+        $counts = Post::query()
+            ->fromVerifiedStudents()
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as safe', [PostStatus::Safe->value])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as flagged', [PostStatus::Flagged->value])
+            ->first();
+
+        $total = (int) ($counts?->total ?? 0);
+        $flagged = (int) ($counts?->flagged ?? 0);
+
+        return [
+            'total' => $total,
+            'safe' => (int) ($counts?->safe ?? 0),
+            'flagged' => $flagged,
+            'flag_rate' => $total > 0 ? round($flagged / $total * 100) : 0,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function appointmentsBreakdown(): array
+    {
+        $counts = Appointment::query()
+            ->whereHas('student', fn(Builder $q) => $q->whereStatusIsVerified())
+            ->selectRaw('COUNT(*) as total')
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as scheduled', [AppointmentStatus::Scheduled->value])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending', [AppointmentStatus::Pending->value])
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as missed', [AppointmentStatus::Missed->value])
+            ->first();
+
+        return [
+            'total' => (int) ($counts?->total ?? 0),
+            'scheduled' => (int) ($counts?->scheduled ?? 0),
+            'pending' => (int) ($counts?->pending ?? 0),
+            'missed' => (int) ($counts?->missed ?? 0),
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function recentActivityAppointments(): array
+    {
+        return Appointment::query()
+            ->with('student')
+            ->whereHas('student', fn(Builder $q) => $q->whereStatusIsVerified())
+            ->whereIn('status', [
+                AppointmentStatus::Scheduled->value,
+                AppointmentStatus::Pending->value,
+                AppointmentStatus::Missed->value,
+            ])
+            ->orderByDesc('datetime')
+            ->limit(10)
+            ->get()
+            ->map(fn(Appointment $apt) => [
+                'id' => $apt->id,
+                'name' => $this->appointmentStudentName($apt),
+                'context' => $apt->context,
+                'time' => $apt->display_time,
+                'status' => $apt->status->value,
             ])
             ->all();
     }

@@ -3,6 +3,7 @@ import type { MoodTrendsData } from '@/types';
 import { ChartPieIcon } from '@heroicons/vue/24/outline';
 import { router } from '@inertiajs/vue3';
 import { ArcElement, Chart as ChartJS, Tooltip } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { computed } from 'vue';
 import { Doughnut } from 'vue-chartjs';
 
@@ -14,8 +15,6 @@ const props = defineProps<{
 
 const PERIODS = ['Today', 'Weekly', 'Monthly'] as const;
 
-// Hex fills for the doughnut (the backend's `color` is a Tailwind class, which
-// Chart.js can't consume), keyed by mood label.
 const MOOD_FILL: Record<string, string> = {
     Excited: '#16783a',
     Content: '#2a78d6',
@@ -65,7 +64,7 @@ const chartData = computed(() => ({
 const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: '70%',
+    cutout: '65%',
     plugins: {
         legend: { display: false },
         tooltip: {
@@ -79,30 +78,29 @@ const chartOptions = {
                 },
             },
         },
+        datalabels: {
+            color: '#ffffff',
+            font: { size: 12, weight: 'bold' as const },
+            formatter: (value: number) => value >= 8 ? `${value}%` : '',
+        },
     },
 };
 </script>
 
 <template>
-    <article class="border-border-light my-9 flex h-full flex-col rounded-2xl border bg-white shadow-sm md:my-0"
+    <article class="flex flex-col rounded-2xl border border-border-light bg-white shadow-sm"
         aria-label="Mood trend overview">
         <!-- Header -->
-        <div class="border-border-light flex shrink-0 items-center justify-between border-b px-5 pt-5 pb-4">
+        <div class="flex shrink-0 items-center justify-between border-b border-border-light px-5 pt-5 pb-4">
             <div>
-                <h3 class="text-text-primary text-base font-semibold">
-                    Mood Trend
-                </h3>
-                <p class="text-text-muted mt-0.5 text-xs">
-                    {{ data.total }} mood logs
-                </p>
+                <h3 class="text-base font-semibold text-text-primary">Mood Trend</h3>
+                <p class="mt-0.5 text-xs text-text-muted">{{ data.total }} mood logs</p>
             </div>
-
-            <div class="bg-post-card-bg flex rounded-full p-1" role="group" aria-label="Time range"></div>
         </div>
 
-        <!-- Program filter row, right-aligned, sitting between header and chart -->
-        <div class="flex items-center justify-between px-5 pt-4">
-            <div class="grid flex-1 grid-cols-3 overflow-hidden rounded-lg bg-stone-200/70">
+        <!-- Period + Program filters -->
+        <div class="flex items-center justify-between gap-2 px-5 pt-4">
+            <div class="grid flex-1 grid-cols-3 overflow-hidden rounded-lg bg-stone-200/70" role="group">
                 <button v-for="p in PERIODS" :key="p" type="button" :aria-pressed="data.period === p" :class="[
                     'cursor-pointer px-3 py-2 text-xs font-semibold transition-colors duration-150',
                     data.period === p
@@ -120,21 +118,20 @@ const chartOptions = {
                 </option>
             </select>
         </div>
+
         <!-- Chart area -->
         <div class="relative flex min-h-45 flex-1 items-center justify-center px-5 py-6">
             <template v-if="data.total > 0">
                 <div class="h-50 w-50 shrink-0" role="img"
                     :aria-label="`Mood distribution doughnut chart. Dominant mood: ${dominantMood}`">
-                    <Doughnut :data="chartData" :options="chartOptions" />
+                    <Doughnut :data="chartData" :options="chartOptions" :plugins="[ChartDataLabels]" />
                 </div>
-
                 <div class="pointer-events-none absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center"
                     aria-hidden="true">
                     <span class="text-text-primary text-base font-semibold whitespace-nowrap">{{ dominantMood }}</span>
                     <span class="text-text-muted mt-0.5 text-[10px] font-medium tracking-wide uppercase">leading</span>
                 </div>
             </template>
-
             <div v-else class="text-text-muted flex flex-col items-center justify-center gap-3 text-sm">
                 <ChartPieIcon class="h-16 w-16 text-blue-500/60" aria-hidden="true" />
                 No mood logs for this period.
@@ -144,7 +141,8 @@ const chartOptions = {
         <!-- Legend -->
         <footer class="border-border-light grid grid-cols-2 gap-2 border-t p-4" role="list" aria-label="Mood key">
             <div v-for="bar in data.distribution" :key="bar.label"
-                class="bg-post-card-bg flex items-center gap-2 rounded-xl px-3 py-2" role="listitem">
+                class="bg-post-card-bg hover:bg-post-card-bg-hover flex items-center gap-2 rounded-xl px-3 py-2 transition-colors"
+                role="listitem">
                 <span class="h-2 w-2 shrink-0 rounded-full" :style="{ background: MOOD_FILL[bar.label] ?? '#898781' }"
                     aria-hidden="true" />
                 <span class="text-text-primary flex-1 truncate text-xs font-medium">{{ bar.label }}</span>
