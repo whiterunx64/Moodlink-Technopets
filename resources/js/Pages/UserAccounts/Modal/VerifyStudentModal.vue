@@ -63,9 +63,12 @@ function submit() {
     preserveScroll: true,
     preserveState: true,
     onSuccess: () => {
-      const credentials = page.props.flash?.student_crendetials;
+      const credentials = page.props.flash?.student_credentials;
       if (credentials) {
         created.value = credentials;   // switch to the result view
+        if (page.props.flash) {
+          page.props.flash.student_credentials = null;
+        }
         emit('verified');              // refresh the list behind the modal
       } else {
         emit('verified');

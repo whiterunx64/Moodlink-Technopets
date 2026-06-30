@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\DB;
 
 /**
  * @property int $id
@@ -31,10 +30,11 @@ use Illuminate\Support\Facades\DB;
  * @property string|null $contact_number
  * @property \Illuminate\Support\Carbon|null $risk_start_date
  *
- * @property-read string|null $auth_user_id
  * @property-read string $name
  * @property-read string $studentNameInitials
  * @property-read string $year_level_label
+ * @property-read string $account_status
+ * @property-read string $verification_status
  * @property-read Collection<int, \App\Models\Appointment> $appointments
  * @property-read int|null $appointments_count
  *
@@ -53,7 +53,6 @@ class Student extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'user_id',
         'uuid',
         'student_number',
         'first_name',
@@ -82,6 +81,27 @@ class Student extends Model
         return static::query()
             ->where('uuid', $authUserId)
             ->first();
+    }
+
+    /**
+     * @param  mixed  $value
+     * @param  string|null  $field
+     */
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        if ($field !== null) {
+            return parent::resolveRouteBinding($value, $field);
+        }
+
+        $query = static::query();
+
+        if (ctype_digit((string) $value)) {
+            $query->where($this->getKeyName(), $value);
+        } else {
+            $query->where('uuid', $value);
+        }
+
+        return $query->first();
     }
 
     protected function name(): Attribute
@@ -236,16 +256,9 @@ class Student extends Model
 
     public static function paginatedListWithFilters(array $filters): LengthAwarePaginator
     {
-        $authUserId = DB::table('auth.users')
-            ->select('id')
-            ->whereRaw("email = students.student_number || '@moodlink.com'")
-            ->limit(1);
-
         return static::query()
             ->filter($filters)
             ->byTab($filters['tab'] ?? 'All')
-            ->select('students.*')
-            ->selectSub($authUserId, 'auth_user_id')
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->paginate(8)

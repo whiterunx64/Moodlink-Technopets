@@ -42,14 +42,6 @@ final class StudentAccountException extends DomainException
         );
     }
 
-    public static function authAccountNotFound(): self
-    {
-        return new self(
-            'No student account could be found for the provided identifier. It may have been removed or never existed.',
-            Response::HTTP_NOT_FOUND,
-        );
-    }
-
     public static function studentIdentifierMustBeNineDigits(): self
     {
         return new self(
@@ -98,21 +90,40 @@ final class StudentAccountException extends DomainException
 
     // ── Upstream account provider (Supabase) ──────────────────────────────────
 
-    public static function loginEmailAlreadyRegistered(?Throwable $previous = null): self
+    public static function studentAccountAlreadyExists(?Throwable $previous = null): self
     {
         return new self(
-            'An account with this login email already exists. Please ask the student to provide a valid student ID, '
-            . 'or reject this registration if it is a duplicate.',
+            'An account with this student ID already exists. Please use the forgot password option to recover your account, or reject this registration if it was submitted by mistake.',
             Response::HTTP_CONFLICT,
             $previous,
         );
     }
 
-    public static function accountCreationRejectedByAuthService(?Throwable $previous = null): self
+    public static function studentAccountCreationFailed(?Throwable $previous = null): self
     {
         return new self(
-            'The account could not be created because the authentication service rejected the request. '
+            'The student account could not be created because Supabase rejected the request. '
             . 'Please verify the student details and try again, or contact your system administrator.',
+            Response::HTTP_BAD_GATEWAY,
+            $previous,
+        );
+    }
+
+    public static function malformedProviderResponse(): self
+    {
+        return new self(
+            'The student account may have been created, but Supabase did not return a usable account id. '
+            . 'Please contact your system administrator.',
+            Response::HTTP_BAD_GATEWAY,
+        );
+    }
+
+
+    public static function studentAccountDeletionFailed(?Throwable $previous = null): self
+    {
+        return new self(
+            'The student account could not be removed because Supabase did not delete the login. '
+            . 'No data has been deleted. Please try again, or contact your system administrator if the problem persists.',
             Response::HTTP_BAD_GATEWAY,
             $previous,
         );

@@ -18,7 +18,7 @@ export type PageProps<T extends Record<string, unknown> = Record<string, unknown
     flash: {
         error?: string;
         success?: string;
-        student_crendetials?: { email: string; password: string } | null;
+        student_credentials?: { email: string; password: string } | null;
     };
 };
 
