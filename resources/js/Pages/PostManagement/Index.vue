@@ -539,6 +539,7 @@ const tabs: FilterTab[] = [
 
 const activeFilter = computed<string>(() => {
     if (props.filters.tab === 'reported') return 'reported';
+    if (props.filters.tab === 'pending') return 'pending';
     if (props.filters.tab === 'archives') return 'archives';
     if (props.filters.status) return props.filters.status;
     if (props.filters.program) return props.filters.program;
@@ -547,6 +548,7 @@ const activeFilter = computed<string>(() => {
 });
 
 const isReportedTab = computed(() => activeFilter.value === 'reported');
+const isPendingTab = computed(() => activeFilter.value === 'pending');
 const isArchivesTab = computed(() => activeFilter.value === 'archives');
 
 // ─── Filter state (search + reported-specific filters) ────────────────────────
@@ -873,64 +875,7 @@ function clearFilters() {
     <Head title="Posts" />
 
     <AdminLayout title="Post Management">
-        <div class="space-y-5 pb-20">
-            <!-- ── Tabs + Sort ───────────────────────────────────────────── -->
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <FilterTabs
-                    :model-value="activeFilter"
-                    :tabs="tabs"
-                    @update:model-value="setFilter"
-                />
-
-                <div class="flex items-center gap-2">
-                    <!-- Reported Posts button -->
-                    <button
-                        type="button"
-                        :class="[
-                            'flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-150 select-none',
-                            isReportedTab
-                                ? 'border-red-200 bg-red-50 text-red-600'
-                                : 'text-filter-inactive-text hover:text-filter-inactive-hover-text hover:bg-filter-inactive-hover-bg bg-bg-surface border-border-light',
-                        ]"
-                        @click="setFilter('reported')"
-                    >
-                        <i class="fas fa-flag text-[10px]" />
-                        Reported Posts
-                    </button>
-
-                    <!-- Sort button -->
-                    <button
-                        v-if="!isArchivesTab"
-                        type="button"
-                        class="text-filter-inactive-text hover:text-filter-inactive-hover-text hover:bg-filter-inactive-hover-bg bg-bg-surface border-border-light flex items-center gap-2 rounded-xl border p-2.5 px-5 text-sm font-medium transition-all duration-150 select-none"
-                        @click="
-                            isReportedTab
-                                ? (reportedSort =
-                                      reportedSort === 'latest'
-                                          ? 'oldest'
-                                          : 'latest')
-                                : toggleSort()
-                        "
-                    >
-                        <i
-                            class="fas text-[10px]"
-                            :class="
-                                (isReportedTab ? reportedSort : currentSort) ===
-                                'oldest'
-                                    ? 'fa-arrow-up-wide-short'
-                                    : 'fa-arrow-down-wide-short'
-                            "
-                        />
-                        {{
-                            (isReportedTab ? reportedSort : currentSort) ===
-                            'oldest'
-                                ? 'Oldest first'
-                                : 'Latest first'
-                        }}
-                    </button>
-                </div>
-            </div>
-
+        <div class="space-y-3 pb-20">
             <!-- ── Stats strip ───────────────────────────────────────────── -->
             <div
                 :class="[
@@ -943,7 +888,7 @@ function clearFilters() {
                 <div
                     v-for="stat in statItems"
                     :key="stat.label"
-                    class="group flex items-center gap-4 rounded-2xl border border-gray-100 bg-white px-5 py-4 shadow-sm transition-shadow hover:shadow-md"
+                    class="group flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
                 >
                     <div
                         :class="[
@@ -975,7 +920,7 @@ function clearFilters() {
                     </div>
                     <div class="min-w-0 flex-1">
                         <p
-                            class="text-2xl font-extrabold tracking-tight text-gray-900"
+                            class="text-xl font-extrabold tracking-tight text-gray-900"
                         >
                             {{ stat.value }}
                         </p>
@@ -991,6 +936,48 @@ function clearFilters() {
                     >
                         {{ stat.description }}
                     </p>
+                </div>
+            </div>
+
+            <!-- ── Tabs + Sort ───────────────────────────────────────────── -->
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <FilterTabs
+                    :model-value="activeFilter"
+                    :tabs="tabs"
+                    @update:model-value="setFilter"
+                />
+
+                <div class="flex items-center gap-2">
+                    <!-- Reported Posts button -->
+                    <button
+                        type="button"
+                        :class="[
+                            'flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-medium transition-all duration-150 select-none',
+                            isReportedTab
+                                ? 'border-red-200 bg-red-50 text-red-600'
+                                : 'text-filter-inactive-text hover:text-filter-inactive-hover-text hover:bg-filter-inactive-hover-bg bg-bg-surface border-border-light',
+                        ]"
+                        @click="setFilter('reported')"
+                    >
+                        <i class="fas fa-flag text-[10px]" />
+                        Reported Posts
+                    </button>
+
+                    <button
+                        type="button"
+                        :class="[
+                            'flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2.5 text-xs font-medium transition-all duration-150 select-none',
+                            isPendingTab
+                                ? 'border-red-200 bg-red-50 text-red-600'
+                                : 'text-filter-inactive-text hover:text-filter-inactive-hover-text hover:bg-filter-inactive-hover-bg bg-bg-surface border-border-light',
+                        ]"
+                        @click="setFilter('pending')"
+                    >
+                        <i class="fas fa-flag text-[10px]" />
+                        Pending Posts
+                    </button>
+
+                    <!-- Sort button -->
                 </div>
             </div>
 
@@ -1082,6 +1069,35 @@ function clearFilters() {
                     >
                         <i class="fas fa-times text-[10px]" />
                         Clear
+                    </button>
+                    <button
+                        v-if="!isArchivesTab"
+                        type="button"
+                        class="text-filter-inactive-text hover:text-filter-inactive-hover-text hover:bg-filter-inactive-hover-bg bg-bg-surface border-border-light ml-auto flex cursor-pointer items-center gap-2 rounded-xl border p-2.5 px-5 text-sm font-medium transition-all duration-150 select-none"
+                        @click="
+                            isReportedTab
+                                ? (reportedSort =
+                                      reportedSort === 'latest'
+                                          ? 'oldest'
+                                          : 'latest')
+                                : toggleSort()
+                        "
+                    >
+                        <i
+                            class="fas text-[10px]"
+                            :class="
+                                (isReportedTab ? reportedSort : currentSort) ===
+                                'oldest'
+                                    ? 'fa-arrow-up-wide-short'
+                                    : 'fa-arrow-down-wide-short'
+                            "
+                        />
+                        {{
+                            (isReportedTab ? reportedSort : currentSort) ===
+                            'oldest'
+                                ? 'Oldest first'
+                                : 'Latest first'
+                        }}
                     </button>
                 </div>
             </div>
