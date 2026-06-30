@@ -114,6 +114,17 @@ Route::get('/preview/student-account-password', function () {
     );
 })->name('preview.student-account-password');
 
+Route::get('/preview/account-deletion', function () {
+    abort_unless(app()->environment('local'), 403);
+
+    $student = new App\Models\Student([
+        'first_name' => 'Maria',
+        'last_name' => 'Santos',
+    ]);
+
+    return new App\Mail\AccountDeletionMailable($student);
+})->name('preview.account-deletion');
+
 Route::get('/test-password', function () {
     $svc = app(App\Services\UserAccount\PasswordGenerator::class);
     $m = new ReflectionMethod($svc, 'generateInitialPassword');

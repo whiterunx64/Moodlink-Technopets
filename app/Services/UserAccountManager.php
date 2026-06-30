@@ -103,7 +103,7 @@ final class UserAccountManager
     public function deleteStudent(Student $student): void
     {
         $this->provisioner->deleteSupabaseAccount($student);
-
+        $this->mail->sendAccountDeletionNotice($student);
         $student->delete();
     }
 

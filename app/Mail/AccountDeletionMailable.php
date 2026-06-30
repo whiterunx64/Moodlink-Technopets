@@ -2,16 +2,16 @@
 
 namespace App\Mail;
 
-use App\Models\Appointment;
 use App\Models\Student;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Attachment;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ReminderAppointmentMailable extends Mailable
+class AccountDeletionMailable extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -19,10 +19,8 @@ class ReminderAppointmentMailable extends Mailable
      * Create a new message instance.
      */
     public function __construct(
-        public readonly Student $student,
-        public readonly Appointment $appointment,
+        public readonly Student $student
     ) {
-        //
     }
 
     /**
@@ -31,7 +29,7 @@ class ReminderAppointmentMailable extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your Counseling Session Is in One Hour',
+            subject: 'Your Moodlink account has been deleted',
         );
     }
 
@@ -41,7 +39,7 @@ class ReminderAppointmentMailable extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'mail.appointment-reminder-mail',
+            view: 'mail.account-deletion-mailable',
             with: [
                 'logoData' => @file_get_contents(
                     config('supabase-auth.url') . '/storage/v1/object/public/assets/MoodlinkLogo.svg'
