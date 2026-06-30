@@ -20,11 +20,13 @@ class PostManagementController extends Controller
     public function index(PostManagementFilterRequest $request): Response
     {
         $postFilters = $request->filters();
+        $isReportedTab = $postFilters['tab'] === 'reported';
 
         return Inertia::render('PostManagement/Index', [
-            'posts' => $this->service->paginatedPostList($postFilters),
-            'filters' => $postFilters,
-            'counts' => $this->service->statusCounts(),
+            'posts'         => $this->service->paginatedPostList($postFilters),
+            'filters'       => $postFilters,
+            'counts'        => $this->service->statusCounts(),
+            'reportedPosts' => $isReportedTab ? $this->service->reportedPostList() : [],
         ]);
     }
 
@@ -51,5 +53,23 @@ class PostManagementController extends Controller
         }
 
         return back()->with('flash_success', 'Post unflagged as safe content.');
+    }
+
+    public function markReportedSafe(Post $post): RedirectResponse
+    {
+        $this->service->markReportedSafe($post);
+
+        return redirect()
+            ->route('posts.index', ['status' => 'safe'])
+            ->with('flash_success', 'Post marked as safe and all reports cleared.');
+    }
+
+    public function markReportedFlagged(Post $post): RedirectResponse
+    {
+        $this->service->markReportedFlagged($post);
+
+        return redirect()
+            ->route('posts.index', ['status' => 'flagged'])
+            ->with('flash_success', 'Post flagged and all reports cleared.');
     }
 }

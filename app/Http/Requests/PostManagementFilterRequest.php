@@ -22,7 +22,7 @@ class PostManagementFilterRequest extends FormRequest
             'program' => ['sometimes', 'nullable', 'string', 'max:100', 'regex:/^[\w\s\-]+$/', Rule::exists('students', 'program')],
             'mood' => ['sometimes', 'nullable', Rule::enum(PostMood::class)],
             'sort' => ['sometimes', 'nullable', Rule::in(['latest', 'oldest'])],
-            'tab' => ['sometimes', 'nullable', 'string', Rule::in(['reported', 'archives'])],
+            'tab' => ['sometimes', 'nullable', 'string', Rule::in(['reported'])],
         ];
     }
     /**

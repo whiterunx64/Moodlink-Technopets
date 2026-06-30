@@ -133,8 +133,6 @@ Route::get('/test-password', function () {
     return collect(range(1, 20))->map(fn() => $m->invoke($svc));
 });
 
-Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-access', 'supabase.single-session'])->group(function () {
-
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
@@ -162,6 +160,10 @@ Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-acce
 
     Route::get('/reported-posts', fn() => redirect()->route('posts.index', ['tab' => 'reported']))
         ->name('reported-posts.index');
+    Route::patch('/post-management/{post}/reported/mark-safe', [PostManagementController::class, 'markReportedSafe'])
+        ->name('reported-posts.mark-safe');
+    Route::patch('/post-management/{post}/reported/mark-flagged', [PostManagementController::class, 'markReportedFlagged'])
+        ->name('reported-posts.mark-flagged');
     Route::patch('/post-management/{post}/mark-as-flagged', [PostManagementController::class, 'flag'])
         ->name('posts.flag');
     Route::patch('/post-management/{post}/mark-as-unflagged', [PostManagementController::class, 'unflag'])
@@ -201,7 +203,7 @@ Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-acce
     Route::delete('/profile/admin', [ProfileController::class, 'destroyAccount'])
         ->middleware('supabase.revalidate')
         ->name('profile.account.destroy');
-});
+
 
 Route::get('/cron/run', function (Request $request) {
     $cronKey = config('app.cron_key');
