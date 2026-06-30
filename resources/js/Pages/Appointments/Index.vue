@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { usePollingReload } from '@/composables/usePolling';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import AddSlotModal from '@/Pages/Appointments/Modal/AddSlotModal.vue';
 import CheckInQrModal from '@/Pages/Appointments/Modal/CheckInQrModal.vue';
 import ConfirmActionModal from '@/Pages/Appointments/Modal/ConfirmActionModal.vue';
 import StudentProfileModal from '@/Pages/Appointments/Modal/StudentProfileModal.vue';
-import AdminLayout from '@/Layouts/AdminLayout.vue';
 import type {
     Appointment,
     AppointmentFilters,
@@ -42,12 +42,25 @@ const TABS: { key: AppointmentTab; label: string }[] = [
     { key: 'rejected', label: 'Rejected' },
 ];
 
-usePollingReload(['appointments', 'tabCounts', 'availableSlots', 'checkInReady', 'checkInDebug'], { interval: 15_000 });
+usePollingReload(
+    [
+        'appointments',
+        'tabCounts',
+        'availableSlots',
+        'checkInReady',
+        'checkInDebug',
+    ],
+    { interval: 15_000 },
+);
 
 const activeTab = computed(() => props.filters.tab ?? 'requests');
 
 function switchTab(tab: AppointmentTab) {
-    router.get(route('appointments.index'), { tab }, { preserveState: true, replace: true });
+    router.get(
+        route('appointments.index'),
+        { tab },
+        { preserveState: true, replace: true },
+    );
 }
 
 const pendingAction = ref<{
@@ -57,11 +70,19 @@ const pendingAction = ref<{
 } | null>(null);
 
 function approve(id: number) {
-    router.patch(route('appointments.approve', id), {}, { preserveScroll: true });
+    router.patch(
+        route('appointments.approve', id),
+        {},
+        { preserveScroll: true },
+    );
 }
 
 function reject(id: number) {
-    router.patch(route('appointments.reject', id), {}, { preserveScroll: true });
+    router.patch(
+        route('appointments.reject', id),
+        {},
+        { preserveScroll: true },
+    );
 }
 
 function confirmAction(type: 'approve' | 'reject', apt: Appointment) {
@@ -113,7 +134,10 @@ async function openCheckInQrTest(apt: Appointment) {
 async function renderCheckInQr(apt: Appointment | CheckInReadyAppointment) {
     if (!apt.checkin_url) return;
     qrAppointment.value = apt;
-    qrDataUrl.value = await QRCode.toDataURL(apt.checkin_url, { width: 240, margin: 1 });
+    qrDataUrl.value = await QRCode.toDataURL(apt.checkin_url, {
+        width: 240,
+        margin: 1,
+    });
 }
 
 function closeCheckInQr() {
@@ -133,7 +157,9 @@ watch(
             if (stillReady) {
                 qrWasReady.value = true;
             } else if (qrWasReady.value && !qrCheckedIn.value) {
-                const expiresAt = open.checkin_expires_at ? new Date(open.checkin_expires_at).getTime() : null;
+                const expiresAt = open.checkin_expires_at
+                    ? new Date(open.checkin_expires_at).getTime()
+                    : null;
                 if (expiresAt !== null && Date.now() < expiresAt) {
                     qrCheckedIn.value = true;
                 }
@@ -195,7 +221,9 @@ function closeProfile() {
 const showScheduleModal = ref(false);
 
 function deleteSlot(id: number) {
-    router.delete(route('appointments.slots.destroy', id), { preserveScroll: true });
+    router.delete(route('appointments.slots.destroy', id), {
+        preserveScroll: true,
+    });
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -253,129 +281,188 @@ const STATS = computed(() => [
         border: 'border-l-purple-400',
     },
 ]);
+
+const displayedAppointments = computed(() => {
+    if (activeTab.value !== 'requests' && activeTab.value !== 'scheduled') {
+        return [...props.appointments].reverse();
+    }
+
+    return props.appointments;
+});
 </script>
 
 <template>
-
     <Head title="Appointments" />
 
     <AdminLayout title="Appointments">
         <!-- TEMP DEBUG — remove once QR popup is confirmed -->
-        <pre v-if="checkInDebug" class="mb-4 overflow-auto rounded-lg bg-gray-900 p-3 text-xs text-green-300">checkInReady={{ checkInReady.length }}
-{{ JSON.stringify(checkInDebug, null, 2) }}</pre>
+        <pre
+            v-if="checkInDebug"
+            class="mb-4 overflow-auto rounded-lg bg-gray-900 p-3 text-xs text-green-300"
+        >
+checkInReady={{ checkInReady.length }}
+{{ JSON.stringify(checkInDebug, null, 2) }}</pre
+        >
 
         <!-- Stats Row -->
         <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
-            <div v-for="stat in STATS" :key="stat.label" :class="[
-                'rounded-xl border border-l-4 border-gray-100 bg-white px-5 py-4 shadow-sm',
-                stat.border,
-            ]">
-                <p class="text-text-muted mb-2 text-xs font-medium">{{ stat.label }}</p>
-                <p :class="['text-3xl leading-none font-black', stat.accent]">{{ stat.value }}</p>
+            <div
+                v-for="stat in STATS"
+                :key="stat.label"
+                :class="[
+                    'rounded-xl border border-l-4 border-gray-100 bg-white px-5 py-4 shadow-sm',
+                    stat.border,
+                ]"
+            >
+                <p class="text-text-muted mb-2 text-xs font-medium">
+                    {{ stat.label }}
+                </p>
+                <p :class="['text-3xl leading-none font-black', stat.accent]">
+                    {{ stat.value }}
+                </p>
             </div>
         </div>
 
         <!-- Main Layout -->
-        <div class="items-start gap-6 lg:flex">
+        <div class="items-start gap-6 md:flex">
             <!-- Left: Tabs + Cards Panel -->
             <div
-                class="mb-6 flex h-[calc(100vh-16rem)] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+                class="mb-6 flex h-[calc(100vh-16rem)] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm"
+            >
                 <!-- Panel Header: Tabs -->
                 <div class="shrink-0 border-b border-gray-100 px-4 py-3">
-                    <div class="flex w-fit max-w-full gap-0.5 overflow-x-auto rounded-xl bg-gray-100 p-1">
-                        <button v-for="tab in TABS" :key="tab.key" type="button" :class="[
-                            'flex shrink-0 items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150',
-                            activeTab === tab.key
-                                ? 'bg-white text-gray-900 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700',
-                        ]" @click="switchTab(tab.key)">
+                    <div
+                        class="flex w-fit max-w-full gap-0.5 overflow-x-auto rounded-xl bg-gray-100 p-1"
+                    >
+                        <button
+                            v-for="tab in TABS"
+                            :key="tab.key"
+                            type="button"
+                            :class="[
+                                'flex shrink-0 items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150',
+                                activeTab === tab.key
+                                    ? 'bg-white text-gray-900 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700',
+                            ]"
+                            @click="switchTab(tab.key)"
+                        >
                             {{ tab.label }}
                         </button>
                     </div>
                 </div>
 
                 <!-- Panel Body -->
-                <div v-if="appointments.length === 0" class="flex flex-1 flex-col items-center justify-center py-20">
+                <div
+                    v-if="appointments.length === 0"
+                    class="flex flex-1 flex-col items-center justify-center py-20"
+                >
                     <CalendarDaysIcon class="mb-3 h-10 w-10 text-gray-200" />
-                    <p class="text-sm font-medium text-gray-400">No appointments here</p>
-                    <p class="mt-1 text-xs text-gray-300">This category is currently empty</p>
+                    <p class="text-sm font-medium text-gray-400">
+                        No appointments here
+                    </p>
+                    <p class="mt-1 text-xs text-gray-300">
+                        This category is currently empty
+                    </p>
                 </div>
 
-                <div v-else class="flex-1 overflow-y-auto space-y-2 p-4">
-                    <div v-for="apt in appointments" :key="apt.id"
-                        class="group flex h-20 items-center gap-4 rounded-xl border border-gray-100 bg-gray-50 px-4 transition-all duration-200 hover:border-gray-200 hover:bg-white hover:shadow-sm">
-                        <!-- Avatar -->
-                        <button type="button"
-                            class="bg-sidebar/10 hover:bg-sidebar/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors"
-                            @click="openProfile(apt)">
-                            <span class="text-sidebar text-sm font-bold">{{ apt.student_summary.initials }}</span>
-                        </button>
-
-                        <!-- Info -->
-                        <div class="min-w-0 flex-1">
-                            <button type="button"
-                                class="text-text-primary hover:text-sidebar block w-full truncate text-left text-sm font-semibold transition-colors"
-                                @click="openProfile(apt)">
-                                {{ apt.student_name }}
+                <div v-else class="flex-1 space-y-2 overflow-y-auto p-4">
+                    <div
+                        v-for="apt in displayedAppointments"
+                        :key="apt.id"
+                        class="group flex min-h-20 flex-col gap-4 rounded-xl border border-gray-100 bg-gray-50 px-4 py-4 transition-all duration-200 hover:border-gray-200 hover:bg-white hover:shadow-sm md:flex-row md:items-center"
+                    >
+                        <div class="flex flex-1 gap-4">
+                            <!-- Avatar -->
+                            <button
+                                type="button"
+                                class="bg-sidebar/10 hover:bg-sidebar/20 flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-colors"
+                                @click="openProfile(apt)"
+                            >
+                                <span class="text-sidebar text-sm font-bold">{{
+                                    apt.student_summary.initials
+                                }}</span>
                             </button>
-                            <div class="mt-1 flex items-center gap-2">
-                                <span
-                                    class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
-                                    {{ apt.context }}
-                                </span>
-                                <span class="text-text-muted flex items-center gap-1 text-xs">
-                                    <CalendarDaysIcon class="h-3 w-3 shrink-0 text-gray-300" />
-                                    {{ formatDateTime(apt.date, apt.time) }}
-                                </span>
+
+                            <!-- Info -->
+                            <div class="min-w-0 flex-1">
+                                <button
+                                    type="button"
+                                    class="text-text-primary hover:text-sidebar block w-full truncate text-left text-sm font-semibold transition-colors"
+                                    @click="openProfile(apt)"
+                                >
+                                    {{ apt.student_name }}
+                                </button>
+                                <div class="mt-1 flex items-center gap-2">
+                                    <span
+                                        class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600"
+                                    >
+                                        {{ apt.context }}
+                                    </span>
+                                    <span
+                                        class="text-text-muted flex items-center gap-1 text-xs"
+                                    >
+                                        <CalendarDaysIcon
+                                            class="h-3 w-3 shrink-0 text-gray-300"
+                                        />
+                                        {{ formatDateTime(apt.date, apt.time) }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
 
                         <!-- Actions -->
                         <div class="flex shrink-0 items-center gap-2">
                             <template v-if="activeTab === 'requests'">
-                                <button type="button"
-                                    class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-500"
-                                    @click="confirmAction('reject', apt)">
+                                <button
+                                    type="button"
+                                    class="flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-500 md:flex-none"
+                                    @click="confirmAction('reject', apt)"
+                                >
                                     Reject
                                 </button>
-                                <button type="button"
-                                    class="bg-sidebar hover:bg-sidebar/90 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors"
-                                    @click="confirmAction('approve', apt)">
+                                <button
+                                    type="button"
+                                    class="bg-sidebar hover:bg-sidebar/90 flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors md:flex-none"
+                                    @click="confirmAction('approve', apt)"
+                                >
                                     Approve
                                 </button>
                             </template>
                             <template v-else-if="activeTab === 'scheduled'">
-                                <span
-                                    class="rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700">
-                                    Scheduled
-                                </span>
-                                <button type="button" :disabled="!apt.can_check_in"
-                                    :title="apt.can_check_in ? 'Show the check-in QR for this session' : `Available at ${apt.time}`"
-                                    class="flex items-center gap-1.5 rounded-lg border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-600 transition-colors hover:bg-amber-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 disabled:hover:bg-transparent"
-                                    @click="openCheckInQr(apt)">
-                                    <QrCodeIcon class="h-4 w-4" />
-                                    Check-in QR
-                                </button>
-                                <button type="button" title="Test: open the QR popup ignoring the time window"
-                                    class="flex items-center gap-1.5 rounded-lg border border-dashed border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-500 transition-colors hover:bg-gray-50"
-                                    @click="openCheckInQrTest(apt)">
-                                    <QrCodeIcon class="h-4 w-4" />
-                                    Test QR
-                                </button>
-                            </template>
-                            <template v-else-if="activeTab === 'missed'">
-                                <span
-                                    class="rounded-full bg-purple-100 px-2.5 py-1 text-xs font-semibold text-purple-700">
-                                    Missed
-                                </span>
-                            </template>
-                            <template v-else>
-                                <span :class="[
-                                    'rounded-full px-2.5 py-1 text-xs font-semibold',
-                                    STATUS_BADGE[apt.status] ?? 'bg-gray-100 text-gray-600',
-                                ]">
-                                    {{ apt.status === 'Completed' ? 'Done' : apt.status }}
-                                </span>
+                                <div
+                                    class="flex w-full flex-col items-start gap-2 md:items-end"
+                                >
+                                    <span
+                                        class="rounded-full bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700"
+                                    >
+                                        Scheduled
+                                    </span>
+                                    <div class="flex w-full gap-2">
+                                        <button
+                                            type="button"
+                                            :disabled="!apt.can_check_in"
+                                            :title="
+                                                apt.can_check_in
+                                                    ? 'Show the check-in QR for this session'
+                                                    : `Available at ${apt.time}`
+                                            "
+                                            class="flex flex-1 items-center gap-1.5 rounded-lg border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-600 transition-colors hover:bg-amber-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400 disabled:hover:bg-transparent md:flex-none"
+                                            @click="openCheckInQr(apt)"
+                                        >
+                                            <QrCodeIcon class="h-4 w-4" />
+                                            Check-in QR
+                                        </button>
+                                        <button
+                                            type="button"
+                                            title="Test: open the QR popup ignoring the time window"
+                                            class="flex flex-1 items-center gap-1.5 rounded-lg border border-dashed border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-500 transition-colors hover:bg-gray-50 md:flex-none"
+                                            @click="openCheckInQrTest(apt)"
+                                        >
+                                            <QrCodeIcon class="h-4 w-4" />
+                                            Test QR
+                                        </button>
+                                    </div>
+                                </div>
                             </template>
                         </div>
                     </div>
@@ -384,45 +471,76 @@ const STATS = computed(() => [
 
             <!-- Right: Schedule Panel -->
             <div
-                class="mb-6 flex h-[calc(100vh-16rem)] w-72 shrink-0 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+                class="mb-6 flex h-[calc(100vh-16rem)] w-full shrink-0 flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm md:w-72"
+            >
                 <div class="border-b border-gray-100 px-5 py-4">
                     <div class="flex items-center justify-between">
-                        <h3 class="text-text-primary text-sm font-semibold">Available Slots</h3>
-                        <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+                        <h3 class="text-text-primary text-sm font-semibold">
+                            Available Slots
+                        </h3>
+                        <span
+                            class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500"
+                        >
                             {{ availableSlots.length }}
                         </span>
                     </div>
                 </div>
 
                 <div class="max-h-96 overflow-y-auto p-4">
-                    <div v-if="availableSlots.length === 0" class="flex flex-col items-center py-8">
+                    <div
+                        v-if="availableSlots.length === 0"
+                        class="flex flex-col items-center py-8"
+                    >
                         <ClockIcon class="mb-2 h-8 w-8 text-gray-200" />
-                        <p class="text-xs text-gray-400">No slots scheduled yet</p>
+                        <p class="text-xs text-gray-400">
+                            No slots scheduled yet
+                        </p>
                     </div>
 
                     <div v-else class="space-y-2">
-                        <div v-for="slot in availableSlots" :key="slot.id" :class="[
-                            'group flex items-center justify-between rounded-lg p-3 transition-colors',
-                            slot.taken ? 'bg-red-50' : 'bg-gray-50 hover:bg-gray-100',
-                        ]">
+                        <div
+                            v-for="slot in availableSlots"
+                            :key="slot.id"
+                            :class="[
+                                'group flex items-center justify-between rounded-lg p-3 transition-colors',
+                                slot.taken
+                                    ? 'bg-red-50'
+                                    : 'bg-gray-50 hover:bg-gray-100',
+                            ]"
+                        >
                             <div class="flex items-center gap-2.5">
-                                <div :class="[
-                                    'h-2 w-2 shrink-0 rounded-full',
-                                    slot.taken ? 'bg-red-400' : 'bg-green-400',
-                                ]" />
+                                <div
+                                    :class="[
+                                        'h-2 w-2 shrink-0 rounded-full',
+                                        slot.taken
+                                            ? 'bg-red-400'
+                                            : 'bg-green-400',
+                                    ]"
+                                />
                                 <div>
-                                    <p class="text-xs font-semibold text-gray-700">{{ slot.date }}</p>
-                                    <p class="mt-0.5 text-[11px] text-gray-400">{{ slot.start_time }}</p>
+                                    <p
+                                        class="text-xs font-semibold text-gray-700"
+                                    >
+                                        {{ slot.date }}
+                                    </p>
+                                    <p class="mt-0.5 text-[11px] text-gray-400">
+                                        {{ slot.start_time }}
+                                    </p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-1">
-                                <span v-if="slot.taken"
-                                    class="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-500">
+                                <span
+                                    v-if="slot.taken"
+                                    class="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-500"
+                                >
                                     Taken
                                 </span>
-                                <button v-else type="button"
+                                <button
+                                    v-else
+                                    type="button"
                                     class="rounded-lg p-1.5 text-red-400 transition-colors hover:bg-red-100 hover:text-red-600"
-                                    @click="deleteSlot(slot.id)">
+                                    @click="deleteSlot(slot.id)"
+                                >
                                     <TrashIcon class="h-4 w-4" />
                                 </button>
                             </div>
@@ -431,9 +549,11 @@ const STATS = computed(() => [
                 </div>
 
                 <div class="border-t border-gray-100 p-4">
-                    <button type="button"
+                    <button
+                        type="button"
                         class="bg-sidebar hover:bg-sidebar/90 w-full rounded-xl py-2.5 text-sm font-semibold text-white transition-colors"
-                        @click="showScheduleModal = true">
+                        @click="showScheduleModal = true"
+                    >
                         + Add Time Slot
                     </button>
                 </div>
@@ -441,15 +561,34 @@ const STATS = computed(() => [
         </div>
 
         <!-- Modals -->
-        <ConfirmActionModal v-if="pendingAction" :type="pendingAction.type" :name="pendingAction.name"
-            @confirm="executePending" @cancel="pendingAction = null" />
+        <ConfirmActionModal
+            v-if="pendingAction"
+            :type="pendingAction.type"
+            :name="pendingAction.name"
+            @confirm="executePending"
+            @cancel="pendingAction = null"
+        />
 
-        <CheckInQrModal v-if="qrAppointment" :appointment="qrAppointment" :qr-data-url="qrDataUrl"
-            :checked-in="qrCheckedIn" @close="closeCheckInQr" />
+        <CheckInQrModal
+            v-if="qrAppointment"
+            :appointment="qrAppointment"
+            :qr-data-url="qrDataUrl"
+            :checked-in="qrCheckedIn"
+            @close="closeCheckInQr"
+        />
 
-        <StudentProfileModal v-if="profileOpen" :student="studentProfile ?? null" :loading="profileLoading"
-            :status-badge="STATUS_BADGE" @close="closeProfile" />
+        <StudentProfileModal
+            v-if="profileOpen"
+            :student="studentProfile ?? null"
+            :loading="profileLoading"
+            :status-badge="STATUS_BADGE"
+            @close="closeProfile"
+        />
 
-        <AddSlotModal v-if="showScheduleModal" @close="showScheduleModal = false" @saved="showScheduleModal = false" />
+        <AddSlotModal
+            v-if="showScheduleModal"
+            @close="showScheduleModal = false"
+            @saved="showScheduleModal = false"
+        />
     </AdminLayout>
 </template>

@@ -122,8 +122,6 @@ Route::get('/test-password', function () {
     return collect(range(1, 20))->map(fn() => $m->invoke($svc));
 });
 
-Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-access', 'supabase.single-session'])->group(function () {
-
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
 
@@ -190,7 +188,6 @@ Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-acce
     Route::delete('/profile/admin', [ProfileController::class, 'destroyAccount'])
         ->middleware('supabase.revalidate')
         ->name('profile.account.destroy');
-});
 
 Route::get('/cron/run', function (Request $request) {
     $cronKey = config('app.cron_key');
