@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useForm, usePage } from '@inertiajs/vue3';
 import type { Student, PageProps } from '@/types';
-import { useDismissibleError } from '@/composables/useDismissibleError';
 import { TrashIcon, ExclamationTriangleIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps<{
@@ -16,24 +15,16 @@ const emit = defineEmits<{
 
 const page = usePage<PageProps>();
 const deleteForm = useForm({});
-const { errorMessage, errorPopup, showError, dismissError } = useDismissibleError();
-void errorPopup; // bound via ref="errorPopup" in the template
 
 function confirm() {
   if (!props.student) return;
-  dismissError();
   deleteForm.delete(route('student-accounts.destroy', props.student.id), {
     preserveScroll: true,
     preserveState: true,
     onSuccess: () => {
-      const flashError = page.props.flash?.error;
-      if (flashError) {
-        showError(flashError);
-        return;
-      }
+      if (page.props.flash?.error) return;
       emit('deleted');
     },
-    onError: () => showError('Failed to delete the account. Please try again.'),
   });
 }
 </script>
@@ -81,14 +72,6 @@ function confirm() {
 
         <!-- Footer -->
         <div class="relative bg-slate-50 px-5 py-4">
-          <!-- Error -->
-          <Transition name="submodal">
-            <div v-if="errorMessage" ref="errorPopup"
-              class="absolute inset-x-4 bottom-full z-10 mb-2 rounded-md border-l-4 border-red-500 bg-red-50 px-4 py-3 text-sm text-red-700 shadow-lg">
-              {{ errorMessage }}
-            </div>
-          </Transition>
-
           <div class="flex flex-col gap-3 sm:flex-row-reverse">
             <button type="button"
               class="flex items-center justify-center gap-2 bg-red-600 px-6 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"

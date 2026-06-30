@@ -122,9 +122,59 @@ final class StudentAccountException extends DomainException
     public static function studentAccountDeletionFailed(?Throwable $previous = null): self
     {
         return new self(
-            'The student account could not be removed because Supabase did not delete the login. '
-            . 'No data has been deleted. Please try again, or contact your system administrator if the problem persists.',
+            'The student account could not be deleted because the Supabase authentication account could not be removed. '
+            . 'No student data has been deleted. Please try again. If the problem continues, contact your system administrator.',
             Response::HTTP_BAD_GATEWAY,
+            $previous,
+        );
+    }
+
+    public static function accountServiceUnavailable(?Throwable $previous = null): self
+    {
+        return new self(
+            'The student account could not be created because the Supabase authentication service is temporarily unavailable. '
+            . 'Please try again in a few minutes. If the problem continues, contact your system administrator.',
+            Response::HTTP_SERVICE_UNAVAILABLE,
+            $previous,
+        );
+    }
+
+    public static function deletionFailedDueToServerError(?Throwable $previous = null): self
+    {
+        return new self(
+            'The student account could not be deleted because the system encountered an error while processing the request. '
+            . 'Please contact your system administrator to verify the application, database, and Supabase services before trying again.',
+            Response::HTTP_INTERNAL_SERVER_ERROR,
+            $previous,
+        );
+    }
+
+    public static function registrationFailedDueToServerError(?Throwable $previous = null): self
+    {
+        return new self(
+            'The student account could not be created because the system encountered an error while processing the registration. '
+            . 'The account may have been partially created. Please contact your system administrator to verify the application, database, and Supabase services before trying again.',
+            Response::HTTP_INTERNAL_SERVER_ERROR,
+            $previous,
+        );
+    }
+
+    public static function registrationFailedDueToUnexpectedError(?Throwable $previous = null): self
+    {
+        return new self(
+            'The student account could not be created because an unexpected error occurred during registration. '
+            . 'Please contact your system administrator to verify the application, database, and Supabase services before trying again to avoid creating duplicate accounts.',
+            Response::HTTP_INTERNAL_SERVER_ERROR,
+            $previous,
+        );
+    }
+
+    public static function statusChangeFailedDueToServerError(string $action, ?Throwable $previous = null): self
+    {
+        return new self(
+            "The student account could not be {$action} because the system encountered an error while processing the request. "
+            . 'Please contact your system administrator to verify the application and database before trying again.',
+            Response::HTTP_INTERNAL_SERVER_ERROR,
             $previous,
         );
     }

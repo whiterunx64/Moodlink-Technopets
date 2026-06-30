@@ -43,7 +43,6 @@ function runAction(
   formObj: typeof suspendForm,
   routeName: string,
   nextStatus: Student['account_status'],
-  failureMessage: string,
 ) {
   if (!props.student) return;
   if (!props.student.auth_user_id) {
@@ -66,16 +65,16 @@ function runAction(
       accountStatus.value = nextStatus;
       emit('updated');
     },
-    onError: () => showError(failureMessage),
+    onError: () => showError('The request could not be completed. Please check your connection and try again.'),
   });
 }
 
 function suspend() {
-  runAction(suspendForm, 'student-accounts.restrict-access', 'suspended', 'Failed to suspend the account. Please try again.');
+  runAction(suspendForm, 'student-accounts.restrict-access', 'suspended');
 }
 
 function reactivate() {
-  runAction(reactivateForm, 'student-accounts.restore-access', 'active', 'Failed to reactivate the account. Please try again.');
+  runAction(reactivateForm, 'student-accounts.restore-access', 'active');
 }
 
 function onDeleted() {

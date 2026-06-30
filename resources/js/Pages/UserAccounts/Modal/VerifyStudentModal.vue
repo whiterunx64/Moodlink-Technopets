@@ -76,7 +76,7 @@ function submit() {
       }
     },
     onError: (errors) => {
-      showError(errors.register ?? 'Account creation failed. Please try again.');
+      showError(errors.register ?? 'The request could not be completed. Please check your connection and try again.');
     },
   });
 }
@@ -94,7 +94,7 @@ function reject() {
       emit('close');
     },
     onError: (errors) => {
-      showError(errors.reject ?? 'Failed to reject the student. Please try again.');
+      showError(errors.reject ?? 'The request could not be completed. Please check your connection and try again.');
     },
   });
 }

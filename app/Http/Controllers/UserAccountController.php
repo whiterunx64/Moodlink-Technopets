@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\CircuitBreakerException;
+use App\Exceptions\InfrastructureException;
 use App\Exceptions\StudentAccountException;
 use App\Http\Requests\UserAccountFilterRequest;
 use App\Models\Student;
@@ -41,6 +42,19 @@ class UserAccountController extends Controller
             $this->service->verifyStudent($student);
         } catch (StudentAccountException $exception) {
             return back()->with('flash_error', $exception->getMessage());
+        } catch (QueryException $exception) {
+            Log::error('Failed to accept student registration.', [
+                'student_id' => $student->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            $connectionFailure = InfrastructureException::fromDatabaseError($exception);
+
+            return back()->with(
+                'flash_error',
+                $connectionFailure?->getMessage()
+                ?? StudentAccountException::statusChangeFailedDueToServerError('accepted', $exception)->getMessage(),
+            );
         }
 
         $this->audit->accountAccepted($request, $student);
@@ -57,6 +71,19 @@ class UserAccountController extends Controller
             $this->service->rejectStudent($student);
         } catch (StudentAccountException $exception) {
             return back()->with('flash_error', $exception->getMessage());
+        } catch (QueryException $exception) {
+            Log::error('Failed to reject student registration.', [
+                'student_id' => $student->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            $connectionFailure = InfrastructureException::fromDatabaseError($exception);
+
+            return back()->with(
+                'flash_error',
+                $connectionFailure?->getMessage()
+                ?? StudentAccountException::statusChangeFailedDueToServerError('rejected', $exception)->getMessage(),
+            );
         }
 
         $this->audit->registrationRejected($request, $student);
@@ -73,6 +100,19 @@ class UserAccountController extends Controller
             $this->service->suspendStudent($student);
         } catch (StudentAccountException $exception) {
             return back()->with('flash_error', $exception->getMessage());
+        } catch (QueryException $exception) {
+            Log::error('Failed to suspend student account.', [
+                'student_id' => $student->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            $connectionFailure = InfrastructureException::fromDatabaseError($exception);
+
+            return back()->with(
+                'flash_error',
+                $connectionFailure?->getMessage()
+                ?? StudentAccountException::statusChangeFailedDueToServerError('suspended', $exception)->getMessage(),
+            );
         }
 
         $this->audit->accessRestricted($request, $student);
@@ -89,6 +129,19 @@ class UserAccountController extends Controller
             $this->service->reactivateStudent($student);
         } catch (StudentAccountException $exception) {
             return back()->with('flash_error', $exception->getMessage());
+        } catch (QueryException $exception) {
+            Log::error('Failed to reactivate student account.', [
+                'student_id' => $student->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            $connectionFailure = InfrastructureException::fromDatabaseError($exception);
+
+            return back()->with(
+                'flash_error',
+                $connectionFailure?->getMessage()
+                ?? StudentAccountException::statusChangeFailedDueToServerError('reactivated', $exception)->getMessage(),
+            );
         }
 
         $this->audit->accessRestored($request, $student);
@@ -103,6 +156,9 @@ class UserAccountController extends Controller
     {
         try {
             $this->service->deleteStudent($student);
+        } catch (CircuitBreakerException $exception) {
+            // External account service is temporarily unavailable.
+            return back()->with('flash_error', StudentAccountException::accountServiceUnavailable($exception)->getMessage());
         } catch (StudentAccountException $exception) {
             return back()->with('flash_error', $exception->getMessage());
         } catch (QueryException $exception) {
@@ -111,10 +167,21 @@ class UserAccountController extends Controller
                 'error' => $exception->getMessage(),
             ]);
 
+            $connectionFailure = InfrastructureException::fromDatabaseError($exception);
+
             return back()->with(
                 'flash_error',
-                'The student account could not be deleted because of a server error. Please try again, or contact your system administrator if the problem persists.',
+                $connectionFailure?->getMessage()
+                ?? StudentAccountException::deletionFailedDueToServerError($exception)->getMessage(),
             );
+        } catch (Throwable $exception) {
+            // Unexpected error (e.g. an unhandled provider failure).
+            Log::error('Unexpected error while deleting student account.', [
+                'student_id' => $student->id,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return back()->with('flash_error', StudentAccountException::deletionFailedDueToUnexpectedError($exception)->getMessage());
         }
 
         $this->audit->accountDeleted($request, $student);
@@ -127,37 +194,41 @@ class UserAccountController extends Controller
         try {
             $credentials = $this->service->registerStudent($student);
         } catch (CircuitBreakerException $exception) {
-            // External account service is temporarily unavailable.
+            // Supabase authentication service is temporarily unavailable.
             return back()->withErrors([
-                'register' => 'The account service is temporarily unavailable because of repeated connection problems. Please wait about a minute and try again. If the issue persists, contact your system administrator.',
+                'register' => StudentAccountException::accountServiceUnavailable($exception)->getMessage(),
             ]);
         } catch (StudentAccountException $exception) {
-            // Show a safe business validation message.
+            // Business validation failed.
             return back()->withErrors([
                 'register' => $exception->getMessage(),
             ]);
         } catch (QueryException $exception) {
-            // Database error after account creation.
+            // Database persistence failed.
             Log::error('Failed to persist student account during registration.', [
                 'student_id' => $student->id,
                 'error' => $exception->getMessage(),
             ]);
 
+            $connectionFailure = InfrastructureException::fromDatabaseError($exception);
+
             return back()->withErrors([
-                'register' => 'The account could not be saved because of a server error. The account may have been partially created — please contact your system administrator before retrying.',
+                'register' => $connectionFailure?->getMessage()
+                    ?? StudentAccountException::registrationFailedDueToServerError($exception)->getMessage(),
             ]);
         } catch (Throwable $exception) {
-            // Unexpected error.
+            // Fallback for unhandled errors.
             Log::error('Unexpected error during student account registration.', [
                 'student_id' => $student->id,
                 'error' => $exception->getMessage(),
             ]);
 
             return back()->withErrors([
-                'register' => 'An unexpected error occurred while creating the account. Please try again, or contact your system administrator if the problem persists.',
+                'register' => StudentAccountException::registrationFailedDueToUnexpectedError($exception)->getMessage(),
             ]);
         }
 
+        // Record the successful account creation.
         $this->audit->accountCreated($request, $student, $credentials);
 
         return back()
