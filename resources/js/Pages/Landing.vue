@@ -56,7 +56,7 @@ const logoUrl = usePage().props.assets.logo;
                     </Link>
                     <a
                         href="#download"
-                        class="font-inter inline-flex items-center gap-1.5 rounded-full bg-[#3a4f1e] px-3 py-1.5 text-xs font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#2d3e17] hover:shadow-lg hover:shadow-[#3a4f1e]/30 active:translate-y-0 active:scale-95 sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm md:px-7 md:py-3.5 md:text-base"
+                        class="font-inter hover:bg-search-button-active inline-flex items-center gap-1.5 rounded-full bg-[#3a4f1e] px-3 py-1.5 text-xs font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#3a4f1e]/30 active:translate-y-0 active:scale-95 sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm md:px-7 md:py-3.5 md:text-base"
                     >
                         <ArrowDownTrayIcon
                             class="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4 md:h-5 md:w-5"
@@ -106,7 +106,7 @@ const logoUrl = usePage().props.assets.logo;
                     >
                         <a
                             href="#download"
-                            class="font-inter inline-flex items-center gap-2 rounded-full bg-[#3a4f1e] px-7 py-3.5 text-base font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#2d3e17] hover:shadow-lg hover:shadow-[#3a4f1e]/30 active:translate-y-0 active:scale-95"
+                            class="font-inter hover:bg-search-button-active inline-flex items-center gap-2 rounded-full bg-[#3a4f1e] px-7 py-3.5 text-base font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#3a4f1e]/30 active:translate-y-0 active:scale-95"
                         >
                             <ArrowDownTrayIcon class="h-5 w-5 shrink-0" />
                             Download APK
@@ -716,7 +716,7 @@ const logoUrl = usePage().props.assets.logo;
                     >
                         <a
                             href="https://github.com/JayveeErandio/capstone/releases/download/v1.0.0/moodlink.apk"
-                            class="font-inter inline-flex items-center gap-2 rounded-full bg-[#3a4f1e] px-7 py-3.5 text-base font-semibold text-white transition-colors hover:bg-[#2d3e17]"
+                            class="font-inter hover:bg-search-button-active inline-flex items-center gap-2 rounded-full bg-[#3a4f1e] px-7 py-3.5 text-base font-semibold text-white transition-colors"
                         >
                             <ArrowDownTrayIcon class="h-5 w-5 shrink-0" />
                             Download APK
