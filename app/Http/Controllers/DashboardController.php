@@ -16,6 +16,8 @@ class DashboardController extends Controller
 
     public function index(Request $request): Response
     {
+        $statPeriod = $this->dashboard->resolveStatPeriod($request->query('statPeriod'));
+
         return Inertia::render('Dashboard', [
             'mood_logs_today' => $this->dashboard->moodLogsToday(),
             'active_students' => $this->dashboard->activeStudents(),
@@ -27,10 +29,11 @@ class DashboardController extends Controller
                 $request->query('trendPeriod'),
                 $request->query('trendProgram'),
             ),
-            'mood_logs_breakdown' => $this->dashboard->moodLogsBreakdown(),
+            'stat_period' => $statPeriod,
+            'mood_logs_breakdown' => $this->dashboard->moodLogsBreakdown($statPeriod),
             'students_breakdown' => $this->dashboard->studentsBreakdown(),
-            'posts_breakdown' => $this->dashboard->postsBreakdown(),
-            'appointments_breakdown' => $this->dashboard->appointmentsBreakdown(),
+            'posts_breakdown' => $this->dashboard->postsBreakdown($statPeriod),
+            'appointments_breakdown' => $this->dashboard->appointmentsBreakdown($statPeriod),
             'activity_appointments' => $this->dashboard->recentActivityAppointments(),
         ]);
     }

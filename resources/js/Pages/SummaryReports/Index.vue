@@ -396,22 +396,10 @@ function miniBarWidth(count: number, total: number): string {
                                 patterns
                             </p>
                         </div>
-                        <div class="flex flex-wrap items-center gap-3">
-                            <span v-if="atRiskStudents.length > 0"
-                                class="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600">
-                                {{ atRiskStudents.length }} At Risk
-                            </span>
-                            <div class="flex items-center gap-1.5">
-                                <button v-for="p in PERIODS" :key="p.key" type="button" :class="[
-                                    'rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors',
-                                    filters.period === p.key
-                                        ? 'bg-sidebar border-sidebar text-white'
-                                        : 'text-text-secondary border-border-light bg-white hover:bg-gray-50',
-                                ]" @click="onPeriodChange(p.key)">
-                                    {{ p.label }}
-                                </button>
-                            </div>
-                        </div>
+                        <span v-if="atRiskStudents.length > 0"
+                            class="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-600">
+                            {{ atRiskStudents.length }} At Risk
+                        </span>
                     </div>
 
                     <div class="divide-border-light divide-y">

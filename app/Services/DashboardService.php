@@ -13,6 +13,7 @@ use App\Models\Post;
 use App\Models\StatusDay;
 use App\Models\Student;
 use App\Support\PhTime;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,8 @@ final class DashboardService
         'Weekly',
         'Monthly',
     ];
+
+    private const STAT_PERIODS = ['today', 'week', 'month'];
 
     /** Memoized headline counts, so the four accessors below share one query. */
     private ?object $headline = null;
@@ -101,26 +104,17 @@ final class DashboardService
      */
     private function formatMoodEntry(Post $post): array
     {
+        $student = $post->student;
+
         return [
             'id' => $post->id,
             'mood' => $post->mood?->value,
             'message' => $post->content,
             'time' => $post->display_time,
             'flagged' => $post->status === PostStatus::Flagged,
-            'name' => $this->postStudentName($post),
+            'name' => trim("{$student?->first_name} {$student?->last_name}") ?: 'Unknown',
+            'anonymous_name' => $student?->anonymous_name ?: 'Anonymous',
         ];
-    }
-
-    private function postStudentName(Post $post): string
-    {
-        if ($post->status === PostStatus::Flagged) {
-            return trim(
-                "({$post->student?->anonymous_name}) {$post->student?->first_name} {$post->student?->last_name}"
-            );
-        }
-
-        return $post->student?->anonymous_name
-            ?: 'Anonymous (not set)';
     }
 
 
@@ -228,6 +222,20 @@ final class DashboardService
             : 'Today';
     }
 
+    public function resolveStatPeriod(?string $period): string
+    {
+        return in_array($period, self::STAT_PERIODS, true) ? $period : 'today';
+    }
+
+    private function statStartDate(string $period): Carbon
+    {
+        return match ($period) {
+            'week' => PhTime::now()->startOfWeek(),
+            'month' => PhTime::now()->startOfMonth(),
+            default => PhTime::now()->startOfDay(),
+        };
+    }
+
 
     private function availablePrograms(): array
     {
@@ -278,11 +286,13 @@ final class DashboardService
     /**
      * @return array<string, mixed>
      */
-    public function moodLogsBreakdown(): array
+    public function moodLogsBreakdown(string $period = 'today'): array
     {
+        $start = $this->statStartDate($period);
+
         $counts = StatusDay::query()
             ->whereStudentIsVerified()
-            ->recordedOnOrAfter(PhTime::startOfDaysAgo(0))
+            ->recordedOnOrAfter($start)
             ->whereNotNull('mood')
             ->selectRaw('COUNT(*) as total')
             ->selectRaw("SUM(CASE WHEN mood IN ('Content', 'Excited') THEN 1 ELSE 0 END) as safe")
@@ -291,7 +301,7 @@ final class DashboardService
 
         $leading = StatusDay::query()
             ->whereStudentIsVerified()
-            ->recordedOnOrAfter(PhTime::startOfDaysAgo(0))
+            ->recordedOnOrAfter($start)
             ->whereNotNull('mood')
             ->selectRaw('mood, COUNT(*) as cnt')
             ->groupBy('mood')
@@ -329,10 +339,13 @@ final class DashboardService
     /**
      * @return array<string, mixed>
      */
-    public function postsBreakdown(): array
+    public function postsBreakdown(string $period = 'today'): array
     {
+        $start = $this->statStartDate($period)->utc();
+
         $counts = Post::query()
             ->fromVerifiedStudents()
+            ->where('datetime', '>=', $start)
             ->selectRaw('COUNT(*) as total')
             ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as safe', [PostStatus::Safe->value])
             ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as flagged', [PostStatus::Flagged->value])
@@ -352,10 +365,13 @@ final class DashboardService
     /**
      * @return array<string, mixed>
      */
-    public function appointmentsBreakdown(): array
+    public function appointmentsBreakdown(string $period = 'today'): array
     {
+        $start = $this->statStartDate($period)->utc();
+
         $counts = Appointment::query()
             ->whereHas('student', fn(Builder $q) => $q->whereStatusIsVerified())
+            ->where('datetime', '>=', $start)
             ->selectRaw('COUNT(*) as total')
             ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as scheduled', [AppointmentStatus::Scheduled->value])
             ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending', [AppointmentStatus::Pending->value])
@@ -388,7 +404,8 @@ final class DashboardService
             ->get()
             ->map(fn(Appointment $apt) => [
                 'id' => $apt->id,
-                'name' => $this->appointmentStudentName($apt),
+                'name' => trim("{$apt->student?->first_name} {$apt->student?->last_name}") ?: 'Unknown',
+                'anonymous_name' => $apt->student?->anonymous_name ?: 'Anonymous',
                 'context' => $apt->context,
                 'time' => $apt->display_time,
                 'status' => $apt->status->value,

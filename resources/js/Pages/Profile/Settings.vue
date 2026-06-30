@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { router, useForm } from '@inertiajs/vue3';
-import AdminLayout from '@/Layouts/AdminLayout.vue';
+import ChangePasswordForm from '@/Components/Profile/ChangePasswordForm.vue';
+import DangerZone from '@/Components/Profile/DangerZone.vue';
+import NotificationPrefs from '@/Components/Profile/NotificationPrefs.vue';
 import ProfileCard from '@/Components/Profile/ProfileCard.vue';
 import ProfileInfoForm from '@/Components/Profile/ProfileInfoForm.vue';
-import ChangePasswordForm from '@/Components/Profile/ChangePasswordForm.vue';
-import NotificationPrefs from '@/Components/Profile/NotificationPrefs.vue';
-import DangerZone from '@/Components/Profile/DangerZone.vue';
-import DeleteAdminModal from '@/Pages/Profile/Modal/DeleteAdminModal.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ConfirmPasswordChangeModal from '@/Pages/Profile/Modal/ConfirmPasswordChangeModal.vue';
 import ConfirmProfileUpdateModal from '@/Pages/Profile/Modal/ConfirmProfileUpdateModal.vue';
+import DeleteAdminModal from '@/Pages/Profile/Modal/DeleteAdminModal.vue';
 import { useToast } from '@/composables/useToast';
 import type {
     AdminProfile,
@@ -17,6 +15,8 @@ import type {
     PasswordForm,
     ProfileSettingsPageProps,
 } from '@/types';
+import { router, useForm } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 
 const props = defineProps<ProfileSettingsPageProps>();
 
@@ -46,14 +46,26 @@ const notifications = ref<NotificationPreferences>({
 // Persist notification toggles to Supabase user_metadata whenever they change.
 const notificationForm = useForm({ notifications: { ...notifications.value } });
 
-watch(notifications, (value) => {
-    notificationForm.notifications = { ...value };
-    notificationForm.patch(route('profile.preferences.update'), {
-        preserveScroll: true,
-        onSuccess: () => add({ type: 'success', message: 'Notification preferences saved.' }),
-        onError: () => add({ type: 'error', message: 'Could not save preferences. Please try again.' }),
-    });
-}, { deep: true });
+watch(
+    notifications,
+    (value) => {
+        notificationForm.notifications = { ...value };
+        notificationForm.patch(route('profile.preferences.update'), {
+            preserveScroll: true,
+            onSuccess: () =>
+                add({
+                    type: 'success',
+                    message: 'Notification preferences saved.',
+                }),
+            onError: () =>
+                add({
+                    type: 'error',
+                    message: 'Could not save preferences. Please try again.',
+                }),
+        });
+    },
+    { deep: true },
+);
 
 // --- Avatar upload ---
 const avatarForm = useForm<{ avatar: File | null }>({ avatar: null });
@@ -63,11 +75,15 @@ function onChangeAvatar(file: File) {
     avatarForm.post(route('profile.avatar.update'), {
         preserveScroll: true,
         forceFormData: true,
-        onSuccess: () => add({ type: 'success', message: 'Avatar updated successfully.' }),
-        onError: (errors) => add({
-            type: 'error',
-            message: errors.avatar ?? 'Could not upload avatar. Please try again.',
-        }),
+        onSuccess: () =>
+            add({ type: 'success', message: 'Avatar updated successfully.' }),
+        onError: (errors) =>
+            add({
+                type: 'error',
+                message:
+                    errors.avatar ??
+                    'Could not upload avatar. Please try again.',
+            }),
         onFinish: () => avatarForm.reset(),
     });
 }
@@ -97,10 +113,15 @@ function closeProfileModal() {
 function confirmProfileUpdate() {
     profileForm.patch(route('profile.metadata.update'), {
         preserveScroll: true,
-        onSuccess: () => add({ type: 'success', message: 'Profile updated successfully.' }),
+        onSuccess: () =>
+            add({ type: 'success', message: 'Profile updated successfully.' }),
         onError: (errors) => {
-            const message = errors.first_name ?? errors.last_name ?? errors.phone ?? errors.profile
-                ?? 'Unable to update profile. Please try again.';
+            const message =
+                errors.first_name ??
+                errors.last_name ??
+                errors.phone ??
+                errors.profile ??
+                'Unable to update profile. Please try again.';
             add({ type: 'error', message });
         },
         onFinish: () => closeProfileModal(),
@@ -120,10 +141,12 @@ const passwordForm = useForm({
 
 // Map server-side validation errors back onto the component's field keys so the
 // relevant inputs are highlighted while the message is surfaced via a toast.
-const passwordErrors = computed<Partial<Record<keyof PasswordForm, string>>>(() => ({
-    current: passwordForm.errors.current_password,
-    new_pass: passwordForm.errors.password,
-}));
+const passwordErrors = computed<Partial<Record<keyof PasswordForm, string>>>(
+    () => ({
+        current: passwordForm.errors.current_password,
+        new_pass: passwordForm.errors.password,
+    }),
+);
 
 // Stash the entered values and ask the user to confirm before submitting.
 function onChangePassword(form: PasswordForm) {
@@ -151,8 +174,10 @@ function confirmPasswordChange() {
             add({ type: 'success', message: 'Password updated successfully.' });
         },
         onError: (errors) => {
-            const message = errors.current_password ?? errors.password
-                ?? 'Unable to update password. Please try again.';
+            const message =
+                errors.current_password ??
+                errors.password ??
+                'Unable to update password. Please try again.';
             add({ type: 'error', message });
         },
         onFinish: () => {
@@ -184,37 +209,64 @@ function submitDeleteAccount(password: string) {
     deleteForm.password = password;
     deleteForm.delete(route('profile.account.destroy'), {
         preserveScroll: true,
-        onError: () => { },
+        onError: () => {},
         onFinish: () => deleteForm.reset(),
     });
 }
 </script>
 
 <template>
-    <AdminLayout title="Settings">
+    <AdminLayout title="Account & Settings">
         <div class="max-w-4xl space-y-6">
-            <ProfileCard :first-name="profile.first_name" :last-name="profile.last_name" :role="profile.role"
-                :status="admin?.status ?? 'inactive'" :avatar-url="admin?.avatar ?? null"
-                :uploading="avatarForm.processing" @change-avatar="onChangeAvatar" />
+            <ProfileCard
+                :first-name="profile.first_name"
+                :last-name="profile.last_name"
+                :role="profile.role"
+                :status="admin?.status ?? 'inactive'"
+                :avatar-url="admin?.avatar ?? null"
+                :uploading="avatarForm.processing"
+                @change-avatar="onChangeAvatar"
+            />
 
-            <ProfileInfoForm :profile="profile" :processing="profileForm.processing" :errors="profileForm.errors"
-                @save="onSaveProfile" />
+            <ProfileInfoForm
+                :profile="profile"
+                :processing="profileForm.processing"
+                :errors="profileForm.errors"
+                @save="onSaveProfile"
+            />
 
-            <ChangePasswordForm ref="changePasswordForm" :processing="passwordForm.processing" :errors="passwordErrors"
-                @submit="onChangePassword" />
+            <ChangePasswordForm
+                ref="changePasswordForm"
+                :processing="passwordForm.processing"
+                :errors="passwordErrors"
+                @submit="onChangePassword"
+            />
 
             <NotificationPrefs v-model="notifications" />
 
             <DangerZone @logout="onLogout" @delete-account="onDeleteAccount" />
         </div>
 
-        <ConfirmProfileUpdateModal :show="showProfileModal" :processing="profileForm.processing"
-            @close="closeProfileModal" @confirm="confirmProfileUpdate" />
+        <ConfirmProfileUpdateModal
+            :show="showProfileModal"
+            :processing="profileForm.processing"
+            @close="closeProfileModal"
+            @confirm="confirmProfileUpdate"
+        />
 
-        <ConfirmPasswordChangeModal :show="showPasswordModal" :processing="passwordForm.processing"
-            @close="closePasswordModal" @confirm="confirmPasswordChange" />
+        <ConfirmPasswordChangeModal
+            :show="showPasswordModal"
+            :processing="passwordForm.processing"
+            @close="closePasswordModal"
+            @confirm="confirmPasswordChange"
+        />
 
-        <DeleteAdminModal :show="showDeleteModal" :processing="deleteForm.processing"
-            :password-error="deleteForm.errors.password" @close="closeDeleteModal" @submit="submitDeleteAccount" />
+        <DeleteAdminModal
+            :show="showDeleteModal"
+            :processing="deleteForm.processing"
+            :password-error="deleteForm.errors.password"
+            @close="closeDeleteModal"
+            @submit="submitDeleteAccount"
+        />
     </AdminLayout>
 </template>

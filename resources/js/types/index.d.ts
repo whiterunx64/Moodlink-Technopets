@@ -340,6 +340,7 @@ export interface DashboardMoodEntry {
     message: string | null;
     time: string;
     name: string;
+    anonymous_name: string;
     flagged: boolean;
 }
 
@@ -397,6 +398,7 @@ export interface DashboardAppointmentsBreakdown {
 export interface DashboardRecentAppointment {
     id: number;
     name: string;
+    anonymous_name: string;
     context: string | null;
     time: string;
     status: 'Scheduled' | 'Pending' | 'Missed';
@@ -411,6 +413,7 @@ export interface DashboardPageProps {
     mood_entries: DashboardMoodEntry[];
     appointments: DashboardAppointment[];
     mood_trends: MoodTrendsData;
+    stat_period: 'today' | 'week' | 'month';
     mood_logs_breakdown: DashboardMoodLogsBreakdown;
     students_breakdown: DashboardStudentsBreakdown;
     posts_breakdown: DashboardPostsBreakdown;

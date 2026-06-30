@@ -13,7 +13,7 @@ import {
     ChatBubbleLeftEllipsisIcon,
     HeartIcon,
 } from '@heroicons/vue/24/outline';
-import { Head } from '@inertiajs/vue3';
+import { Head, router } from '@inertiajs/vue3';
 import { computed, onMounted, onUnmounted, ref, type Component } from 'vue';
 
 const props = defineProps<DashboardPageProps>();
@@ -113,6 +113,25 @@ const statCards = computed<StatCardConfig[]>(() => [
     },
 ]);
 
+// ── Stat period filter ─────────────────────────────────────────────────────────
+const STAT_PERIODS = [
+    { key: 'today' as const, label: 'Today' },
+    { key: 'week' as const, label: 'This Week' },
+    { key: 'month' as const, label: 'This Month' },
+];
+
+function setStatPeriod(period: 'today' | 'week' | 'month') {
+    router.get(
+        route('dashboard'),
+        { statPeriod: period },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['stat_period', 'mood_logs_breakdown', 'posts_breakdown', 'appointments_breakdown'],
+        },
+    );
+}
+
 // ── Recent activity tabs ───────────────────────────────────────────────────────
 const TABS = ['MoodSpace feed', 'Appointments', 'Flagged posts'] as const;
 type Tab = typeof TABS[number];
@@ -148,6 +167,7 @@ usePollingReload([
     'escalation_requests',
     'mood_entries',
     'appointments',
+    'stat_period',
     'mood_logs_breakdown',
     'students_breakdown',
     'posts_breakdown',
@@ -172,6 +192,28 @@ onMounted(() => {
             <DashboardSkeleton v-if="loading" />
 
             <div v-else class="space-y-5">
+
+                <!-- Stat period selector -->
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-medium text-text-muted">Showing:</span>
+                    <div class="flex gap-1 rounded-xl bg-gray-100 p-1">
+                        <button
+                            v-for="p in STAT_PERIODS"
+                            :key="p.key"
+                            type="button"
+                            :class="[
+                                'rounded-lg px-3 py-1.5 text-xs font-medium transition-colors',
+                                stat_period === p.key
+                                    ? 'bg-white text-text-primary shadow-sm'
+                                    : 'text-text-muted hover:text-text-primary',
+                            ]"
+                            @click="setStatPeriod(p.key)"
+                        >
+                            {{ p.label }}
+                        </button>
+                    </div>
+                    <span class="text-xs text-text-muted italic">Users always shows current totals</span>
+                </div>
 
                 <!-- Stat cards — full-width row, natural height -->
                 <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
@@ -218,7 +260,10 @@ onMounted(() => {
                                         </div>
                                         <div class="min-w-0 flex-1">
                                             <div class="flex items-center justify-between gap-2">
-                                                <span class="truncate text-sm font-medium text-text-primary">{{ entry.name }}</span>
+                                                <div class="min-w-0">
+                                                    <span class="truncate text-sm font-medium text-text-primary">{{ entry.name }}</span>
+                                                    <span class="ml-1.5 text-xs text-text-muted">({{ entry.anonymous_name }})</span>
+                                                </div>
                                                 <div class="flex shrink-0 items-center gap-1.5">
                                                     <span v-if="entry.mood" class="text-sm leading-none">{{ moodEmoji[entry.mood] ?? '' }}</span>
                                                     <span class="text-xs text-text-muted">{{ entry.time }}</span>
@@ -251,7 +296,10 @@ onMounted(() => {
                                             {{ apt.name?.charAt(0) ?? '?' }}
                                         </div>
                                         <div class="min-w-0 flex-1">
-                                            <p class="truncate text-sm font-medium text-text-primary">{{ apt.name }}</p>
+                                            <div class="flex items-center gap-1.5">
+                                                <p class="truncate text-sm font-medium text-text-primary">{{ apt.name }}</p>
+                                                <span class="shrink-0 text-xs text-text-muted">({{ apt.anonymous_name }})</span>
+                                            </div>
                                             <p class="truncate text-xs text-text-muted">
                                                 {{ apt.context ?? 'No context provided' }}
                                             </p>
@@ -283,7 +331,10 @@ onMounted(() => {
                                         </div>
                                         <div class="min-w-0 flex-1">
                                             <div class="flex items-center justify-between gap-2">
-                                                <span class="truncate text-sm font-medium text-text-primary">{{ entry.name }}</span>
+                                                <div class="min-w-0">
+                                                    <span class="truncate text-sm font-medium text-text-primary">{{ entry.name }}</span>
+                                                    <span class="ml-1.5 text-xs text-text-muted">({{ entry.anonymous_name }})</span>
+                                                </div>
                                                 <span class="shrink-0 text-xs text-text-muted">{{ entry.time }}</span>
                                             </div>
                                             <p class="mt-0.5 line-clamp-1 text-xs text-text-muted">{{ entry.message }}</p>
