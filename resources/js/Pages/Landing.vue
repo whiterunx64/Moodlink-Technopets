@@ -377,7 +377,7 @@ const logoUrl = usePage().props.assets.logo;
                 <div class="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
                     <!-- Excited — golden yellow -->
                     <div
-                        class="mood-card cursor-pointer rounded-2xl border border-[#fbbf24] bg-[#fefce8] p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 sm:p-8 hover:border-[#f59e0b] hover:shadow-xl hover:shadow-yellow-100"
+                        class="mood-card cursor-pointer rounded-2xl border border-[#fbbf24] bg-[#fefce8] p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-[#f59e0b] hover:shadow-xl hover:shadow-yellow-100 sm:p-8"
                     >
                         <div
                             class="mood-icon mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fde047] text-2xl transition-transform duration-300 hover:scale-110 sm:mb-4 sm:h-14 sm:w-14 sm:text-3xl"
@@ -385,17 +385,19 @@ const logoUrl = usePage().props.assets.logo;
                             ⚡
                         </div>
                         <div
-                            class="font-montserrat mb-2 text-base font-bold sm:text-lg text-[#713f12]"
+                            class="font-montserrat mb-2 text-base font-bold text-[#713f12] sm:text-lg"
                         >
                             Excited
                         </div>
-                        <div class="font-inter text-sm sm:text-base text-[#92400e]">
+                        <div
+                            class="font-inter text-sm text-[#92400e] sm:text-base"
+                        >
                             Buzzing, charged, full of fuel
                         </div>
                     </div>
                     <!-- Content — mint green -->
                     <div
-                        class="mood-card cursor-pointer rounded-2xl border border-[#4ade80] bg-[#f0fdf4] p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 sm:p-8 hover:border-[#22c55e] hover:shadow-xl hover:shadow-green-100"
+                        class="mood-card cursor-pointer rounded-2xl border border-[#4ade80] bg-[#f0fdf4] p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-[#22c55e] hover:shadow-xl hover:shadow-green-100 sm:p-8"
                     >
                         <div
                             class="mood-icon mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#4ade80] text-2xl transition-transform duration-300 sm:mb-4 sm:h-14 sm:w-14 sm:text-3xl"
@@ -403,17 +405,19 @@ const logoUrl = usePage().props.assets.logo;
                             🍀
                         </div>
                         <div
-                            class="font-montserrat mb-2 text-base font-bold sm:text-lg text-[#14532d]"
+                            class="font-montserrat mb-2 text-base font-bold text-[#14532d] sm:text-lg"
                         >
                             Content
                         </div>
-                        <div class="font-inter text-sm sm:text-base text-[#166534]">
+                        <div
+                            class="font-inter text-sm text-[#166534] sm:text-base"
+                        >
                             Calm, settled, at ease
                         </div>
                     </div>
                     <!-- Drained — soft purple -->
                     <div
-                        class="mood-card cursor-pointer rounded-2xl border border-[#a78bfa] bg-[#f5f3ff] p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 sm:p-8 hover:border-[#8b5cf6] hover:shadow-xl hover:shadow-purple-100"
+                        class="mood-card cursor-pointer rounded-2xl border border-[#a78bfa] bg-[#f5f3ff] p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-[#8b5cf6] hover:shadow-xl hover:shadow-purple-100 sm:p-8"
                     >
                         <div
                             class="mood-icon mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c4b5fd] text-2xl transition-transform duration-300 sm:mb-4 sm:h-14 sm:w-14 sm:text-3xl"
@@ -421,17 +425,19 @@ const logoUrl = usePage().props.assets.logo;
                             🌧️
                         </div>
                         <div
-                            class="font-montserrat mb-2 text-base font-bold sm:text-lg text-[#4c1d95]"
+                            class="font-montserrat mb-2 text-base font-bold text-[#4c1d95] sm:text-lg"
                         >
                             Drained
                         </div>
-                        <div class="font-inter text-sm sm:text-base text-[#5b21b6]">
+                        <div
+                            class="font-inter text-sm text-[#5b21b6] sm:text-base"
+                        >
                             Tired, sluggish, running low
                         </div>
                     </div>
                     <!-- Stressed — deep red -->
                     <div
-                        class="mood-card cursor-pointer rounded-2xl border border-red-200 bg-[#fef2f2] p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 sm:p-8 hover:border-red-400 hover:shadow-xl hover:shadow-red-100"
+                        class="mood-card cursor-pointer rounded-2xl border border-red-200 bg-[#fef2f2] p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-red-400 hover:shadow-xl hover:shadow-red-100 sm:p-8"
                     >
                         <div
                             class="mood-icon mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-400 text-2xl transition-transform duration-300 sm:mb-4 sm:h-14 sm:w-14 sm:text-3xl"
@@ -439,11 +445,13 @@ const logoUrl = usePage().props.assets.logo;
                             😫
                         </div>
                         <div
-                            class="font-montserrat mb-2 text-base font-bold sm:text-lg text-[#7f1d1d]"
+                            class="font-montserrat mb-2 text-base font-bold text-[#7f1d1d] sm:text-lg"
                         >
                             Stressed
                         </div>
-                        <div class="font-inter text-sm sm:text-base text-[#991b1b]">
+                        <div
+                            class="font-inter text-sm text-[#991b1b] sm:text-base"
+                        >
                             Tense, on-edge, overwhelmed
                         </div>
                     </div>
@@ -707,7 +715,7 @@ const logoUrl = usePage().props.assets.logo;
                         class="mb-6 flex flex-wrap items-center gap-4 md:mb-10"
                     >
                         <a
-                            href="#"
+                            href="https://github.com/JayveeErandio/capstone/releases/download/v1.0.0/moodlink.apk"
                             class="font-inter inline-flex items-center gap-2 rounded-full bg-[#3a4f1e] px-7 py-3.5 text-base font-semibold text-white transition-colors hover:bg-[#2d3e17]"
                         >
                             <ArrowDownTrayIcon class="h-5 w-5 shrink-0" />
