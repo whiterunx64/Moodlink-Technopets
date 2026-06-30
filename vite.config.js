@@ -4,13 +4,13 @@ import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-   server: {
-    host: '0.0.0.0',
-    cors: true,
-    hmr: {
-        host: '192.168.88.21',
+    server: {
+        host: '0.0.0.0',
+        cors: true,
+        hmr: {
+            host: '192.168.88.3',
+        },
     },
-
     plugins: [
         tailwindcss(),
         laravel({
