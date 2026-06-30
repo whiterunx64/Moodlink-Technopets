@@ -9,6 +9,7 @@ import { usePaginatorNav } from '@/composables/usePaginatorNav';
 import { usePollingReload } from '@/composables/usePolling';
 import type {
     Paginated,
+    PendingPost,
     Post,
     PostFilters,
     PostStatusCounts,
@@ -33,9 +34,10 @@ const props = defineProps<{
     filters: PostFilters;
     counts: PostStatusCounts;
     reportedPosts: ReportedPost[];
+    pendingPosts: PendingPost[];
 }>();
 
-usePollingReload(['posts', 'counts', 'reportedPosts']);
+usePollingReload(['posts', 'counts', 'reportedPosts', 'pendingPosts']);
 
 // ─── Reported posts (seeded from server, mutable for local optimistic updates) ─
 
@@ -45,6 +47,17 @@ watch(
     () => props.reportedPosts,
     (val) => {
         reportedPosts.value = val ?? [];
+    },
+);
+
+// ─── Pending posts ────────────────────────────────────────────────────────────
+
+const pendingPosts = ref<PendingPost[]>(props.pendingPosts ?? []);
+
+watch(
+    () => props.pendingPosts,
+    (val) => {
+        pendingPosts.value = val ?? [];
     },
 );
 
@@ -100,6 +113,11 @@ const reportedSort = ref<'latest' | 'oldest'>('latest');
 const reportedCurrentPage = ref(1);
 const REPORTED_PER_PAGE = 10;
 
+// ─── Pending tab: local pagination ───────────────────────────────────────────
+
+const pendingCurrentPage = ref(1);
+const PENDING_PER_PAGE = 10;
+
 // ─── Sort (regular tabs only) ─────────────────────────────────────────────────
 
 const currentSort = computed(() => props.filters.sort ?? 'latest');
@@ -138,7 +156,7 @@ function filterParams(extra: FilterParams = {}): FilterParams {
 }
 
 function setFilter(filter: string) {
-    if (filter === 'reported') {
+    if (filter === 'reported' || filter === 'pending') {
         router.get(
             route('posts.index'),
             { tab: filter },
@@ -192,6 +210,20 @@ const statItems = computed<StatItem[]>(() => {
                 hoverBg: 'group-hover:bg-blue-100',
                 description:
                     'Posts Reported by the community and pending moderation review.',
+            },
+        ];
+    }
+    if (isPendingTab.value) {
+        return [
+            {
+                label: 'Total Pending',
+                value: pendingPosts.value.length,
+                icon: 'clock',
+                iconColor: 'text-yellow-500',
+                bgColor: 'bg-yellow-50',
+                hoverBg: 'group-hover:bg-yellow-100',
+                description:
+                    'Posts submitted by students awaiting admin review.',
             },
         ];
     }
@@ -282,6 +314,49 @@ const reportedRangeEnd = computed(() =>
     ),
 );
 
+const filteredPendingPosts = computed(() => {
+    const q = search.value.trim().toLowerCase();
+    if (!q) return pendingPosts.value;
+    return pendingPosts.value.filter(
+        (p) =>
+            (p.anonymous_name ?? '').toLowerCase().includes(q) ||
+            (p.content ?? '').toLowerCase().includes(q),
+    );
+});
+
+watch(filteredPendingPosts, () => {
+    pendingCurrentPage.value = 1;
+});
+
+const pendingTotalPages = computed(() =>
+    Math.max(
+        1,
+        Math.ceil(filteredPendingPosts.value.length / PENDING_PER_PAGE),
+    ),
+);
+
+const pendingPageNumbers = computed(() =>
+    buildPageButtons(pendingCurrentPage.value, pendingTotalPages.value),
+);
+
+const paginatedPendingPosts = computed(() => {
+    const start = (pendingCurrentPage.value - 1) * PENDING_PER_PAGE;
+    return filteredPendingPosts.value.slice(start, start + PENDING_PER_PAGE);
+});
+
+const pendingRangeStart = computed(() =>
+    filteredPendingPosts.value.length === 0
+        ? 0
+        : (pendingCurrentPage.value - 1) * PENDING_PER_PAGE + 1,
+);
+
+const pendingRangeEnd = computed(() =>
+    Math.min(
+        pendingCurrentPage.value * PENDING_PER_PAGE,
+        filteredPendingPosts.value.length,
+    ),
+);
+
 const filteredPosts = computed(() => {
     const q = search.value.trim().toLowerCase();
     if (!q) return props.posts.data;
@@ -295,7 +370,9 @@ const filteredPosts = computed(() => {
 const tableRowCount = computed(() =>
     isReportedTab.value
         ? filteredReportedPosts.value.length
-        : props.posts.total,
+        : isPendingTab.value
+          ? filteredPendingPosts.value.length
+          : props.posts.total,
 );
 
 // ─── Mood badge styles ────────────────────────────────────────────────────────
@@ -399,6 +476,14 @@ function onFlag() {
     );
 }
 
+function approvePendingAsSafe(post: PendingPost) {
+    router.patch(route('pending-posts.approve-safe', post.id), {});
+}
+
+function approvePendingAsFlagged(post: PendingPost) {
+    router.patch(route('pending-posts.approve-flagged', post.id), {});
+}
+
 function clearFilters() {
     search.value = '';
     filterReason.value = '';
@@ -414,7 +499,7 @@ function clearFilters() {
             <div
                 :class="[
                     'grid gap-3',
-                    isReportedTab
+                    isReportedTab || isPendingTab
                         ? 'grid-cols-1'
                         : 'grid-cols-1 sm:grid-cols-3',
                 ]"
@@ -572,7 +657,7 @@ function clearFilters() {
                         Clear
                     </button>
                     <button
-                        v-if="!isArchivesTab"
+                        v-if="!isArchivesTab && !isPendingTab"
                         type="button"
                         class="text-filter-inactive-text hover:text-filter-inactive-hover-text hover:bg-filter-inactive-hover-bg bg-bg-surface border-border-light ml-auto flex cursor-pointer items-center gap-2 rounded-xl border p-2.5 px-5 text-sm font-medium transition-all duration-150 select-none"
                         @click="
@@ -613,9 +698,11 @@ function clearFilters() {
                         {{
                             isReportedTab
                                 ? 'Reported Posts'
-                                : isArchivesTab
-                                  ? 'Archived Posts'
-                                  : 'MoodSpace Posts'
+                                : isPendingTab
+                                  ? 'Pending Posts'
+                                  : isArchivesTab
+                                    ? 'Archived Posts'
+                                    : 'MoodSpace Posts'
                         }}
                         <span class="text-text-muted ml-1.5 text-xs font-normal"
                             >({{ tableRowCount }} total)</span
@@ -785,7 +872,181 @@ function clearFilters() {
                             </tbody>
                         </template>
 
-                        <!-- ── Archives tab ── -->
+                        <!-- ── Pending tab ── -->
+                        <template v-else-if="isPendingTab">
+                            <colgroup>
+                                <col class="w-45" />
+                                <col class="w-auto" />
+                                <col class="w-32" />
+                                <col class="w-38" />
+                                <col class="w-40" />
+                            </colgroup>
+                            <thead
+                                class="bg-table-header border-table-grid border-b"
+                            >
+                                <tr>
+                                    <th
+                                        class="border-table-grid border-r px-4 py-3 text-left text-[11px] font-semibold tracking-wide text-gray-500 uppercase"
+                                    >
+                                        Student
+                                    </th>
+                                    <th
+                                        class="border-table-grid border-r px-4 py-3 text-left text-[11px] font-semibold tracking-wide text-gray-500 uppercase"
+                                    >
+                                        Post Content
+                                    </th>
+                                    <th
+                                        class="border-table-grid border-r px-4 py-3 text-left text-[11px] font-semibold tracking-wide text-gray-500 uppercase"
+                                    >
+                                        Mood
+                                    </th>
+                                    <th
+                                        class="border-table-grid border-r px-4 py-3 text-left text-[11px] font-semibold tracking-wide text-gray-500 uppercase"
+                                    >
+                                        Date Posted
+                                    </th>
+                                    <th
+                                        class="px-4 py-3 text-center text-[11px] font-semibold tracking-wide text-gray-500 uppercase"
+                                    >
+                                        Actions
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-table-grid divide-y">
+                                <tr
+                                    v-if="paginatedPendingPosts.length === 0"
+                                >
+                                    <td colspan="5" class="py-16 text-center">
+                                        <div
+                                            class="flex flex-col items-center gap-3 text-gray-400"
+                                        >
+                                            <i
+                                                class="fas fa-clock text-3xl opacity-30"
+                                            />
+                                            <p class="text-sm">
+                                                No pending posts.
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr
+                                    v-for="post in paginatedPendingPosts"
+                                    :key="post.id"
+                                    class="bg-table-row hover:bg-table-row-hover transition-colors"
+                                >
+                                    <!-- Student -->
+                                    <td
+                                        class="border-table-grid border-r px-4 py-3"
+                                    >
+                                        <div class="flex items-center gap-2.5">
+                                            <div
+                                                class="bg-sidebar flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                                            >
+                                                {{
+                                                    (
+                                                        post.anonymous_name ??
+                                                        'U'
+                                                    )
+                                                        .charAt(0)
+                                                        .toUpperCase()
+                                                }}
+                                            </div>
+                                            <div class="min-w-0">
+                                                <p
+                                                    class="text-text-primary truncate text-sm font-semibold capitalize"
+                                                >
+                                                    {{
+                                                        post.anonymous_name ??
+                                                        'Anonymous'
+                                                    }}
+                                                </p>
+                                                <p
+                                                    class="text-text-muted truncate text-xs"
+                                                >
+                                                    {{ post.program }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <!-- Content -->
+                                    <td
+                                        class="border-table-grid border-r px-4 py-3"
+                                    >
+                                        <p
+                                            class="text-text-secondary line-clamp-2 max-w-sm text-sm leading-relaxed"
+                                        >
+                                            {{ post.content ?? '—' }}
+                                        </p>
+                                    </td>
+                                    <!-- Mood -->
+                                    <td
+                                        class="border-table-grid border-r px-4 py-3"
+                                    >
+                                        <span
+                                            :class="[
+                                                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+                                                moodStyle(post.mood).pill,
+                                            ]"
+                                        >
+                                            <span
+                                                :class="[
+                                                    'h-1.5 w-1.5 rounded-full',
+                                                    moodStyle(post.mood).dot,
+                                                ]"
+                                            />
+                                            {{ post.mood }}
+                                        </span>
+                                    </td>
+                                    <!-- Date -->
+                                    <td
+                                        class="border-table-grid border-r px-4 py-3"
+                                    >
+                                        <div class="text-xs text-gray-500">
+                                            <p class="font-medium">
+                                                {{ post.date }}
+                                            </p>
+                                            <p class="text-gray-400">
+                                                {{ post.time }}
+                                            </p>
+                                        </div>
+                                    </td>
+                                    <!-- Actions -->
+                                    <td class="px-4 py-3">
+                                        <div
+                                            class="flex items-center justify-center gap-1.5"
+                                        >
+                                            <button
+                                                type="button"
+                                                class="border-status-safe text-status-safe hover:bg-status-safe inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-all hover:text-white"
+                                                @click="
+                                                    approvePendingAsSafe(post)
+                                                "
+                                            >
+                                                <i
+                                                    class="fas fa-check text-[9px]"
+                                                />
+                                                Safe
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="border-status-flagged text-status-flagged hover:bg-status-flagged inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-all hover:text-white"
+                                                @click="
+                                                    approvePendingAsFlagged(
+                                                        post,
+                                                    )
+                                                "
+                                            >
+                                                <i
+                                                    class="fas fa-flag text-[9px]"
+                                                />
+                                                Flagged
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </template>
+
                         <!-- ── All / Flagged / Safe / Archives tabs ── -->
                         <template v-else>
                             <colgroup>
@@ -1002,9 +1263,27 @@ function clearFilters() {
             </div>
         </div>
 
+        <!-- Pagination (pending tab) -->
+        <Pagination
+            v-if="isPendingTab"
+            :fixed="true"
+            :current-page="pendingCurrentPage"
+            :total-pages="pendingTotalPages"
+            :page-numbers="pendingPageNumbers"
+            :range-start="pendingRangeStart"
+            :range-end="pendingRangeEnd"
+            :total="filteredPendingPosts.length"
+            @update:current-page="pendingCurrentPage = $event"
+            @prev="pendingCurrentPage > 1 && pendingCurrentPage--"
+            @next="
+                pendingCurrentPage < pendingTotalPages &&
+                pendingCurrentPage++
+            "
+        />
+
         <!-- Pagination (regular tabs) -->
         <Pagination
-            v-if="!isReportedTab"
+            v-if="!isReportedTab && !isPendingTab"
             :fixed="true"
             :current-page="posts.current_page"
             :total-pages="posts.last_page"

@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\PostStatus;
 use App\Exceptions\PostModerationException;
+use App\Models\PendingPost;
 use App\Models\Post;
 use App\Models\PostReport;
 use App\Services\Post\QueryService;
@@ -46,6 +47,46 @@ final class PostManager
     public function reportedPostList(): array
     {
         return $this->queries->reportedPostList();
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function pendingPostList(): array
+    {
+        return $this->queries->pendingPostList();
+    }
+
+    /**
+     * Publish a pending post into the posts table as safe and remove it from pending.
+     */
+    public function approvePendingAsSafe(PendingPost $pendingPost): void
+    {
+        Post::create([
+            'student_id' => $pendingPost->student_id,
+            'content'    => $pendingPost->content,
+            'mood'       => $pendingPost->mood,
+            'datetime'   => now(),
+            'status'     => PostStatus::Safe,
+        ]);
+
+        $pendingPost->delete();
+    }
+
+    /**
+     * Publish a pending post into the posts table as flagged and remove it from pending.
+     */
+    public function approvePendingAsFlagged(PendingPost $pendingPost): void
+    {
+        Post::create([
+            'student_id' => $pendingPost->student_id,
+            'content'    => $pendingPost->content,
+            'mood'       => $pendingPost->mood,
+            'datetime'   => now(),
+            'status'     => PostStatus::Flagged,
+        ]);
+
+        $pendingPost->delete();
     }
 
     /**

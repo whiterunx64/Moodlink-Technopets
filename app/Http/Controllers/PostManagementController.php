@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\PostModerationException;
 use App\Http\Requests\PostManagementFilterRequest;
+use App\Models\PendingPost;
 use App\Models\Post;
 use App\Services\PostManager;
 use Illuminate\Http\RedirectResponse;
@@ -20,13 +21,14 @@ class PostManagementController extends Controller
     public function index(PostManagementFilterRequest $request): Response
     {
         $postFilters = $request->filters();
-        $isReportedTab = $postFilters['tab'] === 'reported';
+        $tab = $postFilters['tab'];
 
         return Inertia::render('PostManagement/Index', [
             'posts'         => $this->service->paginatedPostList($postFilters),
             'filters'       => $postFilters,
             'counts'        => $this->service->statusCounts(),
-            'reportedPosts' => $isReportedTab ? $this->service->reportedPostList() : [],
+            'reportedPosts' => $tab === 'reported' ? $this->service->reportedPostList() : [],
+            'pendingPosts'  => $tab === 'pending'  ? $this->service->pendingPostList()  : [],
         ]);
     }
 
@@ -71,5 +73,23 @@ class PostManagementController extends Controller
         return redirect()
             ->route('posts.index', ['status' => 'flagged'])
             ->with('flash_success', 'Post flagged and all reports cleared.');
+    }
+
+    public function approvePendingAsSafe(PendingPost $pendingPost): RedirectResponse
+    {
+        $this->service->approvePendingAsSafe($pendingPost);
+
+        return redirect()
+            ->route('posts.index', ['status' => 'safe'])
+            ->with('flash_success', 'Post published and marked as safe.');
+    }
+
+    public function approvePendingAsFlagged(PendingPost $pendingPost): RedirectResponse
+    {
+        $this->service->approvePendingAsFlagged($pendingPost);
+
+        return redirect()
+            ->route('posts.index', ['status' => 'flagged'])
+            ->with('flash_success', 'Post published and marked as flagged.');
     }
 }

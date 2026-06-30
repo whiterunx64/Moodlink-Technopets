@@ -430,6 +430,18 @@ export interface DashboardPageProps {
     activity_appointments: DashboardRecentAppointment[];
 }
 
+// ── Pending Posts ─────────────────────────────────────────────────────────────
+
+export interface PendingPost {
+    id: number;
+    anonymous_name: string | null;
+    program: string;
+    date: string;
+    time: string;
+    mood: string;
+    content: string | null;
+}
+
 // ── Reported Posts ────────────────────────────────────────────────────────────
 
 export type ReportStatus = 'pending' | 'flagged' | 'resolved';

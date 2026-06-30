@@ -164,6 +164,10 @@ Route::get('/test-password', function () {
         ->name('reported-posts.mark-safe');
     Route::patch('/post-management/{post}/reported/mark-flagged', [PostManagementController::class, 'markReportedFlagged'])
         ->name('reported-posts.mark-flagged');
+    Route::patch('/post-management/pending/{pendingPost}/approve-safe', [PostManagementController::class, 'approvePendingAsSafe'])
+        ->name('pending-posts.approve-safe');
+    Route::patch('/post-management/pending/{pendingPost}/approve-flagged', [PostManagementController::class, 'approvePendingAsFlagged'])
+        ->name('pending-posts.approve-flagged');
     Route::patch('/post-management/{post}/mark-as-flagged', [PostManagementController::class, 'flag'])
         ->name('posts.flag');
     Route::patch('/post-management/{post}/mark-as-unflagged', [PostManagementController::class, 'unflag'])

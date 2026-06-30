@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Post;
 
+use App\Models\PendingPost;
 use App\Models\Post;
 use App\Models\PostReport;
+use App\Support\PhTime;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 
@@ -44,6 +46,29 @@ class QueryService
             'flagged' => $statusCounts->flagged,
             'archived' => $statusCounts->archived,
         ];
+    }
+
+    /**
+     * All pending posts ordered newest-first, with student info.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function pendingPostList(): array
+    {
+        return PendingPost::query()
+            ->with('student')
+            ->get()
+            ->map(fn(PendingPost $post): array => [
+                'id'             => $post->id,
+                'content'        => $post->content,
+                'mood'           => $post->mood,
+                'date'           => $post->created_at ? PhTime::fromUtc($post->created_at)->format('M d, Y') : '',
+                'time'           => $post->created_at ? PhTime::fromUtc($post->created_at)->format('h:i A') : '',
+                'program'        => $post->student?->program ?? '',
+                'anonymous_name' => $post->student?->anonymous_name ?? 'Anonymous',
+            ])
+            ->values()
+            ->all();
     }
 
     /**
