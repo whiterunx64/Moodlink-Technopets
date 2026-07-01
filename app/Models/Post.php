@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 
@@ -30,7 +31,6 @@ use Illuminate\Support\Carbon;
  * @method static Builder|Post fromVerifiedStudents()
  * @method static Builder|Post fromProgram(string $program)
  * @method static Builder|Post whereStatusIs(PostStatus $status)
- * @method static Builder|Post whereArchivedTab(?string $tab)
  * @method static Builder|Post whereStatusFilter(?string $status)
  * @method static Builder|Post whereProgramFilter(?string $program)
  * @method static Builder|Post whereMoodFilter(?string $mood)
@@ -71,6 +71,14 @@ class Post extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(Student::class, 'student_id');
+    }
+
+    /**
+     * @return HasMany<PostReport, $this>
+     */
+    public function reports(): HasMany
+    {
+        return $this->hasMany(PostReport::class, 'post_id');
     }
 
     protected function displayDate(): Attribute
@@ -116,14 +124,6 @@ class Post extends Model
         return $query->orderByDesc('datetime');
     }
 
-    public function scopeWhereArchivedTab(Builder $query, ?string $tab): Builder
-    {
-        return $query->when(
-            $tab === 'archives',
-            fn(Builder $query) => $query->whereStatusIs(PostStatus::Archived)
-        );
-    }
-
     public function scopeWhereStatusFilter(Builder $query, ?string $status): Builder
     {
         return $query->when(
@@ -153,7 +153,6 @@ class Post extends Model
         return static::query()
             ->with('student')
             ->fromVerifiedStudents()
-            ->whereArchivedTab($filters['tab'])
             ->whereStatusFilter($filters['status'])
             ->whereProgramFilter($filters['program'])
             ->whereMoodFilter($filters['mood'])
