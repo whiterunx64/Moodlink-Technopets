@@ -262,7 +262,7 @@ function miniBarWidth(count: number, total: number): string {
                                 {{ overview.at_risk_students }}
                             </p>
                             <p class="text-text-muted mt-0.5 text-xs">
-                                At-Risk Students
+                                Students of Concern
                             </p>
                         </div>
                     </div>

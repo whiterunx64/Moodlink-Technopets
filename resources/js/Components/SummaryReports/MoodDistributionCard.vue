@@ -42,17 +42,17 @@ const PERIODS: { key: SummaryPeriod; label: string }[] = [
 ];
 
 const MOOD_COLOR: Record<string, string> = {
-    Excited: '#22c55e',
-    Content: '#3b82f6',
-    Stressed: '#f97316',
-    Drained: '#f87171',
+    Excited: '#F2C94C',
+    Content: '#6FCF88',
+    Stressed: '#EB5757',
+    Drained: '#8DA9C4',
 };
 
 const MOOD_TEXT: Record<string, string> = {
-    Excited: 'text-green-600',
-    Content: 'text-blue-600',
-    Stressed: 'text-orange-500',
-    Drained: 'text-red-400',
+    Excited: 'text-[#F2C94C]',
+    Content: 'text-[#6FCF88]',
+    Stressed: 'text-[#EB5757]',
+    Drained: 'text-[#8DA9C4]',
 };
 
 const MOOD_BG: Record<string, string> = {

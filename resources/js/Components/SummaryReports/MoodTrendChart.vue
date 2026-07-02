@@ -1,13 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import {
-    Chart as ChartJS,
-    ArcElement,
-    Tooltip,
-} from 'chart.js';
-import { Doughnut } from 'vue-chartjs';
-import type { ChartData, ChartOptions } from 'chart.js';
 import type { MoodTrendPoint } from '@/types';
+import type { ChartData, ChartOptions } from 'chart.js';
+import { ArcElement, Chart as ChartJS, Tooltip } from 'chart.js';
+import { computed } from 'vue';
+import { Doughnut } from 'vue-chartjs';
 
 // Only register what we use — faster init, no Legend bloat
 ChartJS.register(ArcElement, Tooltip);
@@ -24,10 +20,10 @@ const emit = defineEmits<{
 
 // Semantic, perceptually distinct colours — not a rainbow
 const MOOD_PALETTE: Record<number, { fill: string; label: string }> = {
-    4: { fill: '#16783a', label: 'Excited' },
-    3: { fill: '#2a78d6', label: 'Content' },
-    2: { fill: '#c98500', label: 'Stressed' },
-    1: { fill: '#c13434', label: 'Drained' },
+    4: { fill: '#F2C94C', label: 'Excited' },
+    3: { fill: '#6FCF88', label: 'Content' },
+    2: { fill: '#EB5757', label: 'Stressed' },
+    1: { fill: '#8DA9C4', label: 'Drained' },
 };
 
 const TREND_META = {
@@ -40,7 +36,9 @@ const TREND_META = {
 const dominantMood = computed(() => {
     if (!props.data.length) return null;
     const top = [...props.data]
-        .filter((d): d is MoodTrendPoint & { score: number } => d.score !== null)
+        .filter(
+            (d): d is MoodTrendPoint & { score: number } => d.score !== null,
+        )
         .sort((a, b) => b.score - a.score)[0];
     if (!top) return 'Unknown';
     return MOOD_PALETTE[top.score]?.label ?? 'Unknown';
@@ -48,14 +46,25 @@ const dominantMood = computed(() => {
 
 // Fix 2: explicitly type as ChartData<'doughnut'> and replace null scores with 0
 const chartData = computed<ChartData<'doughnut', number[], unknown>>(() => ({
-    labels: props.data.map(d => (d.score !== null ? MOOD_PALETTE[d.score]?.label : undefined) ?? 'Unknown'),
-    datasets: [{
-        data: props.data.map(d => d.score ?? 0),          // null → 0
-        backgroundColor: props.data.map(d => (d.score !== null ? MOOD_PALETTE[d.score]?.fill : undefined) ?? '#898781'),
-        borderColor: '#ffffff',
-        borderWidth: 3,
-        hoverOffset: 8,
-    }],
+    labels: props.data.map(
+        (d) =>
+            (d.score !== null ? MOOD_PALETTE[d.score]?.label : undefined) ??
+            'Unknown',
+    ),
+    datasets: [
+        {
+            data: props.data.map((d) => d.score ?? 0), // null → 0
+            backgroundColor: props.data.map(
+                (d) =>
+                    (d.score !== null
+                        ? MOOD_PALETTE[d.score]?.fill
+                        : undefined) ?? '#898781',
+            ),
+            borderColor: '#ffffff',
+            borderWidth: 3,
+            hoverOffset: 8,
+        },
+    ],
 }));
 
 // Fix 3: explicitly type as ChartOptions<'doughnut'> and use a valid weight literal
@@ -91,7 +100,6 @@ const chartOptions = computed<ChartOptions<'doughnut'>>(() => ({
         no decorative shadows or gradients.
     -->
     <article class="trend-widget" aria-label="Mood trend overview">
-
         <!-- Header -->
         <header class="widget-header">
             <div>
@@ -100,8 +108,17 @@ const chartOptions = computed<ChartOptions<'doughnut'>>(() => ({
             </div>
 
             <div class="day-toggle" role="group" aria-label="Time range">
-                <button v-for="d in [7, 30]" :key="d" type="button" :aria-pressed="trendDays === d"
-                    :class="['day-btn', trendDays === d ? 'day-btn--active' : '']" @click="emit('update:trendDays', d)">
+                <button
+                    v-for="d in [7, 30]"
+                    :key="d"
+                    type="button"
+                    :aria-pressed="trendDays === d"
+                    :class="[
+                        'day-btn',
+                        trendDays === d ? 'day-btn--active' : '',
+                    ]"
+                    @click="emit('update:trendDays', d)"
+                >
                     {{ d }}d
                 </button>
             </div>
@@ -109,15 +126,21 @@ const chartOptions = computed<ChartOptions<'doughnut'>>(() => ({
 
         <!-- Trend indicator -->
         <div class="trend-bar">
-            <span :class="['trend-badge', TREND_META[trend].class]" aria-label="`Trend: ${trend}`">
+            <span
+                :class="['trend-badge', TREND_META[trend].class]"
+                aria-label="`Trend: ${trend}`"
+            >
                 {{ TREND_META[trend].symbol }} {{ trend }}
             </span>
         </div>
 
         <!-- Chart area -->
         <div class="chart-area">
-            <div class="chart-inner" role="img"
-                :aria-label="`Mood distribution doughnut chart. Dominant mood: ${dominantMood}`">
+            <div
+                class="chart-inner"
+                role="img"
+                :aria-label="`Mood distribution doughnut chart. Dominant mood: ${dominantMood}`"
+            >
                 <Doughnut :data="chartData" :options="chartOptions" />
             </div>
 
@@ -130,14 +153,21 @@ const chartOptions = computed<ChartOptions<'doughnut'>>(() => ({
 
         <!-- Legend — inline ruled table -->
         <footer class="widget-legend" role="list" aria-label="Mood key">
-            <div v-for="([score, meta]) in Object.entries(MOOD_PALETTE).reverse()" :key="score" class="legend-item"
-                role="listitem">
-                <span class="legend-dot" :style="{ background: meta.fill }" aria-hidden="true" />
+            <div
+                v-for="[score, meta] in Object.entries(MOOD_PALETTE).reverse()"
+                :key="score"
+                class="legend-item"
+                role="listitem"
+            >
+                <span
+                    class="legend-dot"
+                    :style="{ background: meta.fill }"
+                    aria-hidden="true"
+                />
                 <span class="legend-name">{{ meta.label }}</span>
                 <span class="legend-score">{{ score }}</span>
             </div>
         </footer>
-
     </article>
 </template>
 
@@ -205,10 +235,12 @@ const chartOptions = computed<ChartOptions<'doughnut'>>(() => ({
     color: rgba(255, 255, 255, 0.45);
     border: none;
     cursor: pointer;
-    transition: background 0.1s, color 0.1s;
+    transition:
+        background 0.1s,
+        color 0.1s;
 }
 
-.day-btn+.day-btn {
+.day-btn + .day-btn {
     border-left: 1px solid rgba(255, 255, 255, 0.2);
 }
 
@@ -311,7 +343,7 @@ const chartOptions = computed<ChartOptions<'doughnut'>>(() => ({
 }
 
 /* Remove bottom border from last two items */
-.legend-item:nth-last-child(-n+2) {
+.legend-item:nth-last-child(-n + 2) {
     border-bottom: none;
 }
 
