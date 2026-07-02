@@ -100,8 +100,8 @@ const tabs: Array<{ key: string; label: string; icon: Component }> = [
     { key: 'overview', label: 'Overview', icon: GlobeAltIcon },
     { key: 'programs', label: 'Program Reports', icon: ListBulletIcon },
     {
-        key: 'at-risk',
-        label: 'At-Risk Students',
+        key: 'studentsOfConcern',
+        label: 'Students of Concern',
         icon: ExclamationTriangleIcon,
     },
 ];
@@ -475,7 +475,7 @@ function miniBarWidth(count: number, total: number): string {
                 </div>
             </template>
 
-            <template v-else-if="activeTab === 'at-risk'">
+            <template v-else-if="activeTab === 'studentsOfConcern'">
                 <div class="border-border-light border bg-white shadow-sm">
                     <div
                         class="border-border-light flex flex-wrap items-center justify-between gap-3 border-b px-6 py-4"
@@ -484,7 +484,7 @@ function miniBarWidth(count: number, total: number): string {
                             <h3
                                 class="text-text-primary text-base font-semibold"
                             >
-                                At-Risk Students
+                                Students of Concern
                             </h3>
                             <p class="text-text-muted mt-0.5 text-xs">
                                 Students with consistently negative mood
@@ -583,7 +583,7 @@ function miniBarWidth(count: number, total: number): string {
                             v-if="atRiskStudents.length === 0"
                             class="text-text-muted px-6 py-16 text-center text-sm"
                         >
-                            No at-risk students for this period.
+                            No students of concern for this period.
                         </div>
                     </div>
                 </div>

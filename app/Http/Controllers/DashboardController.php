@@ -25,8 +25,8 @@ class DashboardController extends Controller
             'active_students' => $this->dashboard->activeStudents(),
             'flagged_posts' => $this->dashboard->flaggedPostsToday(),
             'escalation_requests' => $this->dashboard->escalationRequests(),
-            'mood_entries' => $this->dashboard->moodEntries(),
-            'flagged_mood_entries' => $this->dashboard->flaggedMoodEntries(),
+            'mood_entries' => $this->dashboard->moodEntries($statPeriod),
+            'flagged_mood_entries' => $this->dashboard->flaggedMoodEntries($statPeriod),
             'appointments' => $this->dashboard->upcomingAppointments(),
             'mood_trends' => $this->dashboard->moodTrends(
                 $request->query('trendPeriod'),
@@ -37,7 +37,7 @@ class DashboardController extends Controller
             'students_breakdown' => $this->dashboard->studentsBreakdown(),
             'posts_breakdown' => $this->dashboard->postsBreakdown($statPeriod),
             'appointments_breakdown' => $this->dashboard->appointmentsBreakdown($statPeriod),
-            'activity_appointments' => $this->dashboard->recentActivityAppointments(),
+            'activity_appointments' => $this->dashboard->recentActivityAppointments($statPeriod),
         ]);
     }
 }

@@ -94,24 +94,23 @@ final class DashboardService
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function moodEntries(): array
-    {
-        return Post::dashboardRecentEntries()
-            ->map(fn(Post $post) => $this->formatMoodEntry($post))
-            ->all();
-    }
-
+    public function moodEntries(string $period = 'today'): array
+{
+    return Post::dashboardRecentEntries($period)
+        ->map(fn (Post $post) => $this->formatMoodEntry($post))
+        ->all();
+}
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function flaggedMoodEntries(): array
-    {
-        return Post::dashboardRecentEntries()
-            ->filter(fn(Post $post) => $post->status === PostStatus::Flagged)
-            ->map(fn(Post $post) => $this->formatMoodEntry($post))
-            ->values()
-            ->all();
-    }
+    public function flaggedMoodEntries(string $period = 'today'): array
+{
+    return Post::dashboardRecentEntries($period)
+        ->filter(fn (Post $post) => $post->status === PostStatus::Flagged)
+        ->map(fn (Post $post) => $this->formatMoodEntry($post))
+        ->values()
+        ->all();
+}
 
     /**
      * @return array<string, mixed>
@@ -143,7 +142,6 @@ final class DashboardService
             ->where('status', AppointmentStatus::Scheduled->value)
             ->where('datetime', '>=', PhTime::todayStartUtc())
             ->orderBy('datetime')
-            ->limit(5)
             ->get()
             ->map(fn(Appointment $appointment) => $this->formatAppointment($appointment))
             ->all();
@@ -408,27 +406,30 @@ final class DashboardService
     /**
      * @return array<int, array<string, mixed>>
      */
-    public function recentActivityAppointments(): array
-    {
-        return Appointment::query()
-            ->with('student')
-            ->whereHas('student', fn(Builder $q) => $q->whereStatusIsVerified())
-            ->whereIn('status', [
-                AppointmentStatus::Scheduled->value,
-                AppointmentStatus::Pending->value,
-                AppointmentStatus::Missed->value,
-            ])
-            ->orderByDesc('datetime')
-            ->limit(10)
-            ->get()
-            ->map(fn(Appointment $apt) => [
-                'id' => $apt->id,
-                'name' => trim("{$apt->student?->first_name} {$apt->student?->last_name}") ?: 'Unknown',
-                'anonymous_name' => $apt->student?->anonymous_name ?: 'Anonymous',
-                'context' => $apt->context,
-                'time' => $apt->display_time,
-                'status' => $apt->status->value,
-            ])
-            ->all();
-    }
+   public function recentActivityAppointments(string $period = 'today'): array
+{
+    $start = $this->statStartDate($period)->utc();
+
+    return Appointment::query()
+        ->with('student')
+        ->whereHas('student', fn (Builder $q) => $q->whereStatusIsVerified())
+        ->where('datetime', '>=', $start)
+        ->whereIn('status', [
+            AppointmentStatus::Scheduled->value,
+            AppointmentStatus::Pending->value,
+            AppointmentStatus::Missed->value,
+        ])
+        ->orderByDesc('datetime')
+        ->get()
+        ->map(fn (Appointment $apt) => [
+    'id' => $apt->id,
+    'name' => trim("{$apt->student?->first_name} {$apt->student?->last_name}") ?: 'Unknown',
+    'anonymous_name' => $apt->student?->anonymous_name ?: 'Anonymous',
+    'context' => $apt->context,
+    'time' => $apt->display_time,
+    'date' => $apt->display_date,
+    'status' => $apt->status->value,
+])
+        ->all();
+}
 }

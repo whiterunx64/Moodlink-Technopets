@@ -215,15 +215,23 @@ class Post extends Model
      *
      * @return Collection<int, Post>
      */
-    public static function dashboardRecentEntries(): Collection
-    {
-        return static::query()
-            ->with('student')
-            ->fromVerifiedStudents()
-            ->whereIn('status', [PostStatus::Safe->value, PostStatus::Flagged->value])
-            ->where('datetime', '>=', PhTime::todayStartUtc())
-            ->orderByDesc('datetime')
-            ->limit(20)
-            ->get();
-    }
+    public static function dashboardRecentEntries(string $period = 'today'): Collection
+{
+    $start = match ($period) {
+        'week' => PhTime::now()->startOfWeek()->utc(),
+        'month' => PhTime::now()->startOfMonth()->utc(),
+        default => PhTime::todayStartUtc(),
+    };
+
+    return static::query()
+        ->with('student')
+        ->whereIn('status', [
+            PostStatus::Safe->value,
+            PostStatus::Flagged->value,
+        ])
+        ->where('datetime', '>=', $start)
+        ->orderByDesc('datetime')
+        ->orderByDesc('id')
+        ->get();
+}
 }

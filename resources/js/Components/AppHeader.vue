@@ -317,20 +317,6 @@ function markAsSeen(id: number) {
                     </div>
                 </Transition>
             </div>
-
-            <div
-                class="bg-sidebar/10 flex h-8 w-8 items-center justify-center overflow-hidden rounded-full"
-            >
-                <img
-                    v-if="user?.avatar"
-                    :src="user.avatar"
-                    alt="Avatar"
-                    class="h-full w-full object-cover"
-                />
-                <span v-else class="text-sidebar text-sm font-bold">{{
-                    initials
-                }}</span>
-            </div>
         </div>
     </header>
 </template>
