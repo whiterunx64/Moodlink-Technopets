@@ -42,23 +42,40 @@ function moodStyle(mood: string) {
 
 <template>
     <Teleport to="body">
-        <Transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0"
-            enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150"
-            leave-from-class="opacity-100" leave-to-class="opacity-0">
-            <div v-if="show && post" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <Transition
+            enter-active-class="transition ease-out duration-200"
+            enter-from-class="opacity-0"
+            enter-to-class="opacity-100"
+            leave-active-class="transition ease-in duration-150"
+            leave-from-class="opacity-100"
+            leave-to-class="opacity-0"
+        >
+            <div
+                v-if="show && post"
+                class="fixed inset-0 z-50 flex items-center justify-center p-4"
+            >
                 <!-- Overlay -->
-                <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="emit('close')" />
+                <div
+                    class="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                    @click="emit('close')"
+                />
 
                 <!-- Modal card -->
-                <div class="relative mx-auto w-full max-w-lg rounded-2xl bg-white shadow-xl">
+                <div
+                    class="relative mx-auto w-full max-w-lg bg-white shadow-xl"
+                >
                     <!-- Modal header -->
-                    <div class="border-border-light flex items-center justify-between border-b px-6 pt-5 pb-4">
+                    <div
+                        class="border-border-light flex items-center justify-between border-b px-6 pt-5 pb-4"
+                    >
                         <h3 class="text-text-primary text-base font-bold">
                             Post Detail
                         </h3>
-                        <button type="button"
-                            class="text-text-muted hover:bg-hover-soft flex h-7 w-7 items-center justify-center rounded-full transition-colors"
-                            @click="emit('close')">
+                        <button
+                            type="button"
+                            class="text-text-muted hover:bg-hover-soft flex h-7 w-7 items-center justify-center transition-colors"
+                            @click="emit('close')"
+                        >
                             <i class="fas fa-times text-sm" />
                         </button>
                     </div>
@@ -69,7 +86,8 @@ function moodStyle(mood: string) {
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-3">
                                 <div
-                                    class="bg-sidebar flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-base font-bold text-white">
+                                    class="bg-sidebar flex h-11 w-11 shrink-0 items-center justify-center text-base font-bold text-white"
+                                >
                                     {{
                                         (post.anonymous_name ?? 'U')
                                             .charAt(0)
@@ -77,7 +95,9 @@ function moodStyle(mood: string) {
                                     }}
                                 </div>
                                 <div>
-                                    <p class="text-text-primary text-sm font-semibold capitalize">
+                                    <p
+                                        class="text-text-primary text-sm font-semibold capitalize"
+                                    >
                                         {{
                                             post.first_name +
                                             ' ' +
@@ -91,29 +111,39 @@ function moodStyle(mood: string) {
                             </div>
 
                             <!-- Badges -->
-                            <div class="flex shrink-0 flex-col items-end gap-1.5">
-                                <span :class="[
-                                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
-                                    moodStyle(post.mood).pill,
-                                ]">
-                                    <span :class="[
-                                        'h-1.5 w-1.5 rounded-full',
-                                        moodStyle(post.mood).dot,
-                                    ]" />
+                            <div
+                                class="flex shrink-0 flex-col items-end gap-1.5"
+                            >
+                                <span
+                                    :class="[
+                                        'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium',
+                                        moodStyle(post.mood).pill,
+                                    ]"
+                                >
+                                    <span
+                                        :class="[
+                                            'h-1.5 w-1.5',
+                                            moodStyle(post.mood).dot,
+                                        ]"
+                                    />
                                     {{ post.mood }}
                                 </span>
-                                <span :class="[
-                                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
-                                    post.status === 'flagged'
-                                        ? 'bg-status-flagged-bg text-status-flagged border border-red-100'
-                                        : 'bg-status-safe-bg text-status-safe border border-green-200',
-                                ]">
-                                    <i :class="[
-                                        'fas text-[10px]',
+                                <span
+                                    :class="[
+                                        'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium',
                                         post.status === 'flagged'
-                                            ? 'fa-flag'
-                                            : 'fa-check',
-                                    ]" />
+                                            ? 'bg-status-flagged-bg text-status-flagged border border-red-100'
+                                            : 'bg-status-safe-bg text-status-safe border border-green-200',
+                                    ]"
+                                >
+                                    <i
+                                        :class="[
+                                            'fas text-[10px]',
+                                            post.status === 'flagged'
+                                                ? 'fa-flag'
+                                                : 'fa-check',
+                                        ]"
+                                    />
                                     {{
                                         post.status === 'flagged'
                                             ? 'Flagged'
@@ -125,16 +155,20 @@ function moodStyle(mood: string) {
 
                         <!-- Info boxes -->
                         <div class="grid grid-cols-2 gap-3">
-                            <div class="rounded-xl bg-gray-50 px-4 py-3">
-                                <p class="text-text-muted mb-1 text-[10px] font-semibold tracking-wider uppercase">
+                            <div class="bg-gray-50 px-4 py-3">
+                                <p
+                                    class="text-text-muted mb-1 text-[10px] font-semibold tracking-wider uppercase"
+                                >
                                     Program
                                 </p>
                                 <p class="text-text-primary text-sm font-bold">
                                     {{ post.program }}
                                 </p>
                             </div>
-                            <div class="rounded-xl bg-gray-50 px-4 py-3">
-                                <p class="text-text-muted mb-1 text-[10px] font-semibold tracking-wider uppercase">
+                            <div class="bg-gray-50 px-4 py-3">
+                                <p
+                                    class="text-text-muted mb-1 text-[10px] font-semibold tracking-wider uppercase"
+                                >
                                     Mood
                                 </p>
                                 <p class="text-text-primary text-sm font-bold">
@@ -144,17 +178,25 @@ function moodStyle(mood: string) {
                         </div>
 
                         <!-- Posted time -->
-                        <div class="text-text-muted flex items-center gap-2 text-xs">
+                        <div
+                            class="text-text-muted flex items-center gap-2 text-xs"
+                        >
                             <i class="far fa-clock" />
-                            <span>Posted {{ post.date }} at {{ post.time }}</span>
+                            <span
+                                >Posted {{ post.date }} at {{ post.time }}</span
+                            >
                         </div>
 
                         <!-- Post content -->
-                        <div class="rounded-xl bg-gray-50 px-4 py-4">
-                            <p class="text-text-muted mb-2 text-[10px] font-semibold tracking-wider uppercase">
+                        <div class="bg-gray-50 px-4 py-4">
+                            <p
+                                class="text-text-muted mb-2 text-[10px] font-semibold tracking-wider uppercase"
+                            >
                                 Post Content
                             </p>
-                            <p class="text-text-secondary text-sm leading-relaxed">
+                            <p
+                                class="text-text-secondary text-sm leading-relaxed"
+                            >
                                 {{ post.content ?? 'No content provided.' }}
                             </p>
                         </div>
@@ -162,18 +204,25 @@ function moodStyle(mood: string) {
 
                     <!-- Footer -->
                     <div class="flex items-center justify-end gap-3 px-6 pb-5">
-                        <button type="button" :class="[
-                            'inline-flex items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-semibold transition-all',
-                            post.status === 'flagged'
-                                ? 'border-status-safe text-status-safe hover:bg-status-safe hover:text-white'
-                                : 'border-status-flagged text-status-flagged hover:bg-status-flagged hover:text-white',
-                        ]" @click="emit('toggle-flag')">
-                            <i :class="[
-                                'fas text-xs',
+                        <button
+                            type="button"
+                            :class="[
+                                'cursor-pointer items-center gap-1.5 border px-4 py-2 text-sm font-semibold transition-all',
                                 post.status === 'flagged'
-                                    ? 'fa-check'
-                                    : 'fa-flag',
-                            ]" />
+                                    ? 'border-status-safe text-status-safe hover:bg-status-safe hover:text-white'
+                                    : 'border-status-flagged text-status-flagged hover:bg-status-flagged hover:text-white',
+                                post.status === 'archived' ? 'hidden' : '',
+                            ]"
+                            @click="emit('toggle-flag')"
+                        >
+                            <i
+                                :class="[
+                                    'fas text-xs',
+                                    post.status === 'flagged'
+                                        ? 'fa-check'
+                                        : 'fa-flag',
+                                ]"
+                            />
                             {{
                                 post.status === 'flagged'
                                     ? 'Clear Flag'
@@ -181,9 +230,11 @@ function moodStyle(mood: string) {
                             }}
                         </button>
 
-                        <button type="button"
-                            class="bg-sidebar hover:bg-sidebar/90 rounded-xl px-4 py-2 text-sm font-semibold text-white transition-all"
-                            @click="emit('close')">
+                        <button
+                            type="button"
+                            class="bg-sidebar hover:bg-sidebar/90 cursor-pointer px-4 py-2 text-sm font-semibold text-white transition-all"
+                            @click="emit('close')"
+                        >
                             Close
                         </button>
                     </div>

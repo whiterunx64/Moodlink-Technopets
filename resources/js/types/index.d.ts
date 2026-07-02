@@ -8,7 +8,9 @@ export interface User {
     email_verified_at?: string;
 }
 
-export type PageProps<T extends Record<string, unknown> = Record<string, unknown>> = T & {
+export type PageProps<
+    T extends Record<string, unknown> = Record<string, unknown>,
+> = T & {
     auth: {
         user: User;
     };
@@ -101,7 +103,7 @@ export interface ProfileSettingsPageProps {
 // ── Posts / MoodSpace ─────────────────────────────────────────────────────────
 
 export type Mood = 'Drained' | 'Stressed' | 'Content' | 'Excited';
-export type PostStatus = 'flagged' | 'safe';
+export type PostStatus = 'flagged' | 'safe' | 'archived';
 export type PostFilter = 'all' | 'flagged' | 'safe';
 
 export interface PostFilters {
@@ -121,7 +123,7 @@ export interface Post {
     time: string;
     date: string;
     mood: string;
-    status: 'flagged' | 'safe';
+    status: 'flagged' | 'safe' | 'archived';
     content: string | null;
 }
 
@@ -263,7 +265,12 @@ export interface StudentMoodReport {
 
 // ── Appointments ──────────────────────────────────────────────────────────────
 
-export type AppointmentTab = 'requests' | 'scheduled' | 'history' | 'rejected' | 'missed';
+export type AppointmentTab =
+    | 'requests'
+    | 'scheduled'
+    | 'history'
+    | 'rejected'
+    | 'missed';
 export type AppointmentStatus =
     | 'Pending'
     | 'Scheduled'
@@ -408,6 +415,7 @@ export interface DashboardRecentAppointment {
     anonymous_name: string;
     context: string | null;
     time: string;
+    date: string;
     status: 'Scheduled' | 'Pending' | 'Missed';
 }
 

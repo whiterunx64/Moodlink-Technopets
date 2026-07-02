@@ -1198,6 +1198,9 @@ function clearFilters() {
                                                 post.status === 'flagged'
                                                     ? 'bg-status-flagged-bg text-status-flagged border border-red-100'
                                                     : 'bg-status-safe-bg text-status-safe border border-green-200',
+                                                post.status === 'archived'
+                                                    ? 'hidden'
+                                                    : '',
                                             ]"
                                         >
                                             <i
@@ -1209,9 +1212,10 @@ function clearFilters() {
                                                 ]"
                                             />
                                             {{
-                                                post.status === 'flagged'
-                                                    ? 'Flagged'
-                                                    : 'Safe'
+                                                post.status
+                                                    .charAt(0)
+                                                    .toUpperCase() +
+                                                post.status.slice(1)
                                             }}
                                         </span>
                                     </td>
@@ -1223,10 +1227,13 @@ function clearFilters() {
                                             <button
                                                 type="button"
                                                 :class="[
-                                                    'inline-flex items-center gap-1 border px-2.5 py-1.5 text-xs font-semibold transition-all',
+                                                    'cursor-pointer items-center gap-1 border px-2.5 py-1.5 text-xs font-semibold transition-all',
                                                     post.status === 'flagged'
                                                         ? 'border-status-safe text-status-safe hover:bg-status-safe hover:text-white'
                                                         : 'border-status-flagged text-status-flagged hover:bg-status-flagged hover:text-white',
+                                                    post.status === 'archived'
+                                                        ? 'hidden'
+                                                        : '',
                                                 ]"
                                                 @click="toggleFlag(post)"
                                             >
@@ -1247,7 +1254,7 @@ function clearFilters() {
                                             </button>
                                             <button
                                                 type="button"
-                                                class="bg-sidebar/10 text-sidebar hover:bg-sidebar inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold transition-all hover:text-white"
+                                                class="bg-sidebar/10 text-sidebar hover:bg-sidebar inline-flex cursor-pointer items-center gap-1 px-2.5 py-1.5 text-xs font-semibold transition-all hover:text-white"
                                                 @click="openPostModal(post)"
                                             >
                                                 <i
