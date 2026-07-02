@@ -8,6 +8,7 @@ import type {
 } from '@/types';
 import { Bars3Icon, BellIcon } from '@heroicons/vue/24/outline';
 import { usePage } from '@inertiajs/vue3';
+import type { ComponentPublicInstance } from 'vue';
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 defineProps<{
@@ -121,8 +122,8 @@ onMounted(() => {
     );
 });
 
-function observeNotification(el: Element | null) {
-    if (!el || !observer) return;
+function observeNotification(el: Element | ComponentPublicInstance | null) {
+    if (!(el instanceof Element) || !observer) return;
 
     observer.observe(el);
 }
@@ -250,9 +251,11 @@ function markAsSeen(id: number) {
                                     :key="notification.id"
                                     :data-id="notification.id"
                                     :ref="
-                                        (el) =>
-                                            !notification.is_seen &&
-                                            observeNotification(el)
+                                        (el) => {
+                                            if (!notification.is_seen) {
+                                                observeNotification(el);
+                                            }
+                                        }
                                     "
                                     :class="[
                                         'border-b border-slate-300 px-5 py-4',
