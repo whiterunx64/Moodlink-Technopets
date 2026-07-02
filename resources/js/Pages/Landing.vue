@@ -112,7 +112,7 @@ const logoUrl = usePage().props.assets.logo;
                             Download APK
                         </a>
                         <span class="font-inter text-sm text-gray-400"
-                            >v2.1.0 · 24 MB · Android 8.0+</span
+                            >v2.0.0 · 87.21 MB · Android 8.0+</span
                         >
                     </div>
                     <!-- Stats -->
@@ -738,7 +738,7 @@ const logoUrl = usePage().props.assets.logo;
                             <div
                                 class="font-montserrat text-base font-bold text-gray-800"
                             >
-                                2.1.0
+                                2.0.0
                             </div>
                         </div>
                         <div>
@@ -750,7 +750,7 @@ const logoUrl = usePage().props.assets.logo;
                             <div
                                 class="font-montserrat text-base font-bold text-gray-800"
                             >
-                                24 MB
+                                87.21 MB
                             </div>
                         </div>
                         <div>
@@ -774,7 +774,7 @@ const logoUrl = usePage().props.assets.logo;
                             <div
                                 class="font-montserrat text-base font-bold text-gray-800"
                             >
-                                Jun 2026
+                                Jul 2026
                             </div>
                         </div>
                     </div>

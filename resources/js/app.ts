@@ -6,7 +6,7 @@ import { createApp, DefineComponent, h } from 'vue';
 import { Toaster } from 'vue-sonner';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = 'MoodLink';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,

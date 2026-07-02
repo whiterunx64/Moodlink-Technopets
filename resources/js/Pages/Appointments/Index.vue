@@ -462,14 +462,14 @@ checkInReady={{ checkInReady.length }}
                                 <template v-if="activeTab === 'requests'">
                                     <button
                                         type="button"
-                                        class="border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-500"
+                                        class="cursor-pointer border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-500"
                                         @click="confirmAction('reject', apt)"
                                     >
                                         Reject
                                     </button>
                                     <button
                                         type="button"
-                                        class="bg-sidebar hover:bg-sidebar/90 px-3 py-1.5 text-xs font-semibold text-white transition-colors"
+                                        class="bg-sidebar hover:bg-sidebar/90 cursor-pointer px-3 py-1.5 text-xs font-semibold text-white transition-colors"
                                         @click="confirmAction('approve', apt)"
                                     >
                                         Approve
