@@ -715,7 +715,7 @@ const logoUrl = usePage().props.assets.logo;
                         class="mb-6 flex flex-wrap items-center gap-4 md:mb-10"
                     >
                         <a
-                            href="https://github.com/JayveeErandio/capstone/releases/download/v1.0.0/moodlink.apk"
+                            href="https://github.com/JayveeErandio/capstone/releases/download/v2.0.0/moodlink.apk"
                             class="font-inter hover:bg-search-button-active inline-flex items-center gap-2 rounded-full bg-[#3a4f1e] px-7 py-3.5 text-base font-semibold text-white transition-colors"
                         >
                             <ArrowDownTrayIcon class="h-5 w-5 shrink-0" />

@@ -19,14 +19,14 @@ defineEmits<{
 <template>
     <div class="min-w-0 overflow-x-auto">
         <div
-            class="bg-bg-surface border-border-light flex w-fit min-w-max items-center gap-1 rounded-xl border p-1"
+            class="bg-bg-surface border-border-light flex w-fit min-w-max items-center gap-1 border p-1"
         >
             <button
                 v-for="tab in tabs"
                 :key="tab.value"
                 @click="$emit('update:modelValue', tab.value)"
                 :class="[
-                    'cursor-pointer rounded-lg px-5 py-2 text-xs font-medium transition-all duration-150 focus:ring-0 focus:outline-none',
+                    'cursor-pointer p-2 px-3 text-xs font-medium transition-all duration-150 focus:ring-0 focus:outline-none sm:px-4',
 
                     /* active tab */
                     modelValue === tab.value
@@ -40,7 +40,7 @@ defineEmits<{
                 <span
                     v-if="tab.badge !== undefined"
                     :class="[
-                        'ml-1.5 rounded-full px-1.5 py-0.5 text-xs font-bold',
+                        'ml-1.5 px-1.5 py-0.5 text-xs font-bold',
 
                         /* active badge */
                         modelValue === tab.value

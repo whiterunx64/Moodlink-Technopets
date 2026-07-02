@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Notification;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class NotificationController extends Controller
 {
@@ -29,4 +30,13 @@ class NotificationController extends Controller
             'unread' => collect($notifications)->where('is_seen', false)->count(),
         ]);
     }
+
+public function markSeen(Notification $notification)
+{
+    $notification->update([
+        'is_seen' => true,
+    ]);
+
+    return response()->noContent();
+}
 }

@@ -238,6 +238,7 @@ class Student extends Model
     public static function tabCounts(array $filters): object
     {
         return static::query()
+        ->where('id', '!=', 1) 
             ->filter($filters)
             ->selectRaw(
                 'COUNT(*) AS total,
@@ -255,15 +256,16 @@ class Student extends Model
     }
 
     public static function paginatedListWithFilters(array $filters): LengthAwarePaginator
-    {
-        return static::query()
-            ->filter($filters)
-            ->byTab($filters['tab'] ?? 'All')
-            ->orderBy('last_name')
-            ->orderBy('first_name')
-            ->paginate(8)
-            ->withQueryString();
-    }
+{
+    return static::query()
+        ->where('id', '!=', 1)   // Exclude admin
+        ->filter($filters)
+        ->byTab($filters['tab'] ?? 'All')
+        ->orderBy('last_name')
+        ->orderBy('first_name')
+        ->paginate(8)
+        ->withQueryString();
+}
 
     /**
      * @return Collection<int, Student>

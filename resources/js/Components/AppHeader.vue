@@ -95,6 +95,60 @@ onUnmounted(() => {
     if (clock_interval) clearInterval(clock_interval);
     document.removeEventListener('click', handleOutsideClick);
 });
+
+const notificationContainer = ref<HTMLElement | null>(null);
+let observer: IntersectionObserver;
+
+onMounted(() => {
+    observer = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    const id = Number((entry.target as HTMLElement).dataset.id);
+
+                    console.log('Seen:', id);
+
+                    markAsSeen(id);
+
+                    observer.unobserve(entry.target);
+                }
+            });
+        },
+        {
+            root: notificationContainer.value,
+            threshold: 1,
+        },
+    );
+});
+
+function observeNotification(el: Element | null) {
+    if (!el || !observer) return;
+
+    observer.observe(el);
+}
+
+function markAsSeen(id: number) {
+    const notif = notifications.value.find((n) => n.id === id);
+    console.log(route('notifications.seen', id));
+    if (notif && !notif.is_seen) {
+        setTimeout(async function () {
+            notif.is_seen = true;
+            unread.value = Math.max(0, unread.value - 1);
+            await fetch(route('notifications.seen', id), {
+                method: 'PATCH',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN':
+                        document
+                            .querySelector('meta[name="csrf-token"]')
+                            ?.getAttribute('content') ?? '',
+                },
+                body: JSON.stringify({}),
+            });
+        }, 1000);
+    }
+}
 </script>
 
 <template>
@@ -121,7 +175,7 @@ onUnmounted(() => {
             <div ref="notificationsRoot" class="relative">
                 <button
                     type="button"
-                    class="text-header-icon hover:text-header-icon-hover relative p-1.5 transition-colors"
+                    class="text-header-icon hover:text-header-icon-hover relative cursor-pointer p-1.5 transition-colors"
                     aria-label="Notifications"
                     @click="toggleNotifications"
                 >
@@ -171,7 +225,10 @@ onUnmounted(() => {
                         </div>
 
                         <!-- Content -->
-                        <div class="max-h-87.5 overflow-y-auto">
+                        <div
+                            class="max-h-87.5 overflow-y-auto"
+                            ref="notificationContainer"
+                        >
                             <div
                                 v-if="notifications.length === 0"
                                 class="flex flex-col items-center justify-center py-16"
@@ -191,6 +248,12 @@ onUnmounted(() => {
                                 <div
                                     v-for="notification in notifications"
                                     :key="notification.id"
+                                    :data-id="notification.id"
+                                    :ref="
+                                        (el) =>
+                                            !notification.is_seen &&
+                                            observeNotification(el)
+                                    "
                                     :class="[
                                         'border-b border-slate-300 px-5 py-4',
                                         notification.is_seen

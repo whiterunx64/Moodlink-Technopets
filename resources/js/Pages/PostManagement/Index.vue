@@ -458,7 +458,6 @@ function closeReportModal() {
     selectedReport.value = null;
 }
 
-
 function onMarkSafe() {
     if (!selectedReport.value) return;
     router.patch(
@@ -498,20 +497,20 @@ function clearFilters() {
             <!-- ── Stats strip ───────────────────────────────────────────── -->
             <div
                 :class="[
-                    'grid gap-3',
+                    'grid gap-4',
                     isReportedTab || isPendingTab
-                        ? 'grid-cols-1'
-                        : 'grid-cols-1 sm:grid-cols-3',
+                        ? 'lg:grid-cols-1'
+                        : 'grid-cols-2 lg:grid-cols-4',
                 ]"
             >
                 <div
                     v-for="stat in statItems"
                     :key="stat.label"
-                    class="group flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
+                    class="group flex w-full items-center gap-4 border border-gray-100 bg-white p-3 shadow-sm transition-shadow hover:shadow-md md:flex-1"
                 >
                     <div
                         :class="[
-                            'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors',
+                            'flex h-11 w-11 shrink-0 items-center justify-center transition-colors',
                             stat.bgColor,
                             stat.hoverBg,
                         ]"
@@ -559,23 +558,15 @@ function clearFilters() {
             </div>
 
             <!-- ── Tabs + Sort ───────────────────────────────────────────── -->
-            <div class="flex flex-wrap items-center justify-between gap-3">
-                <FilterTabs
-                    :model-value="activeFilter"
-                    :tabs="tabs"
-                    @update:model-value="setFilter"
-                />
-            </div>
-
-            <!-- ── Filter bar ────────────────────────────────────────────── -->
             <div
-                class="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
+                :class="[
+                    'flex flex-col items-center gap-3',
+                    isReportedTab ? 'xl:flex-row' : 'md:flex-row',
+                ]"
             >
-                <div
-                    class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center"
-                >
+                <div class="flex w-full flex-1 flex-row items-center gap-3">
                     <!-- Search -->
-                    <div class="relative min-w-0 flex-1 sm:max-w-xs">
+                    <div class="relative w-full flex-1">
                         <span
                             class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400"
                         >
@@ -601,96 +592,112 @@ function clearFilters() {
                                     ? 'Search by anonymous name...'
                                     : 'Search posts...'
                             "
-                            class="focus:border-sidebar focus:ring-sidebar/20 w-full rounded-xl border border-gray-200 bg-gray-50 py-2.5 pr-4 pl-9 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:bg-white focus:ring-2 focus:outline-none"
+                            class="focus:border-sidebar focus:ring-sidebar/20 w-full border border-gray-200 bg-gray-50 py-2.5 pr-4 pl-9 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:bg-white focus:ring-2 focus:outline-none"
                         />
                     </div>
-
-                    <!-- Reported-only filters -->
-                    <template v-if="isReportedTab">
-                        <!-- Report Reason -->
-                        <div class="relative">
-                            <span
-                                class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400"
-                            >
-                                <i class="fas fa-tag text-xs" />
-                            </span>
-                            <select
-                                v-model="filterReason"
-                                class="focus:border-sidebar focus:ring-sidebar/20 cursor-pointer appearance-none rounded-xl border border-gray-200 bg-gray-50 py-2.5 pr-8 pl-9 text-sm text-gray-700 transition-colors focus:bg-white focus:ring-2 focus:outline-none"
-                            >
-                                <option value="">All Reasons</option>
-                                <option
-                                    v-for="r in REPORT_REASONS"
-                                    :key="r"
-                                    :value="r"
-                                >
-                                    {{ r }}
-                                </option>
-                            </select>
-                            <span
-                                class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400"
-                            >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-4 w-4"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                >
-                                    <polyline points="6 9 12 15 18 9" />
-                                </svg>
-                            </span>
-                        </div>
-                    </template>
-
-                    <!-- Clear (shown when any filter is active) -->
-                    <button
-                        v-if="search || filterReason"
-                        type="button"
-                        class="text-text-muted hover:text-text-primary flex items-center gap-1.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-medium transition-colors hover:border-gray-300"
-                        @click="clearFilters"
+                    <div
+                        class="flex flex-row gap-3 sm:flex-wrap sm:items-center"
                     >
-                        <i class="fas fa-times text-[10px]" />
-                        Clear
-                    </button>
-                    <button
-                        v-if="!isArchivesTab && !isPendingTab"
-                        type="button"
-                        class="text-filter-inactive-text hover:text-filter-inactive-hover-text hover:bg-filter-inactive-hover-bg bg-bg-surface border-border-light ml-auto flex cursor-pointer items-center gap-2 rounded-xl border p-2.5 px-5 text-sm font-medium transition-all duration-150 select-none"
-                        @click="
-                            isReportedTab
-                                ? (reportedSort =
-                                      reportedSort === 'latest'
-                                          ? 'oldest'
-                                          : 'latest')
-                                : toggleSort()
-                        "
-                    >
-                        <i
-                            class="fas text-[10px]"
-                            :class="
+                        <!-- Reported-only filters -->
+                        <template v-if="isReportedTab">
+                            <!-- Report Reason -->
+                            <div class="relative">
+                                <span
+                                    class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400"
+                                >
+                                    <i class="fas fa-tag text-xs" />
+                                </span>
+                                <select
+                                    v-model="filterReason"
+                                    class="focus:border-sidebar focus:ring-sidebar/20 cursor-pointer appearance-none border border-gray-200 bg-gray-50 py-2.5 pr-8 pl-9 text-sm text-gray-700 transition-colors focus:bg-white focus:ring-2 focus:outline-none"
+                                >
+                                    <option value="">All Reasons</option>
+                                    <option
+                                        v-for="r in REPORT_REASONS"
+                                        :key="r"
+                                        :value="r"
+                                    >
+                                        {{ r }}
+                                    </option>
+                                </select>
+                                <span
+                                    class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400"
+                                >
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        class="h-4 w-4"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                    >
+                                        <polyline points="6 9 12 15 18 9" />
+                                    </svg>
+                                </span>
+                            </div>
+                        </template>
+
+                        <!-- Clear (shown when any filter is active) -->
+                        <button
+                            v-if="search || filterReason"
+                            type="button"
+                            class="text-text-muted hover:text-text-primary flex items-center gap-1.5 border border-gray-200 bg-white px-3 py-1 text-xs font-medium transition-colors hover:border-gray-300"
+                            @click="clearFilters"
+                        >
+                            <i class="fas fa-times text-[10px]" />
+                            Clear
+                        </button>
+                        <button
+                            v-if="!isArchivesTab && !isPendingTab"
+                            type="button"
+                            class="text-filter-inactive-text hover:text-filter-inactive-hover-text hover:bg-filter-inactive-hover-bg bg-bg-surface border-border-light ml-auto flex w-min cursor-pointer items-center gap-2 border px-2 py-1 text-xs font-medium transition-all duration-150 select-none"
+                            @click="
+                                isReportedTab
+                                    ? (reportedSort =
+                                          reportedSort === 'latest'
+                                              ? 'oldest'
+                                              : 'latest')
+                                    : toggleSort()
+                            "
+                        >
+                            <i
+                                class="fas text-xl font-bold"
+                                :class="
+                                    (isReportedTab
+                                        ? reportedSort
+                                        : currentSort) === 'oldest'
+                                        ? 'fa-arrow-up-wide-short'
+                                        : 'fa-arrow-down-wide-short'
+                                "
+                                >{{
+                                    (isReportedTab
+                                        ? reportedSort
+                                        : currentSort) === 'oldest'
+                                        ? '↑'
+                                        : '↓'
+                                }}</i
+                            >
+                            {{
                                 (isReportedTab ? reportedSort : currentSort) ===
                                 'oldest'
-                                    ? 'fa-arrow-up-wide-short'
-                                    : 'fa-arrow-down-wide-short'
-                            "
-                        />
-                        {{
-                            (isReportedTab ? reportedSort : currentSort) ===
-                            'oldest'
-                                ? 'Oldest first'
-                                : 'Latest first'
-                        }}
-                    </button>
+                                    ? 'Oldest First'
+                                    : 'Latest First'
+                            }}
+                        </button>
+                    </div>
                 </div>
-            </div>
 
+                <FilterTabs
+                    :model-value="activeFilter"
+                    :tabs="tabs"
+                    @update:model-value="setFilter"
+                />
+            </div>
             <!-- ── Table ─────────────────────────────────────────────────── -->
             <div
-                class="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm"
+                class="overflow-hidden border border-gray-100 bg-white shadow-sm"
             >
                 <!-- Table label row -->
                 <div class="border-b border-gray-100 px-5 py-3.5">
@@ -792,7 +799,7 @@ function clearFilters() {
                                     >
                                         <div class="flex items-center gap-2.5">
                                             <div
-                                                class="bg-sidebar flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                                                class="bg-sidebar flex h-8 w-8 shrink-0 items-center justify-center text-xs font-bold text-white"
                                             >
                                                 {{
                                                     rp.anonymous_name
@@ -827,7 +834,7 @@ function clearFilters() {
                                         class="border-table-grid border-r px-4 py-3 text-center"
                                     >
                                         <span
-                                            class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-red-50 text-sm font-bold text-red-600"
+                                            class="inline-flex h-7 w-7 items-center justify-center bg-red-50 text-sm font-bold text-red-600"
                                         >
                                             {{ rp.report_count }}
                                         </span>
@@ -837,7 +844,7 @@ function clearFilters() {
                                     >
                                         <span
                                             :class="[
-                                                'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium',
+                                                'inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium',
                                                 REASON_BADGE[rp.top_reason] ??
                                                     'bg-gray-100 text-gray-600',
                                             ]"
@@ -861,7 +868,7 @@ function clearFilters() {
                                     <td class="px-4 py-3 text-center">
                                         <button
                                             type="button"
-                                            class="bg-sidebar/10 text-sidebar hover:bg-sidebar inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-150 hover:text-white"
+                                            class="bg-sidebar/10 text-sidebar hover:bg-sidebar inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all duration-150 hover:text-white"
                                             @click="openReportModal(rp)"
                                         >
                                             <i class="fas fa-eye text-[10px]" />
@@ -913,9 +920,7 @@ function clearFilters() {
                                 </tr>
                             </thead>
                             <tbody class="divide-table-grid divide-y">
-                                <tr
-                                    v-if="paginatedPendingPosts.length === 0"
-                                >
+                                <tr v-if="paginatedPendingPosts.length === 0">
                                     <td colspan="5" class="py-16 text-center">
                                         <div
                                             class="flex flex-col items-center gap-3 text-gray-400"
@@ -940,13 +945,10 @@ function clearFilters() {
                                     >
                                         <div class="flex items-center gap-2.5">
                                             <div
-                                                class="bg-sidebar flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                                                class="bg-sidebar flex h-8 w-8 shrink-0 items-center justify-center text-xs font-bold text-white"
                                             >
                                                 {{
-                                                    (
-                                                        post.anonymous_name ??
-                                                        'U'
-                                                    )
+                                                    (post.anonymous_name ?? 'U')
                                                         .charAt(0)
                                                         .toUpperCase()
                                                 }}
@@ -984,13 +986,13 @@ function clearFilters() {
                                     >
                                         <span
                                             :class="[
-                                                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+                                                'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium',
                                                 moodStyle(post.mood).pill,
                                             ]"
                                         >
                                             <span
                                                 :class="[
-                                                    'h-1.5 w-1.5 rounded-full',
+                                                    'h-1.5 w-1.5',
                                                     moodStyle(post.mood).dot,
                                                 ]"
                                             />
@@ -1017,7 +1019,7 @@ function clearFilters() {
                                         >
                                             <button
                                                 type="button"
-                                                class="border-status-safe text-status-safe hover:bg-status-safe inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-all hover:text-white"
+                                                class="border-status-safe text-status-safe hover:bg-status-safe inline-flex items-center gap-1 border px-2.5 py-1.5 text-xs font-semibold transition-all hover:text-white"
                                                 @click="
                                                     approvePendingAsSafe(post)
                                                 "
@@ -1029,7 +1031,7 @@ function clearFilters() {
                                             </button>
                                             <button
                                                 type="button"
-                                                class="border-status-flagged text-status-flagged hover:bg-status-flagged inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-all hover:text-white"
+                                                class="border-status-flagged text-status-flagged hover:bg-status-flagged inline-flex items-center gap-1 border px-2.5 py-1.5 text-xs font-semibold transition-all hover:text-white"
                                                 @click="
                                                     approvePendingAsFlagged(
                                                         post,
@@ -1119,7 +1121,7 @@ function clearFilters() {
                                     >
                                         <div class="flex items-center gap-2.5">
                                             <div
-                                                class="bg-sidebar flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white"
+                                                class="bg-sidebar flex h-8 w-8 shrink-0 items-center justify-center text-xs font-bold text-white"
                                             >
                                                 {{
                                                     (post.anonymous_name ?? 'U')
@@ -1160,13 +1162,13 @@ function clearFilters() {
                                     >
                                         <span
                                             :class="[
-                                                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+                                                'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium',
                                                 moodStyle(post.mood).pill,
                                             ]"
                                         >
                                             <span
                                                 :class="[
-                                                    'h-1.5 w-1.5 rounded-full',
+                                                    'h-1.5 w-1.5',
                                                     moodStyle(post.mood).dot,
                                                 ]"
                                             />
@@ -1192,7 +1194,7 @@ function clearFilters() {
                                     >
                                         <span
                                             :class="[
-                                                'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium',
+                                                'inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium',
                                                 post.status === 'flagged'
                                                     ? 'bg-status-flagged-bg text-status-flagged border border-red-100'
                                                     : 'bg-status-safe-bg text-status-safe border border-green-200',
@@ -1221,7 +1223,7 @@ function clearFilters() {
                                             <button
                                                 type="button"
                                                 :class="[
-                                                    'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-all',
+                                                    'inline-flex items-center gap-1 border px-2.5 py-1.5 text-xs font-semibold transition-all',
                                                     post.status === 'flagged'
                                                         ? 'border-status-safe text-status-safe hover:bg-status-safe hover:text-white'
                                                         : 'border-status-flagged text-status-flagged hover:bg-status-flagged hover:text-white',
@@ -1245,7 +1247,7 @@ function clearFilters() {
                                             </button>
                                             <button
                                                 type="button"
-                                                class="bg-sidebar/10 text-sidebar hover:bg-sidebar inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all hover:text-white"
+                                                class="bg-sidebar/10 text-sidebar hover:bg-sidebar inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold transition-all hover:text-white"
                                                 @click="openPostModal(post)"
                                             >
                                                 <i
@@ -1276,8 +1278,7 @@ function clearFilters() {
             @update:current-page="pendingCurrentPage = $event"
             @prev="pendingCurrentPage > 1 && pendingCurrentPage--"
             @next="
-                pendingCurrentPage < pendingTotalPages &&
-                pendingCurrentPage++
+                pendingCurrentPage < pendingTotalPages && pendingCurrentPage++
             "
         />
 

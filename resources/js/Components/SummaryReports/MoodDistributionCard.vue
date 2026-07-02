@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { Doughnut, Line } from 'vue-chartjs';
-import {
-    Chart as ChartJS,
-    ArcElement,
-    LineElement,
-    PointElement,
-    CategoryScale,
-    LinearScale,
-    Tooltip,
-    Legend,
-} from 'chart.js';
-import ChartDataLabels from 'chartjs-plugin-datalabels';
 import type { MoodDistributionItem, SummaryPeriod } from '@/types';
 import { ArrowDownTrayIcon } from '@heroicons/vue/24/outline';
+import {
+    ArcElement,
+    CategoryScale,
+    Chart as ChartJS,
+    Legend,
+    LinearScale,
+    LineElement,
+    PointElement,
+    Tooltip,
+} from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+import { computed } from 'vue';
+import { Doughnut, Line } from 'vue-chartjs';
 
 ChartJS.register(
     ArcElement,
@@ -237,67 +237,94 @@ const lineOptions = computed(() => ({
 </script>
 
 <template>
-    <div class="bg-white rounded-2xl border border-border-light shadow-sm overflow-hidden">
-        <div class="flex flex-wrap items-center justify-between gap-3 px-6 pt-5 pb-4 border-b border-border-light">
+    <div class="border-border-light overflow-hidden border bg-white shadow-sm">
+        <div
+            class="border-border-light flex flex-wrap items-center justify-between gap-3 border-b px-6 pt-5 pb-4"
+        >
             <div>
-                <h3 class="text-base font-semibold text-text-primary">
+                <h3 class="text-text-primary text-base font-semibold">
                     Mood Distribution
                 </h3>
-                <p class="text-xs text-text-muted mt-0.5">
+                <p class="text-text-muted mt-0.5 text-xs">
                     Emotional breakdown across all programs
                 </p>
             </div>
 
-            <div class="flex items-center gap-2 flex-wrap">
+            <div class="flex flex-wrap items-center gap-2">
                 <div class="flex items-center gap-1.5">
-                    <button v-for="p in PERIODS" :key="p.key" type="button" :class="[
-                        'px-3.5 py-1.5 rounded-full text-xs font-medium border transition-colors',
-                        period === p.key
-                            ? 'bg-sidebar text-white border-sidebar'
-                            : 'bg-white text-text-secondary border-border-light hover:bg-gray-50',
-                    ]" @click="emit('update:period', p.key)">
+                    <button
+                        v-for="p in PERIODS"
+                        :key="p.key"
+                        type="button"
+                        :class="[
+                            'cursor-pointer border px-3.5 py-1.5 text-xs font-medium transition-colors',
+                            period === p.key
+                                ? 'bg-sidebar border-sidebar text-white'
+                                : 'text-text-secondary border-border-light bg-white hover:bg-[#fef]',
+                        ]"
+                        @click="emit('update:period', p.key)"
+                    >
                         {{ p.label }}
                     </button>
                 </div>
 
-                <div class="w-px h-5 bg-border-light" />
+                <div class="bg-border-light h-5 w-px" />
 
-                <button type="button"
-                    class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-medium border border-border-light bg-white text-text-secondary hover:bg-gray-50 transition-colors">
-                    <ArrowDownTrayIcon class="w-3.5 h-3.5" />
+                <button
+                    type="button"
+                    class="border-border-light text-text-secondary inline-flex cursor-pointer items-center gap-1.5 border bg-white px-3.5 py-1.5 text-xs font-medium transition-colors hover:bg-gray-50"
+                >
+                    <ArrowDownTrayIcon class="h-3.5 w-3.5" />
                     Export PDF
                 </button>
             </div>
         </div>
 
-        <div v-if="totalLogs === 0" class="py-20 text-center text-sm text-text-muted">
+        <div
+            v-if="totalLogs === 0"
+            class="text-text-muted py-20 text-center text-sm"
+        >
             No mood data available for this period.
         </div>
 
-        <div v-else class="grid grid-cols-1 lg:grid-cols-5 divide-y lg:divide-y-0 lg:divide-x divide-border-light">
+        <div
+            v-else
+            class="divide-border-light grid grid-cols-1 divide-y lg:grid-cols-5 lg:divide-x lg:divide-y-0"
+        >
             <!-- Doughnut -->
 
-            <div class="lg:col-span-2 flex flex-col items-center justify-center px-6 py-6 gap-2">
-                <div class="relative w-full max-w-55 h-55">
+            <div
+                class="flex flex-col items-center justify-center gap-2 px-6 py-6 lg:col-span-2"
+            >
+                <div class="relative h-55 w-full max-w-55">
                     <Doughnut :data="doughnutData" :options="doughnutOptions" />
 
-                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                        <span class="text-3xl font-extrabold text-text-primary">
+                    <div
+                        class="pointer-events-none absolute inset-0 flex flex-col items-center justify-center"
+                    >
+                        <span class="text-text-primary text-3xl font-extrabold">
                             {{ totalLogs }}
                         </span>
 
-                        <span class="text-xs text-text-muted font-medium">
+                        <span class="text-text-muted text-xs font-medium">
                             Total Logs
                         </span>
                     </div>
                 </div>
 
-                <div class="flex flex-wrap justify-center gap-2 mt-2">
-                    <span v-for="item in distribution" :key="item.label" :class="[
-                        'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold',
-                        MOOD_BG[item.label],
-                    ]">
-                        <span class="w-2 h-2 rounded-full" :style="{ backgroundColor: MOOD_COLOR[item.label] }" />
+                <div class="mt-2 flex flex-wrap justify-center gap-2">
+                    <span
+                        v-for="item in distribution"
+                        :key="item.label"
+                        :class="[
+                            'flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold',
+                            MOOD_BG[item.label],
+                        ]"
+                    >
+                        <span
+                            class="h-2 w-2"
+                            :style="{ backgroundColor: MOOD_COLOR[item.label] }"
+                        />
 
                         <span :class="MOOD_TEXT[item.label]">
                             {{ item.label }}
@@ -308,31 +335,38 @@ const lineOptions = computed(() => ({
 
             <!-- Multi Axis Line Chart -->
 
-            <div class="lg:col-span-3 flex flex-col justify-center px-6 py-6 gap-5">
+            <div
+                class="flex flex-col justify-center gap-5 px-6 py-6 lg:col-span-3"
+            >
                 <div class="h-80">
                     <Line :data="lineData" :options="lineOptions" />
                 </div>
 
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div v-for="item in distribution" :key="item.label" :class="[
-                        'rounded-xl p-3 text-center',
-                        MOOD_BG[item.label],
-                    ]">
-                        <p :class="[
-                            'text-xl font-extrabold',
-                            MOOD_TEXT[item.label],
-                        ]">
+                <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                    <div
+                        v-for="item in distribution"
+                        :key="item.label"
+                        :class="['p-3 text-center', MOOD_BG[item.label]]"
+                    >
+                        <p
+                            :class="[
+                                'text-xl font-extrabold',
+                                MOOD_TEXT[item.label],
+                            ]"
+                        >
                             {{ item.pct }}%
                         </p>
 
-                        <p class="text-xs text-text-muted mt-0.5">
+                        <p class="text-text-muted mt-0.5 text-xs">
                             {{ item.label }}
                         </p>
 
-                        <p :class="[
-                            'text-xs font-semibold mt-0.5',
-                            MOOD_TEXT[item.label],
-                        ]">
+                        <p
+                            :class="[
+                                'mt-0.5 text-xs font-semibold',
+                                MOOD_TEXT[item.label],
+                            ]"
+                        >
                             {{ item.count }} logs
                         </p>
                     </div>

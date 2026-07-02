@@ -1,16 +1,21 @@
 <script setup lang="ts">
-import { ref, toRef, watch } from 'vue';
-import { Head, router } from '@inertiajs/vue3';
-import AdminLayout from '@/Layouts/AdminLayout.vue';
-import SearchInput from '@/Components/UI/SearchInput.vue';
-import StudentTabs from '@/Components/Students/StudentTabs.vue';
 import StudentTable from '@/Components/Students/StudentTable.vue';
+import StudentTabs from '@/Components/Students/StudentTabs.vue';
 import Pagination from '@/Components/UI/Pagination.vue';
-import VerifyStudentModal from '@/Pages/UserAccounts/Modal/VerifyStudentModal.vue';
+import SearchInput from '@/Components/UI/SearchInput.vue';
+import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ManageAccountModal from '@/Pages/UserAccounts/Modal/ManageAccountModal.vue';
-import { YEAR_LEVEL_OPTIONS } from '@/composables/useStudentFilters';
+import VerifyStudentModal from '@/Pages/UserAccounts/Modal/VerifyStudentModal.vue';
 import { usePaginatorNav } from '@/composables/usePaginatorNav';
-import type { Paginated, Student, StudentAccountFilters, StudentTab } from '@/types';
+import { YEAR_LEVEL_OPTIONS } from '@/composables/useStudentFilters';
+import type {
+    Paginated,
+    Student,
+    StudentAccountFilters,
+    StudentTab,
+} from '@/types';
+import { Head, router } from '@inertiajs/vue3';
+import { ref, toRef, watch } from 'vue';
 
 const props = defineProps<{
     students: Paginated<Student>;
@@ -20,7 +25,9 @@ const props = defineProps<{
 
 // ── Local filter state, seeded from the server's echoed filters ───────────────
 const search = ref(props.filters.search ?? '');
-const yearFilter = ref(props.filters.year_level ? String(props.filters.year_level) : 'All');
+const yearFilter = ref(
+    props.filters.year_level ? String(props.filters.year_level) : 'All',
+);
 const activeTab = ref<StudentTab>((props.filters.tab as StudentTab) ?? 'all');
 
 const paginator = usePaginatorNav(toRef(props, 'students'));
@@ -75,35 +82,66 @@ function goToPage(page: number) {
 </script>
 
 <template>
-
     <Head title="User Accounts" />
 
     <AdminLayout title="User Accounts">
         <div class="space-y-4 pb-20">
-
             <!-- Top bar -->
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3 sm:flex-wrap">
-
+            <div
+                class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3"
+            >
                 <!-- Search -->
-                <SearchInput v-model="search" placeholder="Search by name or student ID..." @search="searchStudents" />
+                <SearchInput
+                    v-model="search"
+                    placeholder="Search by name or student ID..."
+                    @search="searchStudents"
+                />
 
                 <!-- Year level filter -->
                 <div class="relative w-full sm:w-auto">
-                    <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                    <span
+                        class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <polygon
+                                points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"
+                            />
                         </svg>
                     </span>
-                    <select v-model="yearFilter"
-                        class="w-full sm:w-auto appearance-none rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-8 text-xs text-text-secondary transition-colors focus:border-sidebar focus:ring-2 focus:ring-sidebar/20 focus:outline-none cursor-pointer sm:py-2.5 sm:text-sm">
-                        <option v-for="y in YEAR_LEVEL_OPTIONS" :key="y.value" :value="y.value">
+                    <select
+                        v-model="yearFilter"
+                        class="text-text-secondary focus:border-sidebar focus:ring-sidebar/20 w-full cursor-pointer appearance-none border border-gray-200 bg-white py-2 pr-8 pl-9 text-xs transition-colors focus:ring-2 focus:outline-none sm:w-auto sm:py-2.5 sm:text-sm"
+                    >
+                        <option
+                            v-for="y in YEAR_LEVEL_OPTIONS"
+                            :key="y.value"
+                            :value="y.value"
+                        >
                             {{ y.label }}
                         </option>
                     </select>
-                    <span class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <span
+                        class="pointer-events-none absolute inset-y-0 right-2 flex items-center text-gray-400"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-4 w-4"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
                             <polyline points="6 9 12 15 18 9" />
                         </svg>
                     </span>
@@ -115,19 +153,36 @@ function goToPage(page: number) {
 
             <!-- Table -->
             <StudentTable :rows="students.data" @open="openModal" />
-
         </div>
 
         <!-- Fixed pagination bar -->
-        <Pagination :fixed="true" :current-page="paginator.currentPage.value" :total-pages="paginator.totalPages.value"
-            :page-numbers="paginator.pageNumbers.value" :range-start="paginator.rangeStart.value"
-            :range-end="paginator.rangeEnd.value" :total="paginator.total.value" @update:current-page="goToPage"
-            @prev="goToPage(paginator.currentPage.value - 1)" @next="goToPage(paginator.currentPage.value + 1)" />
+        <Pagination
+            :fixed="true"
+            :current-page="paginator.currentPage.value"
+            :total-pages="paginator.totalPages.value"
+            :page-numbers="paginator.pageNumbers.value"
+            :range-start="paginator.rangeStart.value"
+            :range-end="paginator.rangeEnd.value"
+            :total="paginator.total.value"
+            @update:current-page="goToPage"
+            @prev="goToPage(paginator.currentPage.value - 1)"
+            @next="goToPage(paginator.currentPage.value + 1)"
+        />
     </AdminLayout>
 
     <!-- Pending students: create-account flow -->
-    <VerifyStudentModal :show="verifyModalOpen" :student="selectedStudent" @close="closeModal" @verified="onVerified" />
+    <VerifyStudentModal
+        :show="verifyModalOpen"
+        :student="selectedStudent"
+        @close="closeModal"
+        @verified="onVerified"
+    />
 
     <!-- Verified / suspended students: manage account -->
-    <ManageAccountModal :show="manageModalOpen" :student="selectedStudent" @close="closeModal" @updated="onVerified" />
+    <ManageAccountModal
+        :show="manageModalOpen"
+        :student="selectedStudent"
+        @close="closeModal"
+        @updated="onVerified"
+    />
 </template>
