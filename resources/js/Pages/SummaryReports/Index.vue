@@ -191,6 +191,7 @@ function miniBarWidth(count: number, total: number): string {
                         activeTab === tab.key
                             ? 'text-text-primary bg-white shadow-sm hover:bg-[#fef]'
                             : 'text-text-muted hover:text-text-secondary hover:bg-black/5',
+                        //tab.key == 'studentsOfConcern' ? 'hidden' : '',
                     ]"
                     @click="changeTab(tab.key)"
                 >

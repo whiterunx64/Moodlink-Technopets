@@ -31,7 +31,7 @@ class SummaryReportController extends Controller
 
         if ($filters['tab'] === 'programs') {
             $props['programs'] = $this->reports->perProgramMoodCounts($period);
-        } elseif ($filters['tab'] === 'at-risk') {
+        } elseif ($filters['tab'] === 'studentsOfConcern') {
             $props['atRiskStudents'] = $this->reports->atRiskStudents();
         } else {
             $props['overview'] = $this->reports->overview($period);

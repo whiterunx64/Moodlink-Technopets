@@ -268,11 +268,9 @@ const lineOptions = computed(() => ({
                     </button>
                 </div>
 
-                <div class="bg-border-light h-5 w-px" />
-
                 <button
                     type="button"
-                    class="border-border-light text-text-secondary inline-flex cursor-pointer items-center gap-1.5 border bg-white px-3.5 py-1.5 text-xs font-medium transition-colors hover:bg-gray-50"
+                    class="border-border-light text-text-secondary hidden cursor-pointer items-center gap-1.5 border bg-white px-3.5 py-1.5 text-xs font-medium transition-colors hover:bg-gray-50"
                 >
                     <ArrowDownTrayIcon class="h-3.5 w-3.5" />
                     Export PDF
