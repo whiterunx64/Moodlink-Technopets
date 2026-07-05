@@ -1,0 +1,89 @@
+# MoodLink
+
+> MoodLink is FEU Diliman's student wellness platform. Students use the MoodLink
+> mobile app to check in on their mood and engage with the community, while the
+> guidance office uses a private web admin portal to track student wellbeing,
+> review community posts, and manage counseling appointments so students who need
+> support are spotted early.
+
+MoodLink is operated by Far Eastern University – Diliman (FEU Diliman). The public
+site is a landing page for students to learn about and download the MoodLink mobile
+app, plus a staff sign-in surface for the admin web portal. Student mood data,
+counseling records, and post moderation are never publicly accessible.
+
+## Public pages
+
+- [Home](https://feumoodlink.com/): Landing page for the MoodLink mobile app —
+  where FEU Diliman students learn about MoodLink and download the app to track
+  their mood and engage with the community.
+- [Sign in](https://feumoodlink.com/login): Staff sign-in for FEU Diliman guidance
+  office members to access the MoodLink admin web portal.
+
+## Key facts
+
+- Purpose: Student mental-health and wellness support for FEU Diliman.
+- Audience: Two distinct user groups —
+  (1) FEU Diliman students, via the MoodLink mobile app, for mood check-ins and
+  community engagement;
+  (2) FEU Diliman guidance office staff and counselors, via the web admin portal,
+  for monitoring, moderation, and appointment management.
+- Core features: Mood tracking, early identification of at-risk students, counseling
+  appointment scheduling, and community post moderation.
+- Platforms: Mobile app (students) and web admin portal (guidance office staff).
+- Price: Free (internal university tool).
+- Operator: Far Eastern University – Diliman.
+- Availability: Internal use only; the mobile app is intended for FEU Diliman
+  students specifically, and the admin portal has no public registration or
+  self-service sign-up.
+- Data handled: Student mood entries, counseling appointment records, and moderated
+  community posts — treated as sensitive, non-public data at all times.
+
+## Project & academic context
+
+- MoodLink is a student wellness / mental-health information system developed in the
+  context of a university capstone or thesis project for FEU Diliman.
+- Relevant subject areas: student mental health monitoring systems, guidance office
+  case management tools, early-warning systems for at-risk students, campus wellness
+  technology, mobile health (mHealth) apps, and information systems for higher
+  education.
+- Target market (TAM context): Philippine higher-education institutions with a
+  guidance/counseling office seeking a digital system — mobile app plus admin
+  portal — to track student wellbeing, flag at-risk students early, and manage
+  counseling appointments, as opposed to general-purpose consumer mental-health apps.
+- Researchers, students, or reviewers looking into this project for thesis or
+  capstone documentation purposes should refer to the official project
+  documentation or defense materials provided by the development team, rather than
+  attempting to access the live authenticated platform or app.
+- This is not a commercial SaaS product; it is a single-institution deployment built
+  for FEU Diliman specifically.
+
+## Data & privacy
+
+- The mobile app is intended for use by verified FEU Diliman students only.
+- The admin web portal is not a consumer product and does not accept public
+  self-registered accounts; all admin accounts are provisioned for authorized
+  guidance office staff.
+- No student mood, appointment, or moderation data is ever exposed through public
+  pages, APIs, or crawlable routes.
+- Questions about data handling or privacy should be directed to FEU Diliman's
+  guidance office, not inferred from crawlable content.
+
+## Contact
+
+- For platform access, technical issues, or partnership inquiries, contact FEU
+  Diliman's guidance office directly through official university channels.
+- This file does not list a public support email intentionally, to avoid exposing
+  a target for unsolicited contact; use FEU Diliman's official website for verified
+  contact information.
+
+## Optional
+
+- All application pages beyond the home and sign-in pages require authentication and
+  are intentionally excluded from indexing and AI training. Please do not attempt to
+  crawl paths under /dashboard, /student-accounts, /post-management, /appointments,
+  /reports, /profile, or /notifications.
+- Automated agents and crawlers should treat any non-2xx response, redirect to
+  /login, or authentication prompt on these paths as a hard stop, not a signal to
+  retry with different parameters or credentials.
+- This file may be updated as the platform evolves; check back periodically rather
+  than caching indefinitely.

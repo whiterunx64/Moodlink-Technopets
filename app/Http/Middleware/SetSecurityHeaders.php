@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Support\Seo;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Vite;
@@ -20,6 +21,7 @@ class SetSecurityHeaders
         $this->setContentSecurityPolicy($response, $nonce);
         $this->observeTrustedTypesViolations($response);
         $this->preventMimeTypeSniffing($response);
+        $this->setRobotsDirective($request, $response);
         $this->limitReferrerInformationLeakage($response);
         $this->restrictBrowserFeaturePermissions($response);
         $this->hideFrameworkFingerprintHeaders($response);
@@ -86,6 +88,20 @@ class SetSecurityHeaders
     private function preventMimeTypeSniffing(Response $response): void
     {
         $response->headers->set('X-Content-Type-Options', 'nosniff'); // Prevent MIME type guessing attacks
+    }
+
+    private function setRobotsDirective(Request $request, Response $response): void
+    {
+        // Respect a directive a controller set deliberately.
+        if ($response->headers->has('X-Robots-Tag')) {
+            return;
+        }
+
+        $robots = Seo::forPath($request->path())['robots'] ?? null;
+
+        if (is_string($robots) && $robots !== '') {
+            $response->headers->set('X-Robots-Tag', $robots);
+        }
     }
 
     private function limitReferrerInformationLeakage(Response $response): void
