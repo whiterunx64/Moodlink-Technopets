@@ -163,14 +163,6 @@ RUN printf '%s\n' \
 RUN printf '%s\n' \
     'Header always unset X-Powered-By' \
     'Header always unset Server' \
-    'Header always unset X-Content-Type-Options' \
-    'Header always set X-Content-Type-Options "nosniff"' \
-    'Header always unset X-Frame-Options' \
-    'Header always set X-Frame-Options "SAMEORIGIN"' \
-    'Header always unset Cross-Origin-Resource-Policy' \
-    'Header always set Cross-Origin-Resource-Policy "same-origin"' \
-    'Header always unset X-Permitted-Cross-Domain-Policies' \
-    'Header always set X-Permitted-Cross-Domain-Policies "none"' \
     'Header always set X-Download-Options "noopen"' \
     'Header always set X-DNS-Prefetch-Control "off"' \
     > /etc/apache2/conf-available/security-headers.conf \

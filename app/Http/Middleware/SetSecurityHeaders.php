@@ -23,7 +23,9 @@ class SetSecurityHeaders
         $this->limitReferrerInformationLeakage($response);
         $this->restrictBrowserFeaturePermissions($response);
         $this->hideFrameworkFingerprintHeaders($response);
+        $this->enableOriginAgentCluster($response);
         $this->addCrossOriginProtection($response);
+        $this->blockLegacyXssFilter($response);
 
         if ($this->requestIsServedOverHttps($request)) {
             $this->enforceHttpsWithStrictTransportSecurity($response);
@@ -105,12 +107,23 @@ class SetSecurityHeaders
         $response->headers->remove('Server'); // Hide server information
     }
 
+    private function enableOriginAgentCluster(Response $response): void
+    {
+        $response->headers->set('Origin-Agent-Cluster', '?1');
+    }
+
+
     private function addCrossOriginProtection(Response $response): void
     {
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
         $response->headers->set('Cross-Origin-Resource-Policy', 'same-origin');
         $response->headers->set('X-Permitted-Cross-Domain-Policies', 'none');
+    }
+
+    private function blockLegacyXssFilter(Response $response): void
+    {
+        $response->headers->set('X-XSS-Protection', '0');
     }
 
     private function enforceHttpsWithStrictTransportSecurity(Response $response): void
