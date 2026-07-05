@@ -441,11 +441,7 @@ function toggleFlag(post: Post) {
     );
 }
 
-function toggleReport(post: Post, chosenStatus: String) {
-    const routeName = chosenStatus == 'safe' ? 'posts.unflag' : 'posts.flag';
-    console.log(post, chosenStatus);
-    const nextStatus: Post['status'] =
-        chosenStatus == 'safe' ? 'safe' : 'flagged';
+function toggleReport(post: ReportedPost, chosenStatus: string) {
     router.patch(
         route('posts.unreport', { post: post.id, status: chosenStatus }),
         {},
@@ -875,7 +871,6 @@ function clearFilters() {
                                             class="bg-sidebar/10 text-sidebar hover:bg-sidebar inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all duration-150 hover:text-white"
                                             @click="toggleReport(rp, 'safe')"
                                         >
-                                            {{ console.log(rp) }}
                                             <i class="fas fa-eye text-[10px]" />
                                             Safe
                                         </button>
