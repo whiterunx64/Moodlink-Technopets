@@ -32,6 +32,16 @@ const TREND_META = {
     Improving: { symbol: '↑', class: 'trend--up' },
 } as const;
 
+
+function countForMood(label: string): number {
+    return props.data.reduce((total, d) => {
+        const moodLabel =
+            (d.score !== null ? MOOD_PALETTE[d.score]?.label : undefined) ??
+            'Unknown';
+        return moodLabel === label ? total + 1 : total;
+    }, 0);
+}
+
 // Highest-scored mood for the centre label
 const dominantMood = computed(() => {
     if (!props.data.length) return null;
@@ -165,11 +175,7 @@ const chartOptions = computed<ChartOptions<'doughnut'>>(() => ({
                     aria-hidden="true"
                 />
                 <span class="legend-name">{{ meta.label }}</span>
-                <span class="legend-score">{{
-                    chartData.labels
-                        .filter((num) => num == meta.label)
-                        .reduce((accumulator, current) => accumulator + 1, 0)
-                }}</span>
+                <span class="legend-score">{{ countForMood(meta.label) }}</span>
             </div>
         </footer>
     </article>
