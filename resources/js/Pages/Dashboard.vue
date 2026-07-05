@@ -60,18 +60,6 @@ const statCards = computed<StatCardConfig[]>(() => [
         href: route('reports.index'),
         rows: [
             {
-                type: 'pill',
-                label: 'Safe',
-                count: props.mood_logs_breakdown.safe,
-                variant: 'green',
-            },
-            {
-                type: 'pill',
-                label: 'Flagged',
-                count: props.mood_logs_breakdown.flagged,
-                variant: 'red',
-            },
-            {
                 type: 'badge',
                 label: 'Leading mood',
                 value: props.mood_logs_breakdown.leading,
@@ -81,7 +69,7 @@ const statCards = computed<StatCardConfig[]>(() => [
     },
     {
         label: 'Users',
-        value: props.students_breakdown.total,
+        value: props.students_breakdown.total - 1,
         icon: AcademicCapIcon,
         iconBg: 'bg-blue-200',
         iconColor: 'text-blue-700',
@@ -93,7 +81,7 @@ const statCards = computed<StatCardConfig[]>(() => [
             {
                 type: 'pill',
                 label: 'Active',
-                count: props.students_breakdown.active,
+                count: props.students_breakdown.active - 1,
                 variant: 'green',
             },
             {

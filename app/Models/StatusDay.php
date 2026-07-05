@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
+use App\Support\PhTime;
 /**
  * @property int $id
  * @property int $account_id
@@ -166,20 +167,21 @@ class StatusDay extends Model
      * @return Collection<string, int>
      */
     public static function moodCountsSince(?\DateTimeInterface $start, ?string $program = null): Collection
-    {
-        return static::query()
-            ->whereStudentIsVerified()
-            ->when($program, fn(Builder $query) => $query->whereHas(
-                'student',
-                fn(Builder $student) => $student->where('program', $program),
-            ))
-            ->recordedOnOrAfter($start)
-            ->whereNotNull('mood')
-            ->selectRaw('mood, count(*) as total')
-            ->groupBy('mood')
-            ->withCasts(['total' => 'integer'])
-            ->pluck('total', 'mood');
-    }
+{
+    return static::query()
+        ->whereStudentIsVerified()
+        ->when($program, fn (Builder $query) => $query->whereHas(
+            'student',
+            fn (Builder $student) => $student->where('program', $program),
+        ))
+        ->recordedOnOrAfter($start)
+        ->whereDate('status_days.date', '<=', PhTime::now()) // or PhTime::now(), see below
+        ->whereNotNull('mood')
+        ->selectRaw('mood, count(*) as total')
+        ->groupBy('mood')
+        ->withCasts(['total' => 'integer'])
+        ->pluck('total', 'mood');
+}
 
     /**
      * @return Collection<int, StatusDay>  one row per program, ordered by program name

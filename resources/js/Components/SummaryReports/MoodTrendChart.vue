@@ -165,7 +165,11 @@ const chartOptions = computed<ChartOptions<'doughnut'>>(() => ({
                     aria-hidden="true"
                 />
                 <span class="legend-name">{{ meta.label }}</span>
-                <span class="legend-score">{{ score }}</span>
+                <span class="legend-score">{{
+                    chartData.labels
+                        .filter((num) => num == meta.label)
+                        .reduce((accumulator, current) => accumulator + 1, 0)
+                }}</span>
             </div>
         </footer>
     </article>
@@ -196,7 +200,7 @@ const chartOptions = computed<ChartOptions<'doughnut'>>(() => ({
     align-items: flex-end;
     justify-content: space-between;
     padding: 1.25rem 1.375rem 1rem;
-    background: var(--ink);
+    background: #333;
     border-bottom: 1.5px solid var(--ink);
 }
 

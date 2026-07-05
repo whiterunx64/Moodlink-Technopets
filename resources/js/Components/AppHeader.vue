@@ -158,7 +158,7 @@ function markAsSeen(id: number) {
     >
         <button
             type="button"
-            class="text-header-icon hover:text-header-icon-hover p-1 transition-colors lg:hidden"
+            class="text-header-icon hover:text-header-icon-hover cursor-pointer p-1 transition-colors lg:hidden"
             @click="emit('toggle-sidebar')"
         >
             <Bars3Icon class="h-6 w-6" />

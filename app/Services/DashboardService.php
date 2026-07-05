@@ -65,6 +65,7 @@ final class DashboardService
                 StatusDay::query()
                     ->whereStudentIsVerified()
                     ->recordedOnOrAfter(PhTime::startOfDaysAgo(0))
+                    ->where('date', '<=', PhTime::now()->utc())
                     ->whereNotNull('mood')
                     ->selectRaw('count(*)'),
                 'mood_logs_today',
@@ -310,6 +311,7 @@ final class DashboardService
         $counts = StatusDay::query()
             ->whereStudentIsVerified()
             ->recordedOnOrAfter($start)
+            ->where('date', '<=', PhTime::now()->utc())
             ->whereNotNull('mood')
             ->selectRaw('COUNT(*) as total')
             ->selectRaw("SUM(CASE WHEN mood IN ('Content', 'Excited') THEN 1 ELSE 0 END) as safe")
@@ -319,6 +321,7 @@ final class DashboardService
         $leading = StatusDay::query()
             ->whereStudentIsVerified()
             ->recordedOnOrAfter($start)
+            ->where('date', '<=', PhTime::now()->utc())
             ->whereNotNull('mood')
             ->selectRaw('mood, COUNT(*) as cnt')
             ->groupBy('mood')

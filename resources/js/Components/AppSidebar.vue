@@ -73,7 +73,7 @@ const nav_items: NavItem[] = [
             <button
                 v-if="!collapsed"
                 type="button"
-                class="p-1 text-white/60 transition-colors hover:text-white lg:hidden"
+                class="cursor-pointer p-1 text-white/60 transition-colors hover:text-white lg:hidden"
                 @click="emit('close')"
             >
                 <XMarkIcon class="h-5 w-5" />

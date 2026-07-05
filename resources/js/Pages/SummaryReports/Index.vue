@@ -366,7 +366,7 @@ function miniBarWidth(count: number, total: number): string {
                                 <th
                                     class="text-text-muted px-4 py-3 text-left text-xs font-medium"
                                 >
-                                    At-Risk
+                                    Concern Quantity
                                 </th>
                                 <th
                                     class="text-text-muted px-4 py-3 text-left text-xs font-medium"
@@ -424,7 +424,7 @@ function miniBarWidth(count: number, total: number): string {
                                 <td class="px-4 py-4">
                                     <div class="flex h-2 w-28 overflow-hidden">
                                         <div
-                                            class="h-full bg-green-500"
+                                            class="h-full bg-[#0fdf58]"
                                             :style="{
                                                 width: miniBarWidth(
                                                     sec.excited,
@@ -433,7 +433,7 @@ function miniBarWidth(count: number, total: number): string {
                                             }"
                                         />
                                         <div
-                                            class="h-full bg-blue-500"
+                                            class="h-full bg-[#8da9e4]"
                                             :style="{
                                                 width: miniBarWidth(
                                                     sec.content,
@@ -442,7 +442,7 @@ function miniBarWidth(count: number, total: number): string {
                                             }"
                                         />
                                         <div
-                                            class="h-full bg-orange-400"
+                                            class="h-full bg-[#f2c94c]"
                                             :style="{
                                                 width: miniBarWidth(
                                                     sec.stressed,
@@ -451,7 +451,7 @@ function miniBarWidth(count: number, total: number): string {
                                             }"
                                         />
                                         <div
-                                            class="h-full bg-red-400"
+                                            class="h-full bg-[#fb5737]"
                                             :style="{
                                                 width: miniBarWidth(
                                                     sec.drained,
@@ -496,7 +496,7 @@ function miniBarWidth(count: number, total: number): string {
                             v-if="atRiskStudents.length > 0"
                             class="bg-red-100 px-3 py-1 text-xs font-semibold text-red-600"
                         >
-                            {{ atRiskStudents.length }} At Risk
+                            {{ atRiskStudents.length }} Students
                         </span>
                     </div>
 
@@ -522,11 +522,6 @@ function miniBarWidth(count: number, total: number): string {
                                         >· {{ student.student_number }} ·
                                         {{ student.program }}</span
                                     >
-                                    <span
-                                        class="bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-600"
-                                    >
-                                        Risk {{ student.window_a_count }}
-                                    </span>
                                 </div>
                                 <div
                                     class="mt-1 flex flex-wrap items-center gap-1.5"
@@ -552,7 +547,8 @@ function miniBarWidth(count: number, total: number): string {
                                     <p
                                         class="text-sm font-semibold text-red-500"
                                     >
-                                        At risk for {{ student.time_at_risk }}
+                                        Of concern for
+                                        {{ student.time_at_risk }}
                                     </p>
                                     <p class="text-text-muted text-xs">
                                         Last log: {{ student.last_log }}
@@ -562,7 +558,7 @@ function miniBarWidth(count: number, total: number): string {
                                 <button
                                     v-if="!student.has_consultation"
                                     type="button"
-                                    class="bg-sidebar hover:bg-sidebar/90 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white transition-colors"
+                                    class="bg-sidebar hover:bg-sidebar/90 inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white transition-colors"
                                     @click="openConsult(student)"
                                 >
                                     <ChatBubbleLeftEllipsisIcon
