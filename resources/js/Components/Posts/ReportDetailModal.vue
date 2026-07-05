@@ -8,8 +8,7 @@ defineProps<{
 
 const emit = defineEmits<{
     close: [];
-    'mark-safe': [];
-    flag: [];
+    unreport: ['safe' | 'flag'];
 }>();
 
 const REASON_ROWS = [
@@ -341,16 +340,16 @@ function pct(count: number, total: number): number {
                     >
                         <button
                             type="button"
-                            class="border-status-safe text-status-safe hover:bg-status-safe inline-flex items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-semibold transition-all hover:text-white"
-                            @click="emit('mark-safe')"
+                            class="border-status-safe text-status-safe hover:bg-status-safe inline-flex cursor-pointer items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-semibold transition-all hover:text-white"
+                            @click="emit('unreport', 'safe')"
                         >
                             <i class="fas fa-check text-xs" />
                             Safe
                         </button>
                         <button
                             type="button"
-                            class="border-status-flagged text-status-flagged hover:bg-status-flagged inline-flex items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-semibold transition-all hover:text-white"
-                            @click="emit('flag')"
+                            class="border-status-flagged text-status-flagged hover:bg-status-flagged inline-flex cursor-pointer items-center gap-1.5 rounded-xl border px-4 py-2 text-sm font-semibold transition-all hover:text-white"
+                            @click="emit('unreport', 'flag')"
                         >
                             <i class="fas fa-flag text-xs" />
                             Flag

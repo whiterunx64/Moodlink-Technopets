@@ -441,6 +441,26 @@ function toggleFlag(post: Post) {
     );
 }
 
+function toggleReport(post: Post, chosenStatus: String) {
+    const routeName = chosenStatus == 'safe' ? 'posts.unflag' : 'posts.flag';
+    console.log(post, chosenStatus);
+    const nextStatus: Post['status'] =
+        chosenStatus == 'safe' ? 'safe' : 'flagged';
+    router.patch(
+        route('posts.unreport', { post: post.id, status: chosenStatus }),
+        {},
+        {
+            preserveScroll: true,
+            only: ['posts', 'filters', 'flash', 'counts', 'reportedPosts'],
+            onSuccess: () => {
+                reportedPosts.value = reportedPosts.value.filter(
+                    (p) => p.id !== post.id,
+                );
+            },
+        },
+    );
+}
+
 function openPostModal(post: Post) {
     selectedPost.value = post;
 }
@@ -727,7 +747,6 @@ function clearFilters() {
                                 <col class="w-24" />
                                 <col class="w-40" />
                                 <col class="w-32" />
-                                <col class="w-22" />
                             </colgroup>
                             <thead
                                 class="bg-table-header border-table-grid border-b"
@@ -752,11 +771,6 @@ function clearFilters() {
                                         class="border-table-grid border-r px-4 py-3 text-left text-[11px] font-semibold tracking-wide text-gray-500 uppercase"
                                     >
                                         Top Reason
-                                    </th>
-                                    <th
-                                        class="border-table-grid border-r px-4 py-3 text-left text-[11px] font-semibold tracking-wide text-gray-500 uppercase"
-                                    >
-                                        Latest Report
                                     </th>
                                     <th
                                         class="px-4 py-3 text-center text-[11px] font-semibold tracking-wide text-gray-500 uppercase"
@@ -854,21 +868,28 @@ function clearFilters() {
                                         </span>
                                     </td>
                                     <td
-                                        class="border-table-grid border-r px-4 py-3"
+                                        class="flex flex-row gap-2 px-4 py-3 text-center"
                                     >
-                                        <div
-                                            class="flex items-center gap-1.5 text-xs text-gray-500"
-                                        >
-                                            <i
-                                                class="far fa-calendar text-[10px]"
-                                            />
-                                            {{ rp.latest_report_date }}
-                                        </div>
-                                    </td>
-                                    <td class="px-4 py-3 text-center">
                                         <button
                                             type="button"
-                                            class="bg-sidebar/10 text-sidebar hover:bg-sidebar inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all duration-150 hover:text-white"
+                                            class="bg-sidebar/10 text-sidebar hover:bg-sidebar inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all duration-150 hover:text-white"
+                                            @click="toggleReport(rp, 'safe')"
+                                        >
+                                            {{ console.log(rp) }}
+                                            <i class="fas fa-eye text-[10px]" />
+                                            Safe
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="bg-status-flagged/40 text-sidebar hover:bg-status-flagged inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all duration-150 hover:text-white"
+                                            @click="toggleReport(rp, 'flag')"
+                                        >
+                                            <i class="fas fa-eye text-[10px]" />
+                                            Flag
+                                        </button>
+                                        <button
+                                            type="button"
+                                            class="bg-sidebar/10 text-sidebar hover:bg-sidebar inline-flex cursor-pointer items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all duration-150 hover:text-white"
                                             @click="openReportModal(rp)"
                                         >
                                             <i class="fas fa-eye text-[10px]" />
@@ -1019,7 +1040,7 @@ function clearFilters() {
                                         >
                                             <button
                                                 type="button"
-                                                class="border-status-safe text-status-safe hover:bg-status-safe inline-flex items-center gap-1 border px-2.5 py-1.5 text-xs font-semibold transition-all hover:text-white"
+                                                class="border-status-safe text-status-safe hover:bg-status-safe inline-flex cursor-pointer items-center gap-1 border px-2.5 py-1.5 text-xs font-semibold transition-all hover:text-white"
                                                 @click="
                                                     approvePendingAsSafe(post)
                                                 "
@@ -1031,7 +1052,7 @@ function clearFilters() {
                                             </button>
                                             <button
                                                 type="button"
-                                                class="border-status-flagged text-status-flagged hover:bg-status-flagged inline-flex items-center gap-1 border px-2.5 py-1.5 text-xs font-semibold transition-all hover:text-white"
+                                                class="border-status-flagged text-status-flagged hover:bg-status-flagged inline-flex cursor-pointer items-center gap-1 border px-2.5 py-1.5 text-xs font-semibold transition-all hover:text-white"
                                                 @click="
                                                     approvePendingAsFlagged(
                                                         post,
@@ -1041,7 +1062,7 @@ function clearFilters() {
                                                 <i
                                                     class="fas fa-flag text-[9px]"
                                                 />
-                                                Flagged
+                                                Flag
                                             </button>
                                         </div>
                                     </td>
@@ -1335,8 +1356,14 @@ function clearFilters() {
             :report="selectedReport"
             :show="selectedReport !== null"
             @close="closeReportModal"
-            @mark-safe="onMarkSafe"
-            @flag="onFlag"
+            @unreport="
+                (status) => {
+                    if (selectedReport) {
+                        toggleReport(selectedReport, status);
+                        closeReportModal();
+                    }
+                }
+            "
         />
     </AdminLayout>
 </template>

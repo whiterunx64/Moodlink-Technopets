@@ -57,6 +57,17 @@ class PostManagementController extends Controller
         return back()->with('flash_success', 'Post unflagged as safe content.');
     }
 
+    public function unreport(Post $post, String $status): RedirectResponse
+    {
+        try {
+            $this->service->unreportPost($post, $status);
+        } catch (PostModerationException $exception) {
+            return back()->with('flash_error', $exception->getMessage());
+        }
+
+        return back()->with('flash_success', 'Post has been unreported');
+    }
+
     public function markReportedSafe(Post $post): RedirectResponse
     {
         $this->service->markReportedSafe($post);
@@ -90,6 +101,6 @@ class PostManagementController extends Controller
 
         return redirect()
             ->route('posts.index', ['status' => 'flagged'])
-            ->with('flash_success', 'Post published and marked as flagged.');
+            ->with('flash_success', 'Post not published and marked as flagged.');
     }
 }

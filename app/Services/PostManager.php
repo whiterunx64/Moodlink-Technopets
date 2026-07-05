@@ -12,6 +12,7 @@ use App\Models\PostReport;
 use App\Services\Post\QueryService;
 use App\Services\Post\Validator;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 final class PostManager
 {
@@ -129,5 +130,17 @@ final class PostManager
         $this->validator->ensurePostCanBeUnflagged($post);
 
         $post->update(['status' => PostStatus::Safe]);
+    }
+
+    public function unreportPost(Post $post, String $status): void
+    {
+        if($status == 'safe')
+        $post->update(['status' => PostStatus::Safe]);
+    else if($status == 'flag')
+        $post->update(['status' => PostStatus::Flagged]);
+
+    DB::table('reported_post')
+    ->where('post_id', $post->id)
+    ->delete();
     }
 }
