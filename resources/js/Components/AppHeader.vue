@@ -107,8 +107,6 @@ onMounted(() => {
                 if (entry.isIntersecting) {
                     const id = Number((entry.target as HTMLElement).dataset.id);
 
-                    console.log('Seen:', id);
-
                     markAsSeen(id);
 
                     observer.unobserve(entry.target);
@@ -130,7 +128,6 @@ function observeNotification(el: Element | ComponentPublicInstance | null) {
 
 function markAsSeen(id: number) {
     const notif = notifications.value.find((n) => n.id === id);
-    console.log(route('notifications.seen', id));
     if (notif && !notif.is_seen) {
         setTimeout(async function () {
             notif.is_seen = true;

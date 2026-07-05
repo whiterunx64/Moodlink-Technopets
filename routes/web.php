@@ -9,11 +9,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SummaryReportController;
 use App\Http\Controllers\UserAccountController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 
-Route::get('/', fn() => Inertia::render('Landing'))
+Route::inertia('/', 'Landing')
     ->middleware('throttle:landing')
     ->name('landing');
 
@@ -57,7 +54,7 @@ Route::middleware([
     Route::get('/post-management', [PostManagementController::class, 'index'])
         ->name('posts.index');
 
-    Route::get('/reported-posts', fn() => redirect()->route('posts.index', ['tab' => 'reported']))
+    Route::redirect('/reported-posts', '/post-management?tab=reported')
         ->name('reported-posts.index');
     Route::patch('/post-management/{post}/mark-as-flagged', [PostManagementController::class, 'flag'])
         ->name('posts.flag');
@@ -111,24 +108,7 @@ Route::patch(
         ->name('profile.account.destroy');
 });
 
-Route::get('/cron/run', function (Request $request) {
-    $cronKey = config('app.cron_key');
-
-    abort_unless(
-        filled($cronKey) &&
-        hash_equals($cronKey, (string) $request->header('X-Cron-Key')),
-        403
-    );
-
-    $exitCode = Artisan::call('schedule:run');
-
-    return response()->json([
-        'status' => 'ok',
-        'exit_code' => $exitCode,
-        'output' => Artisan::output(),
-        'ran_at' => now()->toIso8601String(),
-    ]);
-});
+Route::get('/cron/run', \App\Http\Controllers\CronController::class);
 
 Route::get('/appointments/{appointment}/check-in', [AppointmentController::class, 'checkIn'])
     ->middleware('signed')

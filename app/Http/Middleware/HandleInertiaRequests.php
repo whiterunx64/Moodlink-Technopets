@@ -41,13 +41,18 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
-
-
         $admin = $user
             ? Cache::remember(
                 self::adminCacheKey($user->id),
                 self::ADMIN_CACHE_TTL,
-                fn () => Admin::findByUserId($user->id),
+                function () use ($user): ?array {
+                    $model = Admin::findByUserId($user->id);
+
+                    return $model === null ? null : [
+                        'name' => trim("{$model->first_name} {$model->last_name}"),
+                        'avatar' => $model->avatar,
+                    ];
+                },
             )
             : null;
 
@@ -59,9 +64,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $user ? [
                     'id' => $user->id,
-                    'name' => $admin ? trim("{$admin->first_name} {$admin->last_name}") : $user->email,
+                    'name' => $admin['name'] ?? $user->email,
                     'email' => $user->email,
-                    'avatar' => $admin?->avatar,
+                    'avatar' => $admin['avatar'] ?? null,
                     'email_verified_at' => $user->email_confirmed_at,
                     'created_at' => $user->created_at,
                 ] : null,

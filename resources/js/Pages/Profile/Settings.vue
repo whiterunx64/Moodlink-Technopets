@@ -70,7 +70,23 @@ watch(
 // --- Avatar upload ---
 const avatarForm = useForm<{ avatar: File | null }>({ avatar: null });
 
+const AVATAR_MAX_BYTES = 2 * 1024 * 1024; // 2 MB — matches server validation
+const AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
 function onChangeAvatar(file: File) {
+
+    if (!AVATAR_TYPES.includes(file.type)) {
+        add({ type: 'error', message: 'Please choose a JPG, PNG, or WebP image.' });
+        return;
+    }
+    if (file.size > AVATAR_MAX_BYTES) {
+        add({
+            type: 'error',
+            message: 'That image is too large. Please choose one under 2 MB.',
+        });
+        return;
+    }
+
     avatarForm.avatar = file;
     avatarForm.post(route('profile.avatar.update'), {
         preserveScroll: true,
