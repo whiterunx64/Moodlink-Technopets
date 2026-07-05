@@ -2,11 +2,25 @@ import '../css/app.css';
 
 import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
+import {
+    CheckCircleIcon,
+    ExclamationTriangleIcon,
+    InformationCircleIcon,
+    XCircleIcon,
+} from '@heroicons/vue/24/solid';
 import { createApp, DefineComponent, h } from 'vue';
 import { Toaster, toast } from 'vue-sonner';
 import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 
 const appName = 'MoodLink';
+
+// Heroicons for the toast type badges (the CSS colors the circle + icon).
+const toastIcons = {
+    success: () => h(CheckCircleIcon),
+    error: () => h(XCircleIcon),
+    warning: () => h(ExclamationTriangleIcon),
+    info: () => h(InformationCircleIcon),
+};
 
 router.on('invalid', (event) => {
     const status = event.detail.response?.status;
@@ -46,6 +60,7 @@ createInertiaApp({
                         visibleToasts: 4,    // how many stay in the visible stack
                         gap: 12,
                         offset: 16,
+                        icons: toastIcons,   // Heroicons for the type badges
                     }),
                 ]),
         });

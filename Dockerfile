@@ -24,6 +24,7 @@ RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends \
        libpng-dev libonig-dev libxml2-dev libpq-dev libzip-dev \
+       libapache2-mod-brotli \
     && docker-php-ext-install -j"$(nproc)" \
        pdo_pgsql pgsql mbstring exif pcntl bcmath gd opcache zip \
     && apt-get purge -y --auto-remove \
@@ -78,7 +79,7 @@ RUN php artisan view:cache && php artisan event:cache
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 
-RUN a2enmod rewrite headers reqtimeout expires \
+RUN a2enmod rewrite headers reqtimeout expires brotli \
     && a2dismod -f autoindex status info userdir || true
 
 RUN printf '%s\n' \
@@ -163,12 +164,29 @@ RUN printf '%s\n' \
 RUN printf '%s\n' \
     'Header always unset X-Powered-By' \
     'Header always unset Server' \
+    'Header always unset X-Content-Type-Options' \
     'Header always set X-Content-Type-Options "nosniff"' \
+    'Header always unset X-Frame-Options' \
     'Header always set X-Frame-Options "SAMEORIGIN"' \
+    'Header always unset Cross-Origin-Resource-Policy' \
     'Header always set Cross-Origin-Resource-Policy "same-origin"' \
+    'Header always unset X-Permitted-Cross-Domain-Policies' \
     'Header always set X-Permitted-Cross-Domain-Policies "none"' \
+    'Header always set X-Download-Options "noopen"' \
+    'Header always set X-DNS-Prefetch-Control "off"' \
     > /etc/apache2/conf-available/security-headers.conf \
     && a2enconf security-headers
+
+RUN printf '%s\n' \
+    '<IfModule mod_brotli.c>' \
+    '    AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/css text/javascript' \
+    '    AddOutputFilterByType BROTLI_COMPRESS application/javascript application/json application/xml' \
+    '    AddOutputFilterByType BROTLI_COMPRESS image/svg+xml' \
+    '    BrotliCompressionQuality 5' \
+    '</IfModule>' \
+    'Header append Vary Accept-Encoding' \
+    > /etc/apache2/conf-available/brotli.conf \
+    && a2enconf brotli
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
