@@ -15,6 +15,7 @@ use App\Services\UserAccount\QueryService;
 use App\Services\UserAccount\StudentAccountProvisioner;
 use App\Services\UserAccount\Validator;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Log;
 
 final class UserAccountManager
 {
@@ -97,12 +98,18 @@ final class UserAccountManager
     // Public Method — StudentAccountProvisioner.php
     // ─────────────────────────────────────────────────────────────
 
-    /**
-     * @throws StudentAccountException when the auth account cannot be deleted.
-     */
     public function deleteStudent(Student $student): void
     {
-        $this->provisioner->deleteSupabaseAccount($student);
+        try {
+            $this->provisioner->deleteSupabaseAccount($student);
+        } catch (StudentAccountException $exception) {
+            Log::warning('Supabase auth account could not be removed; removing student record anyway.', [
+                'student_id' => $student->id,
+                'auth_user_id' => $student->uuid,
+                'error' => $exception->getMessage(),
+            ]);
+        }
+
         $this->mail->sendAccountDeletionNotice($student);
         $student->delete();
     }
