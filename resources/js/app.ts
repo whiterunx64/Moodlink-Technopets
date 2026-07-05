@@ -42,9 +42,9 @@ createInertiaApp({
                         position: 'top-right',
                         richColors: false,
                         closeButton: true,
-                        expand: false,       // collapsed deck; expands on hover
+                        expand: true,        // full card stack, no overlap
                         visibleToasts: 4,    // how many stay in the visible stack
-                        gap: 10,
+                        gap: 12,
                         offset: 16,
                     }),
                 ]),

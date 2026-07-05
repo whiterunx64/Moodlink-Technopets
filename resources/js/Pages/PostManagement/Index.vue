@@ -23,14 +23,9 @@ import {
     FlagIcon,
 } from '@heroicons/vue/24/outline';
 import { Head, router } from '@inertiajs/vue3';
-import { computed, defineAsyncComponent, ref, toRef, watch } from 'vue';
-
-const PostDetailModal = defineAsyncComponent(
-    () => import('@/Components/Posts/PostDetailModal.vue'),
-);
-const ReportDetailModal = defineAsyncComponent(
-    () => import('@/Components/Posts/ReportDetailModal.vue'),
-);
+import { computed, ref, toRef, watch } from 'vue';
+import PostDetailModal from '@/Components/Posts/PostDetailModal.vue';
+import ReportDetailModal from '@/Components/Posts/ReportDetailModal.vue';
 
 // ─── Server props ─────────────────────────────────────────────────────────────
 

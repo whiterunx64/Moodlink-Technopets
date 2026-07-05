@@ -14,15 +14,9 @@ import type {
     StudentTab,
 } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
-import { defineAsyncComponent, ref, toRef, watch } from 'vue';
-
-// Modals load lazily so their chunks aren't pulled into other pages' bundles.
-const ManageAccountModal = defineAsyncComponent(
-    () => import('@/Pages/UserAccounts/Modal/ManageAccountModal.vue'),
-);
-const VerifyStudentModal = defineAsyncComponent(
-    () => import('@/Pages/UserAccounts/Modal/VerifyStudentModal.vue'),
-);
+import { ref, toRef, watch } from 'vue';
+import ManageAccountModal from '@/Pages/UserAccounts/Modal/ManageAccountModal.vue';
+import VerifyStudentModal from '@/Pages/UserAccounts/Modal/VerifyStudentModal.vue';
 
 const props = defineProps<{
     students: Paginated<Student>;

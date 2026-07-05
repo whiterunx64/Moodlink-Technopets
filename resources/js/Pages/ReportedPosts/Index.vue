@@ -2,12 +2,8 @@
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { Head } from '@inertiajs/vue3';
 import { FlagIcon } from '@heroicons/vue/24/outline';
-import { computed, defineAsyncComponent, ref } from 'vue';
-
-// Modal loads lazily so its chunk isn't pulled into other pages' bundles.
-const ReportDetailModal = defineAsyncComponent(
-    () => import('@/Components/Posts/ReportDetailModal.vue'),
-);
+import { computed, ref } from 'vue';
+import ReportDetailModal from '@/Components/Posts/ReportDetailModal.vue';
 import type { ReportedPost, ReportStatus, ReportReason } from '@/types';
 
 // ─── Mock data ────────────────────────────────────────────────────────────────

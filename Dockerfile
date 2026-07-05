@@ -1,182 +1,181 @@
-FROM php:8.4-apache
+# syntax=docker/dockerfile:1
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-  git curl zip unzip libpng-dev libonig-dev libxml2-dev libpq-dev \
-  && docker-php-ext-install pdo_pgsql pgsql mbstring exif pcntl bcmath gd opcache
+FROM composer:2 AS vendor
+WORKDIR /app
+COPY composer.json composer.lock ./
+RUN composer install \
+    --no-dev --prefer-dist --optimize-autoloader \
+    --no-interaction --no-progress --no-scripts \
+    --classmap-authoritative
+COPY . .
+RUN composer dump-autoload --optimize --classmap-authoritative --no-dev
 
-RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-  && apt-get install -y nodejs
+FROM node:22-slim AS assets
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
+COPY . .
+COPY --from=vendor /app/vendor ./vendor
+RUN npm run build
+
+FROM php:8.4-apache AS production
+
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && apt-get install -y --no-install-recommends \
+       libpng-dev libonig-dev libxml2-dev libpq-dev libzip-dev \
+    && docker-php-ext-install -j"$(nproc)" \
+       pdo_pgsql pgsql mbstring exif pcntl bcmath gd opcache zip \
+    && apt-get purge -y --auto-remove \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 RUN { \
-  echo 'opcache.enable=1'; \
-  echo 'opcache.enable_cli=0'; \
-  echo 'opcache.memory_consumption=256'; \
-  echo 'opcache.interned_strings_buffer=16'; \
-  echo 'opcache.max_accelerated_files=20000'; \
-  echo 'opcache.validate_timestamps=0'; \
+    echo 'opcache.enable=1'; \
+    echo 'opcache.enable_cli=0'; \
+    echo 'opcache.memory_consumption=256'; \
+    echo 'opcache.interned_strings_buffer=16'; \
+    echo 'opcache.max_accelerated_files=20000'; \
+    echo 'opcache.validate_timestamps=0'; \
+    echo 'opcache.save_comments=1'; \
+    echo 'realpath_cache_size=4096K'; \
+    echo 'realpath_cache_ttl=600'; \
   } > /usr/local/etc/php/conf.d/opcache.ini
 
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+RUN { \
+    echo 'expose_php = Off'; \
+    echo 'display_errors = Off'; \
+    echo 'display_startup_errors = Off'; \
+    echo 'log_errors = On'; \
+    echo 'error_log = /dev/stderr'; \
+    echo 'allow_url_include = Off'; \
+    echo 'session.cookie_httponly = On'; \
+    echo 'session.cookie_secure = On'; \
+    echo 'session.cookie_samesite = Lax'; \
+    echo 'session.use_strict_mode = On'; \
+  } > /usr/local/etc/php/conf.d/security.ini
 
-# Set working directory
+RUN { \
+    echo 'upload_max_filesize = 8M'; \
+    echo 'post_max_size = 10M'; \
+    echo 'max_execution_time = 60'; \
+    echo 'memory_limit = 256M'; \
+  } > /usr/local/etc/php/conf.d/uploads.ini
+
 WORKDIR /var/www/html
+COPY --chown=www-data:www-data . .
+COPY --from=vendor --chown=www-data:www-data /app/vendor ./vendor
+COPY --from=assets --chown=www-data:www-data /app/public/build ./public/build
 
-# Copy project files
-COPY . .
-
-# Install PHP dependencies
-RUN composer clear-cache && \
-  composer config --global process-timeout 2000 && \
-  for i in 1 2 3; do \
-  composer install \
-  --no-dev \
-  --optimize-autoloader \
-  --prefer-source \
-  --no-interaction \
-  --no-progress \
-  && break || { \
-  echo "Composer install failed. Retrying in 5 seconds..."; \
-  sleep 5; \
-  }; \
-  done
-
-# Install Node dependencies and build assets
-RUN npm install && npm run build
+RUN chown -R root:root /var/www/html \
+    && chown -R www-data:www-data storage bootstrap/cache \
+    && find storage bootstrap/cache -type d -exec chmod 775 {} \; \
+    && find storage bootstrap/cache -type f -exec chmod 664 {} \;
 
 RUN php artisan view:cache && php artisan event:cache
 
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["apache2-foreground"]
-
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
-
-# Apache config
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 
-# Apache Hardening
-
-# Hide PHP version (removes X-Powered-By header)
-RUN echo "expose_php = Off" > /usr/local/etc/php/conf.d/security.ini
-
-RUN { \
-  echo 'upload_max_filesize = 8M'; \
-  echo 'post_max_size = 10M'; \
-  } > /usr/local/etc/php/conf.d/uploads.ini
-
-RUN a2enmod rewrite headers reqtimeout expires
-RUN a2dismod -f autoindex status || true
+RUN a2enmod rewrite headers reqtimeout expires \
+    && a2dismod -f autoindex status info userdir || true
 
 RUN printf '%s\n' \
-  '<Directory /var/www/html/public/build>' \
-  '    <IfModule mod_headers.c>' \
-  '        Header set Cache-Control "public, max-age=31536000, immutable"' \
-  '    </IfModule>' \
-  '</Directory>' \
-  '<IfModule mod_expires.c>' \
-  '    ExpiresActive On' \
-  '    ExpiresByType image/x-icon "access plus 7 days"' \
-  '    ExpiresByType image/svg+xml "access plus 7 days"' \
-  '    ExpiresByType image/png "access plus 7 days"' \
-  '    ExpiresByType text/plain "access plus 1 day"' \
-  '    ExpiresByType application/xml "access plus 1 day"' \
-  '</IfModule>' \
-  > /etc/apache2/conf-available/asset-caching.conf \
-  && a2enconf asset-caching
-
-# Hide Apache version
-RUN echo "ServerTokens Prod\nServerSignature Off" \
-  > /etc/apache2/conf-available/security.conf \
-  && a2enconf security
-
-# Disable directory listing
-RUN printf '%s\n' \
-  '<Directory /var/www/html/public>' \
-  '    Options -Indexes' \
-  '    AllowOverride All' \
-  '    Require all granted' \
-  '</Directory>' \
-  > /etc/apache2/conf-available/no-indexes.conf \
-  && a2enconf no-indexes
-
-# Disable TRACE
-RUN echo "TraceEnable Off" \
-  > /etc/apache2/conf-available/trace.conf \
-  && a2enconf trace
-
-# Remove ETag header
-RUN printf '%s\n' \
-  'FileETag None' \
-  'Header unset ETag' \
-  > /etc/apache2/conf-available/etag.conf \
-  && a2enconf etag
+    'ServerTokens Prod' \
+    'ServerSignature Off' \
+    > /etc/apache2/conf-available/hardening-tokens.conf \
+    && a2enconf hardening-tokens
 
 RUN printf '%s\n' \
-  '<FilesMatch "^\.">' \
-  '    Require all denied' \
-  '</FilesMatch>' \
-  '<Directory /var/www/html/public/.well-known>' \
-  '    Require all granted' \
-  '</Directory>' \
-  > /etc/apache2/conf-available/hide-dotfiles.conf \
-  && a2enconf hide-dotfiles
+    '<Directory /var/www/html/public/build>' \
+    '    Header set Cache-Control "public, max-age=31536000, immutable"' \
+    '</Directory>' \
+    '<IfModule mod_expires.c>' \
+    '    ExpiresActive On' \
+    '    ExpiresByType image/x-icon "access plus 7 days"' \
+    '    ExpiresByType image/svg+xml "access plus 7 days"' \
+    '    ExpiresByType image/png "access plus 7 days"' \
+    '    ExpiresByType image/webp "access plus 7 days"' \
+    '</IfModule>' \
+    > /etc/apache2/conf-available/asset-caching.conf \
+    && a2enconf asset-caching
 
-# Disable Apache information pages
 RUN printf '%s\n' \
-  '<Location "/server-status">' \
-  '    Require all denied' \
-  '</Location>' \
-  '<Location "/server-info">' \
-  '    Require all denied' \
-  '</Location>' \
-  > /etc/apache2/conf-available/server-restrictions.conf \
-  && a2enconf server-restrictions
+    '<Directory /var/www/html/public>' \
+    '    Options -Indexes -Includes -ExecCGI' \
+    '    AllowOverride All' \
+    '    Require all granted' \
+    '</Directory>' \
+    '<DirectoryMatch "/var/www/html/(app|bootstrap|config|database|routes|storage|vendor|tests)">' \
+    '    Require all denied' \
+    '</DirectoryMatch>' \
+    > /etc/apache2/conf-available/dir-policy.conf \
+    && a2enconf dir-policy
 
-# Limit upload/request size (10 MB)
-RUN echo "LimitRequestBody 10485760" \
-  > /etc/apache2/conf-available/request-limit.conf \
-  && a2enconf request-limit
-
-# Allow only required HTTP methods
 RUN printf '%s\n' \
-  '<Location "/">' \
-  '    <LimitExcept GET POST PATCH PUT DELETE HEAD OPTIONS>' \
-  '        Require all denied' \
-  '    </LimitExcept>' \
-  '</Location>' \
-  > /etc/apache2/conf-available/http-methods.conf \
-  && a2enconf http-methods
+    'TraceEnable Off' \
+    'FileETag None' \
+    'Header unset ETag' \
+    '<FilesMatch "^\.">' \
+    '    Require all denied' \
+    '</FilesMatch>' \
+    '<Directory /var/www/html/public/.well-known>' \
+    '    Require all granted' \
+    '</Directory>' \
+    '<Location "/server-status">' \
+    '    Require all denied' \
+    '</Location>' \
+    '<Location "/server-info">' \
+    '    Require all denied' \
+    '</Location>' \
+    > /etc/apache2/conf-available/lockdown.conf \
+    && a2enconf lockdown
 
-# Slowloris protection
 RUN printf '%s\n' \
-  'RequestReadTimeout header=20-40,minrate=500 body=20,minrate=500' \
-  > /etc/apache2/conf-available/request-timeout.conf \
-  && a2enconf request-timeout
+    '<Directory /var/www/html/public>' \
+    '    <FilesMatch "\.php$">' \
+    '        Require all denied' \
+    '    </FilesMatch>' \
+    '    <FilesMatch "^index\.php$">' \
+    '        Require all granted' \
+    '    </FilesMatch>' \
+    '</Directory>' \
+    > /etc/apache2/conf-available/php-lockdown.conf \
+    && a2enconf php-lockdown
 
-# Limit oversized headers
 RUN printf '%s\n' \
-  'LimitRequestFields 50' \
-  'LimitRequestFieldSize 8190' \
-  > /etc/apache2/conf-available/request-headers.conf \
-  && a2enconf request-headers
+    'LimitRequestBody 10485760' \
+    'LimitRequestFields 50' \
+    'LimitRequestFieldSize 8190' \
+    'LimitRequestLine 8190' \
+    'RequestReadTimeout header=20-40,minrate=500 body=20,minrate=500' \
+    'Timeout 60' \
+    'KeepAliveTimeout 5' \
+    '<Location "/">' \
+    '    <LimitExcept GET POST PATCH PUT DELETE HEAD OPTIONS>' \
+    '        Require all denied' \
+    '    </LimitExcept>' \
+    '</Location>' \
+    > /etc/apache2/conf-available/request-limits.conf \
+    && a2enconf request-limits
 
-# Defense in depth: duplicate static security headers
 RUN printf '%s\n' \
-  'Header always unset X-Powered-By' \
-  'Header always set X-Content-Type-Options "nosniff"' \
-  'Header always set X-Frame-Options "SAMEORIGIN"' \
-  'Header always set Referrer-Policy "strict-origin-when-cross-origin"' \
-  'Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"' \
-  'Header always set Cross-Origin-Opener-Policy "same-origin"' \
-  'Header always set Cross-Origin-Resource-Policy "same-origin"' \
-  'Header always set X-Permitted-Cross-Domain-Policies "none"' \
-  > /etc/apache2/conf-available/security-headers.conf \
-  && a2enconf security-headers
+    'Header always unset X-Powered-By' \
+    'Header always unset Server' \
+    'Header always set X-Content-Type-Options "nosniff"' \
+    'Header always set X-Frame-Options "SAMEORIGIN"' \
+    'Header always set Cross-Origin-Resource-Policy "same-origin"' \
+    'Header always set X-Permitted-Cross-Domain-Policies "none"' \
+    > /etc/apache2/conf-available/security-headers.conf \
+    && a2enconf security-headers
 
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD curl -fsS http://localhost/up || exit 1
 
 EXPOSE 80
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["apache2-foreground"]
