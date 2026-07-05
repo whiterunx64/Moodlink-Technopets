@@ -80,7 +80,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         LaravelRateLimiter::for('landing', function (Request $request) {
-            return Limit::perMinute(5)
+            return Limit::perMinute(10)
                 ->by($request->ip())
                 ->response(function ($request, $headers) {
 

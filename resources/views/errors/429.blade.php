@@ -2,13 +2,9 @@
     use App\Exceptions\InfrastructureException;
 
     $infra = isset($exception) && $exception instanceof InfrastructureException ? $exception : null;
-    $code = $infra?->errorCode ?? 'RATE_LIMIT_EXCEEDED';
-    $status = 429;
     $retryAfter = $infra?->retryAfter()
         ?? (isset($headers['Retry-After']) ? (int) $headers['Retry-After'] : null)
         ?? 60;
-    $reference = strtoupper(substr(md5($code . microtime()), 0, 8));
-    $when = now()->format('M j, Y · H:i:s T');
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -17,210 +13,47 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex,nofollow">
+    <meta name="color-scheme" content="light dark">
     <meta http-equiv="refresh" content="{{ $retryAfter }}">
-    <title>429 · Too many requests</title>
+    <title>Too many requests</title>
     <style>
+        html { color-scheme: light dark; }
         :root {
-            --brand: #6c9140;
-            --brand-dark: #587836;
-            --ink: #1f2937;
-            --ink-soft: #6b7280;
-            --ink-faint: #9ca3af;
-            --canvas: #f8f9f7;
+            --art: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='88' height='94' viewBox='0 0 44 47' fill='%23dadce0'><path d='M28 2h8v6h-8zM28 8h8v6h-8zM26 8h2v6h-2zM36 8h2v4h-2zM32 12h2v2h-2zM14 14h14v6H14zM8 20h20v6H8zM4 20h4v14H4zM8 26h24v6H8zM10 32h6v10h-6zM24 32h6v10h-6zM8 32h2v4H8zM30 26h8v2h-8zM2 24h2v6H2z'/></svg>");
         }
-
-        *,
-        *::before,
-        *::after {
-            box-sizing: border-box;
-        }
-
-        html,
         body {
-            margin: 0;
-            padding: 0;
-            height: 100%;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #202124; background-color: #fff;
+            margin: 0; min-height: 100vh;
+            display: flex; align-items: center; justify-content: center; text-align: center;
         }
-
-        body {
-            font-family: 'Figtree', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-            background: var(--canvas);
-            color: var(--ink);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 3rem 1.25rem;
-            text-align: center;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        .wrap {
-            width: 100%;
-            max-width: 34rem;
-        }
-
-        .code {
-            font-size: clamp(5rem, 18vw, 8rem);
-            font-weight: 300;
-            line-height: 1;
-            letter-spacing: -.02em;
-            color: var(--ink);
-        }
-
-        h1 {
-            margin: .5rem 0 0;
-            font-size: clamp(1.5rem, 5vw, 2rem);
-            font-weight: 400;
-            color: var(--ink);
-        }
-
-        .summary {
-            margin: 1rem auto 0;
-            max-width: 30rem;
-            font-size: 1rem;
-            line-height: 1.6;
-            color: var(--ink);
-        }
-
-        .detail {
-            margin: .75rem auto 0;
-            max-width: 30rem;
-            font-size: .9rem;
-            line-height: 1.65;
-            color: var(--ink-soft);
-        }
-
-        .countdown {
-            display: inline-flex;
-            align-items: baseline;
-            gap: .35rem;
-            margin-top: 1.5rem;
-            padding: .5rem 1rem;
-            border-radius: .5rem;
-            background: rgba(108, 145, 64, .08);
-            border: 1px solid rgba(108, 145, 64, .2);
-            font-size: .875rem;
-            color: var(--ink-soft);
-        }
-
-        .countdown strong {
-            font-variant-numeric: tabular-nums;
-            font-weight: 600;
-            color: var(--brand);
-        }
-
-        .actions {
-            margin-top: 2rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: .75rem;
-            justify-content: center;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: .8rem 1.5rem;
-            border-radius: .5rem;
-            font-family: inherit;
-            font-size: .8rem;
-            font-weight: 600;
-            letter-spacing: .06em;
-            text-transform: uppercase;
-            text-decoration: none;
-            border: 1px solid transparent;
-            cursor: pointer;
-            transition: background-color .15s ease, border-color .15s ease;
-        }
-
-        .btn:disabled {
-            opacity: .4;
-            cursor: not-allowed;
-        }
-
-        .btn-primary {
-            background: var(--brand);
-            color: #fff;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, .1), 0 1px 3px rgba(0, 0, 0, .08);
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            background: var(--brand-dark);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: var(--ink-soft);
-            border-color: #d6dad0;
-        }
-
-        .btn-secondary:hover {
-            background: #eef0ec;
-        }
-
-        .meta {
-            margin-top: 2.25rem;
-            font-size: .72rem;
-            color: var(--ink-faint);
-        }
-
-        .meta code {
-            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-            color: var(--ink-soft);
-        }
-
+        .wrap { max-width: 960px; width: 100%; padding: 2rem clamp(1.5rem, 6vw, 5rem); }
+        .status { font-size: clamp(3.5rem, 12vw, 5.5rem); font-weight: 700; line-height: 1; letter-spacing: -.02em; color: #202124; margin: 0 0 1.5rem; }
+        .art { width: 120px; height: 128px; margin: 0 auto 1.75rem; background: var(--art) no-repeat center / contain; }
+        h1 { font-size: 2.3rem; font-weight: 500; line-height: 1.25; margin: 0 0 1.1rem; }
+        p { font-size: 1.25rem; line-height: 1.65; color: #5f6368; margin: 0 auto 1rem; max-width: 70ch; }
+        p b, p strong { color: #202124; font-weight: 700; }
+        a.btn { display: inline-block; margin-top: 1.75rem; color: #1a73e8; text-decoration: none; font-weight: 600; font-size: 1.1rem; }
+        a.btn:hover { text-decoration: underline; }
         @media (prefers-color-scheme: dark) {
-            :root {
-                --ink: #f3f4f1;
-                --ink-soft: #9ca3af;
-                --ink-faint: #6b7280;
-                --canvas: #0d110c;
-            }
-
-            .countdown {
-                background: rgba(108, 145, 64, .12);
-                border-color: rgba(108, 145, 64, .25);
-            }
-
-            .btn-secondary {
-                border-color: #3a453a;
-            }
-
-            .btn-secondary:hover {
-                background: #1d231c;
-            }
+            body { color: #e8eaed; background-color: #202124; }
+            :root { --art: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='88' height='94' viewBox='0 0 44 47' fill='%235f6368'><path d='M28 2h8v6h-8zM28 8h8v6h-8zM26 8h2v6h-2zM36 8h2v4h-2zM32 12h2v2h-2zM14 14h14v6H14zM8 20h20v6H8zM4 20h4v14H4zM8 26h24v6H8zM10 32h6v10h-6zM24 32h6v10h-6zM8 32h2v4H8zM30 26h8v2h-8zM2 24h2v6H2z'/></svg>"); }
+            p { color: #9aa0a6; }
+            .status { color: #e8eaed; }
+            p b, p strong { color: #e8eaed; }
+            a.btn { color: #8ab4f8; }
         }
     </style>
 </head>
 
 <body>
-    <main class="wrap" role="alert" aria-live="assertive">
-        <div class="code">429</div>
+    <main class="wrap" role="alert">
+        <div class="status">Error 429</div>
+        <div class="art" aria-hidden="true"></div>
         <h1>You are going a little too fast</h1>
-        <p class="summary">
-            {{ $infra?->getMessage() ?: 'You have sent too many requests in a short time' }}
-        </p>
-        <p class="detail">
-            This page allows a limited number of requests per minute per visitor The limit
-            resets on its own and no action is needed The page will refresh automatically
-            once you are able to try again
-        </p>
-
-        <p class="countdown" role="status" aria-live="polite">
-            Refreshing in <strong id="timer">{{ $retryAfter }}</strong> second{{ $retryAfter === 1 ? '' : 's' }}
-        </p>
-
-        <div class="actions">
-            <button type="button" class="btn btn-primary" id="retry-btn" disabled data-go="{{ url()->current() }}">
-                Try again
-            </button>
-            <button type="button" class="btn btn-secondary" data-go="{{ url('/') }}">
-                Back to dashboard
-            </button>
-        </div>
-
-        <p class="meta">
-            Status 429 · Code {{ $code }} · Reference <code>{{ $reference }}</code> · {{ $when }}
-        </p>
+        <p>{{ $infra?->getMessage() ?: 'You have sent too many requests in a short time so we slowed things down for a moment to protect the service' }}</p>
+        <p>No action is needed The limit resets on its own and this page will <b>refresh automatically in <span id="timer">{{ $retryAfter }}</span> seconds</b></p>
+        <a class="btn" href="#" data-go="{{ url('/') }}">Back to dashboard</a>
     </main>
 
     <script nonce="{{ Vite::cspNonce() }}">
@@ -228,35 +61,13 @@
             try { window.top.location.href = url; }
             catch (e) { window.location.href = url; }
         }
-
         document.querySelectorAll('[data-go]').forEach(function (el) {
-            el.addEventListener('click', function () {
-                if (!el.disabled) go(el.getAttribute('data-go'));
-            });
+            el.addEventListener('click', function (e) { e.preventDefault(); go(el.getAttribute('data-go')); });
         });
-
         (function () {
-            var seconds = {{ (int) $retryAfter }};
-            var timerEl = document.getElementById('timer');
-            var retryBtn = document.getElementById('retry-btn');
-            var target = window.location.href;
-
-            var interval = setInterval(function () {
-                seconds -= 1;
-
-                if (seconds <= 0) {
-                    clearInterval(interval);
-                    go(target);
-                } else {
-                    if (timerEl) timerEl.textContent = seconds;
-                }
-            }, 1000);
-
-            // Enable the manual button a moment before the auto-redirect
-            // so the user can act if they want to.
-            setTimeout(function () {
-                if (retryBtn) retryBtn.disabled = false;
-            }, Math.max(0, ({{ (int) $retryAfter }} - 3) * 1000));
+            var s = {{ (int) $retryAfter }};
+            var t = document.getElementById('timer');
+            setInterval(function () { s -= 1; if (s >= 0 && t) t.textContent = s; }, 1000);
         })();
     </script>
 </body>

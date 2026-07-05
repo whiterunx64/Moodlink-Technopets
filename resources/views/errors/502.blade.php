@@ -1,23 +1,17 @@
 @php
     use App\Exceptions\InfrastructureException;
 
-    $infra     = isset($exception) && $exception instanceof InfrastructureException ? $exception : null;
-    $code      = $infra?->errorCode;
-    $status    = 502;
-    $retryable = $infra?->isRetryable() ?? true;
+    $infra   = isset($exception) && $exception instanceof InfrastructureException ? $exception : null;
+    $status  = 502;
+    $retry   = true;
+    $code    = $infra?->errorCode ?? 'NETWORK_FAILURE';
+    $heading = 'We could not reach a needed service';
+
+    $body = 'A service the app depends on such as <b>Supabase Auth Storage or an external API</b> did not respond in time or refused the connection This is a network or upstream problem between our server and that service not a bug in the page itself';
+
+    $more = $infra !== null
+        ? e($infra->getMessage())
+        : 'This is not automatically reported so tell the system maintainer with the code below The maintainer should check whether Supabase is up the service keys and URLs are correct and the server has outbound network access at the time shown';
 @endphp
 
 @extends('errors.layout')
-
-@section('title', 'We could not reach a needed service')
-
-@section('summary', $infra?->getMessage()
-    ?: 'A service the application depends on did not respond')
-
-@section('detail', 'A request to an upstream service such as Supabase Auth or Storage did not complete in time or was refused This is usually a short lived connection issue between our servers and that service Check that your connection is stable and try again in a few seconds')
-
-@section('reasons')
-    <li>A brief network interruption between our servers and the service</li>
-    <li>The upstream service was busy or restarting</li>
-    <li>A short timeout while waiting for a response</li>
-@endsection

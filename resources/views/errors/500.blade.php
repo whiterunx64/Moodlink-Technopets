@@ -1,24 +1,23 @@
 @php
     use App\Exceptions\InfrastructureException;
 
-    $infra     = isset($exception) && $exception instanceof InfrastructureException ? $exception : null;
-    $code      = $infra?->errorCode;
-    $status    = 500;
-    $retryable = true;
+    $infra   = isset($exception) && $exception instanceof InfrastructureException ? $exception : null;
+    $status  = 500;
+    $retry   = true;
+    $code    = $infra?->errorCode ?? 'APP_ERROR';
+    $heading = 'Something went wrong on our end';
+
+    // Describe the failure so the maintainer knows where to look when reported.
+    $body = match ($code) {
+        InfrastructureException::CODE_UNEXPECTED_STATE =>
+            'The application reached an <b>unexpected internal state</b> and could not finish your request This points to a bug or bad data in the app logic rather than the database or network',
+        default =>
+            'The application hit an <b>unexpected error</b> while building this page This is a problem in the app itself not something you did wrong',
+    };
+
+    $more = $infra !== null
+        ? e($infra->getMessage())
+        : 'This is not automatically reported so please tell the system maintainer using the code below The maintainer should check the application logs on the server for the full stack trace around the time shown';
 @endphp
 
 @extends('errors.layout')
-
-@section('title', 'Something went wrong on our end')
-
-{{-- Only surface our own user safe message never leak details from a real bug --}}
-@section('summary', $infra?->getMessage()
-    ?: 'The application ran into an unexpected problem while handling your request')
-
-@section('detail', 'Our team is notified automatically and is looking into it Your data is safe In most cases trying again resolves it and if it keeps failing you can reload the page or contact support with the reference below')
-
-@section('reasons')
-    <li>A temporary glitch happened while processing your request</li>
-    <li>A background service returned an unexpected result</li>
-    <li>The issue is on our side and not caused by anything you did</li>
-@endsection
