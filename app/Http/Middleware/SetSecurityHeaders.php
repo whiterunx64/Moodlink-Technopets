@@ -119,8 +119,9 @@ class SetSecurityHeaders
 
     private function hideFrameworkFingerprintHeaders(Response $response): void
     {
-        $response->headers->remove('X-Powered-By'); // Hide framework information
-        $response->headers->remove('Server'); // Hide server information
+        $response->headers->remove('X-Powered-By');        // PHP / framework
+        $response->headers->remove('Server');              // web server + version
+        $response->headers->remove('X-Render-Origin-Server'); // Render edge echo of origin Server
     }
 
     private function enableOriginAgentCluster(Response $response): void

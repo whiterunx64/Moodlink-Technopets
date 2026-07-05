@@ -163,6 +163,7 @@ RUN printf '%s\n' \
 RUN printf '%s\n' \
     'Header always unset X-Powered-By' \
     'Header always unset Server' \
+    'Header always unset X-Render-Origin-Server' \
     'Header always set X-Download-Options "noopen"' \
     'Header always set X-DNS-Prefetch-Control "off"' \
     > /etc/apache2/conf-available/security-headers.conf \
