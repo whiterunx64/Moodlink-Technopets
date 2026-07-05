@@ -175,7 +175,6 @@ RUN printf '%s\n' \
     '    AddOutputFilterByType BROTLI_COMPRESS image/svg+xml' \
     '    BrotliCompressionQuality 5' \
     '</IfModule>' \
-    'Header append Vary Accept-Encoding' \
     > /etc/apache2/conf-available/brotli.conf \
     && a2enconf brotli
 
