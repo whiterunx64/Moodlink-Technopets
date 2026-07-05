@@ -8,6 +8,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 if (!function_exists('infrastructureJsonResponse')) {
     function infrastructureJsonResponse(InfrastructureException $e): Response
@@ -72,6 +73,32 @@ return Application::configure(basePath: dirname(__DIR__))
 
             return redirect()->route('login')->with('flash_error', $message);
         });
+
+        // Auth/permission HTTP errors: redirect to a working page with a plain
+        // toast instead of a dead-end error page. Infrastructure errors (5xx,
+        // 429) fall through to their self-contained full-page views, since the
+        // server may be down and there's nowhere safe to redirect.
+        $exceptions->render(function (HttpExceptionInterface $e, Request $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return null; // APIs get the default JSON error
+            }
+
+            $messages = [
+                403 => 'You don’t have access to that page.',
+                404 => 'We couldn’t find that page. Here’s your dashboard instead.',
+                405 => 'That action isn’t available here. Please try again from the start.',
+            ];
+
+            $status = $e->getStatusCode();
+            if (! array_key_exists($status, $messages)) {
+                return null; // 429/5xx → self-contained full-page error views
+            }
+
+            $target = $request->user() ? route('dashboard') : route('login');
+
+            return redirect()->to($target)->with('flash_error', $messages[$status]);
+        });
+
         $exceptions->render(function (QueryException|\PDOException $e, Request $request) {
             $infra = InfrastructureException::fromDatabaseError($e);
 

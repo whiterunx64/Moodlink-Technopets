@@ -40,8 +40,8 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
     {{-- Structured data: describes MoodLink to search engines --}}
-    <script type="application/ld+json">
-        @json([
+    @php
+        $structuredData = [
             '@context' => 'https://schema.org',
             '@type' => 'SoftwareApplication',
             'name' => 'MoodLink',
@@ -59,7 +59,10 @@
                 'price' => '0',
                 'priceCurrency' => 'PHP',
             ],
-        ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
+        ];
+    @endphp
+    <script type="application/ld+json">
+        {!! json_encode($structuredData, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) !!}
     </script>
 
     <!-- Scripts -->

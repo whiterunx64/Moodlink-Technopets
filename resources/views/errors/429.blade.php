@@ -195,14 +195,14 @@
 <body>
     <main class="wrap" role="alert" aria-live="assertive">
         <div class="code">429</div>
-        <h1>Too many requests</h1>
+        <h1>You are going a little too fast</h1>
         <p class="summary">
-            {{ $infra?->getMessage() ?: "You've sent too many requests in a short period." }}
+            {{ $infra?->getMessage() ?: 'You have sent too many requests in a short time' }}
         </p>
         <p class="detail">
-            This page is rate-limited to once per minute per visitor. The limit resets
-            automatically — no action is required. The page will refresh on its own
-            when you're able to try again.
+            This page allows a limited number of requests per minute per visitor The limit
+            resets on its own and no action is needed The page will refresh automatically
+            once you are able to try again
         </p>
 
         <p class="countdown" role="status" aria-live="polite">
@@ -214,12 +214,12 @@
                 Try again
             </button>
             <button type="button" class="btn btn-secondary" data-go="{{ url('/') }}">
-                Go to homepage
+                Back to dashboard
             </button>
         </div>
 
         <p class="meta">
-            Error 429 · {{ $code }} · Reference <code>{{ $reference }}</code> · {{ $when }}
+            Status 429 · Code {{ $code }} · Reference <code>{{ $reference }}</code> · {{ $when }}
         </p>
     </main>
 
