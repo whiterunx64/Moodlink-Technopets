@@ -109,7 +109,9 @@ class SupabaseClient
             'X-Request-ID' => $requestId,
         ];
 
-        $maxAttempts = $this->config['retry_attempts'] ?? 3;
+        $maxAttempts = (int) ($options['max_attempts'] ?? $this->config['retry_attempts'] ?? 3);
+        $maxAttempts = max(1, $maxAttempts);
+        unset($options['max_attempts']); // not a Guzzle option
         $retryDelay = $this->config['retry_delay'] ?? 1000;
 
         for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
@@ -263,7 +265,11 @@ class SupabaseClient
     {
         try {
             $startTime = hrtime(true);
-            $this->request('GET', '/rest/v1/', useServiceKey: true);
+            $this->request('GET', '/rest/v1/', [
+                'timeout' => 3.0,
+                'connect_timeout' => 2.0,
+                'max_attempts' => 1,
+            ], useServiceKey: true);
 
             return [
                 'status' => 'healthy',

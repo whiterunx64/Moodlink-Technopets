@@ -184,6 +184,8 @@ return [
       'endpoint' => env('SUPABASE_HEALTH_ENDPOINT', '/health/supabase'),
       'interval' => filter_var(env('SUPABASE_HEALTH_INTERVAL', 30), FILTER_VALIDATE_INT), // seconds
     ],
+    
+    'slow_request_threshold_ms' => filter_var(env('SLOW_REQUEST_THRESHOLD_MS', 1000), FILTER_VALIDATE_INT),
   ],
 
   /*
