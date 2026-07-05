@@ -20,7 +20,13 @@ Route::get('/', fn() => Inertia::render('Landing'))
 Route::get(config('supabase-auth.monitoring.health_checks.endpoint'), [HealthController::class, 'check'])
     ->name('health');
 
-Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-access', 'supabase.single-session'])->group(function () {
+Route::middleware([
+    'auth',
+    'supabase.verify-token',
+    'supabase.require-admin-access',
+    'supabase.single-session',
+    \Inertia\EncryptHistoryMiddleware::class,
+])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');

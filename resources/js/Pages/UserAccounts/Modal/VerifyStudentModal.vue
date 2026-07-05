@@ -20,7 +20,7 @@ import {
     XCircleIcon,
     XMarkIcon,
 } from '@heroicons/vue/24/outline';
-import { useForm, usePage } from '@inertiajs/vue3';
+import { router, useForm, usePage } from '@inertiajs/vue3';
 import { computed, ref, watch } from 'vue';
 
 const props = defineProps<{
@@ -63,6 +63,8 @@ watch(
             dismissError();
             revealPassword.value = false;
             resetScrollGate();
+        } else if (created.value) {
+            router.clearHistory();
         }
     },
 );

@@ -64,14 +64,12 @@ class HandleInertiaRequests extends Middleware
                     'avatar' => $admin?->avatar,
                     'email_verified_at' => $user->email_confirmed_at,
                     'created_at' => $user->created_at,
-                    // TEST JWT TOKEN ALGO
-                    // 'access_token' => $user->getAccessToken(),
                 ] : null,
             ],
             'flash' => [
-                'error' => session('flash_error'),
-                'success' => session('flash_success'),
-                'student_credentials' => session('flash_student_credentials'),
+                'error' => fn () => session('flash_error'),
+                'success' => fn () => session('flash_success'),
+                'student_credentials' => fn () => $request->session()->pull('flash_student_credentials'),
             ],
         ];
     }

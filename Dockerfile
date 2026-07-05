@@ -66,8 +66,25 @@ RUN { \
   echo 'post_max_size = 10M'; \
   } > /usr/local/etc/php/conf.d/uploads.ini
 
-RUN a2enmod rewrite headers reqtimeout
+RUN a2enmod rewrite headers reqtimeout expires
 RUN a2dismod -f autoindex status || true
+
+RUN printf '%s\n' \
+  '<Directory /var/www/html/public/build>' \
+  '    <IfModule mod_headers.c>' \
+  '        Header set Cache-Control "public, max-age=31536000, immutable"' \
+  '    </IfModule>' \
+  '</Directory>' \
+  '<IfModule mod_expires.c>' \
+  '    ExpiresActive On' \
+  '    ExpiresByType image/x-icon "access plus 7 days"' \
+  '    ExpiresByType image/svg+xml "access plus 7 days"' \
+  '    ExpiresByType image/png "access plus 7 days"' \
+  '    ExpiresByType text/plain "access plus 1 day"' \
+  '    ExpiresByType application/xml "access plus 1 day"' \
+  '</IfModule>' \
+  > /etc/apache2/conf-available/asset-caching.conf \
+  && a2enconf asset-caching
 
 # Hide Apache version
 RUN echo "ServerTokens Prod\nServerSignature Off" \

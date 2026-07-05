@@ -67,6 +67,8 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
+        Inertia::clearHistory();
+
         if ($userId !== null) {
             Cache::forget("auth:active_session:{$userId}");
         }
