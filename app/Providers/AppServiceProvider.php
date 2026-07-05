@@ -18,10 +18,12 @@ use App\Services\RateLimiter;
 use App\Services\AvatarStorage;
 use App\Services\SupabaseAuthApi;
 use App\Services\SupabaseClient;
+use App\Support\Seo;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -66,6 +68,17 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Throttle login attempts by IP + submitted email to blunt brute-force
+        // and credential-stuffing without letting one attacker lock out everyone.
+        LaravelRateLimiter::for('login', function (Request $request) {
+            $email = (string) $request->input('email');
+
+            return [
+                Limit::perMinute(5)->by($request->ip()),
+                Limit::perMinute(5)->by(mb_strtolower($email) . '|' . $request->ip()),
+            ];
+        });
+
         LaravelRateLimiter::for('landing', function (Request $request) {
             return Limit::perMinute(5)
                 ->by($request->ip())
@@ -94,6 +107,10 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Vite::prefetch(concurrency: 3);
+
+        View::composer('app', function ($view): void {
+            $view->with('seo', Seo::forPath(request()->path()));
+        });
 
         Auth::provider('supabase', fn($app, array $config) => new SupabaseUserProvider(
             $app->make(SupabaseAuthInterface::class),

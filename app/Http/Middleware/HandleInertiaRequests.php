@@ -3,12 +3,21 @@
 namespace App\Http\Middleware;
 
 use App\Models\Admin;
-use App\Models\Notification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
 {
+    /** Cache TTL, in seconds, for the shared admin lookup. */
+    private const ADMIN_CACHE_TTL = 300;
+
+    /** Cache key for a user's shared admin record. Kept in sync with ProfileService. */
+    public static function adminCacheKey(string $userId): string
+    {
+        return "shared:admin:user:{$userId}";
+    }
+
     /**
      * The root template that is loaded on the first page visit.
      *
@@ -32,7 +41,15 @@ class HandleInertiaRequests extends Middleware
     public function share(Request $request): array
     {
         $user = $request->user();
-        $admin = $user ? Admin::findByUserId($user->id) : null;
+
+
+        $admin = $user
+            ? Cache::remember(
+                self::adminCacheKey($user->id),
+                self::ADMIN_CACHE_TTL,
+                fn () => Admin::findByUserId($user->id),
+            )
+            : null;
 
         return [
             ...parent::share($request),

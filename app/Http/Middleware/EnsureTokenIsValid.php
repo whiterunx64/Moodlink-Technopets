@@ -15,7 +15,9 @@ use Illuminate\Support\Facades\Log;
 
 class EnsureTokenIsValid
 {
-  private const SESSION_EXPIRED = 'Your session has expired or is no longer valid. Please sign in again to continue.';
+  // Distinct, user-facing reasons surfaced as a toast on the login page.
+  private const NOT_AUTHENTICATED = 'Please sign in to continue.';
+  private const SESSION_EXPIRED = 'Your session has expired for your security. Please sign in again to pick up where you left off.';
 
   public function __construct(
     protected readonly SupabaseAuthInterface $supabase,
@@ -32,7 +34,7 @@ class EnsureTokenIsValid
         'url' => $request->fullUrl(),
       ]);
 
-      throw new AuthenticationException(self::SESSION_EXPIRED);
+      throw new AuthenticationException(self::NOT_AUTHENTICATED);
     }
 
     if ($this->verifyAccessToken($user) || $this->refreshAndVerifyAccessToken()) {

@@ -21,6 +21,7 @@ import {
     UserIcon,
     XMarkIcon,
 } from '@heroicons/vue/24/outline';
+import { usePolling } from '@/composables/usePolling';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import { computed, ref, type Component } from 'vue';
 
@@ -95,6 +96,21 @@ function onPeriodChange(p: SummaryPeriod) {
 }
 
 const activeTab = computed<string>(() => props.filters.tab ?? 'overview');
+
+// Refresh only the active tab's dataset; period/tab filters stay client-driven.
+const TAB_PROPS: Record<string, string> = {
+    overview: 'overview',
+    programs: 'programs',
+    studentsOfConcern: 'atRiskStudents',
+};
+
+usePolling(
+    () => {
+        const only = TAB_PROPS[activeTab.value] ?? 'overview';
+        router.reload({ only: [only], preserveUrl: true });
+    },
+    { interval: 30_000 },
+);
 
 const tabs: Array<{ key: string; label: string; icon: Component }> = [
     { key: 'overview', label: 'Overview', icon: GlobeAltIcon },

@@ -27,7 +27,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->trustProxies(at: '*');
+        $middleware->trustProxies(
+            at: '*',
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_HOST
+                | Request::HEADER_X_FORWARDED_PORT
+                | Request::HEADER_X_FORWARDED_PROTO,
+        );
 
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
@@ -52,7 +58,14 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null; // fall through to Laravel's default 401 JSON
             }
 
-            return redirect()->route('login')->with('flash_error', $e->getMessage());
+            // Surface our descriptive middleware messages as a login toast, but
+            // never leak Laravel's bare "Unauthenticated." to the user.
+            $message = $e->getMessage();
+            if ($message === '' || $message === 'Unauthenticated.') {
+                $message = 'Please sign in to continue.';
+            }
+
+            return redirect()->route('login')->with('flash_error', $message);
         });
         $exceptions->render(function (QueryException|\PDOException $e, Request $request) {
             $infra = InfrastructureException::fromDatabaseError($e);

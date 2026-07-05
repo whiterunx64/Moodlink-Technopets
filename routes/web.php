@@ -20,120 +20,7 @@ Route::get('/', fn() => Inertia::render('Landing'))
 Route::get(config('supabase-auth.monitoring.health_checks.endpoint'), [HealthController::class, 'check'])
     ->name('health');
 
-//Route::get('/debug-session', function () {
-//    abort_unless(app()->environment('local'), 403);
-//    return session()->all();
-//});
-
-//Route::get('/debug-cache', function (\App\Services\CacheManager $cache) {
-//
-//    $userId = 'test-id';
-//
-//    $start = microtime(true);
-//
-//    $cache->cacheUserData($userId, ['name' => 'test']);
-//    $cache->getCachedUserData($userId);
-//
-//    $duration = microtime(true) - $start;
-//
-//    return [
-//        'time_seconds' => $duration,
-//    ];
-//});
-
-
-Route::get('/preview/appointment-reminder', function () {
-
-    $student = (object) [
-        'first_name' => 'Juan',
-    ];
-
-    $appointment = (object) [
-        'display_date' => 'June 30, 2026',
-        'display_time' => '10:00 AM',
-    ];
-
-    return view('mail.appointment-reminder-mail', [
-        'student' => $student,
-        'appointment' => $appointment,
-        'logoData' => null,
-    ]);
-
-})->name('preview.appointment.reminder');
-
-Route::get('/preview/approve-appointment-mail', function () {
-    abort_unless(app()->environment('local'), 403);
-
-    $student = new App\Models\Student([
-        'first_name' => 'Maria',
-        'last_name' => 'Santos',
-    ]);
-
-    $appointment = new App\Models\Appointment([
-        'context' => 'Academic stress',
-        'datetime' => now()->addDays(3)->setTime(10, 30),
-    ]);
-    $appointment->id = 42;
-    $appointment->setRelation('student', $student);
-
-    return new App\Mail\ApproveAppointmentMailable($student, $appointment);
-})->name('preview.approve-appointment-mail');
-
-// Local-only preview of the rejected-appointment email. No DB writes, no mail sent.
-Route::get('/preview/reject-appointment-mail', function () {
-    abort_unless(app()->environment('local'), 403);
-
-    $student = new App\Models\Student([
-        'first_name' => 'Maria',
-        'last_name' => 'Santos',
-    ]);
-
-    $appointment = new App\Models\Appointment([
-        'context' => 'Academic stress',
-        'datetime' => now()->addDays(3)->setTime(10, 30),
-    ]);
-    $appointment->id = 42;
-    $appointment->setRelation('student', $student);
-
-    return new App\Mail\RejectAppointmentMailable($student, $appointment);
-})->name('preview.reject-appointment-mail');
-
-// Local-only preview of the student-account credentials email. No DB writes, no mail sent.
-Route::get('/preview/student-account-password', function () {
-    abort_unless(app()->environment('local'), 403);
-
-    $student = new App\Models\Student([
-        'first_name' => 'Maria',
-        'last_name' => 'Santos',
-    ]);
-
-    return new App\Mail\InitialPasswordMailable(
-        $student,
-        'maria.santos@student.feu.edu.ph',
-        'Tmp-9f2K7xQ4',
-    );
-})->name('preview.student-account-password');
-
-Route::get('/preview/account-deletion', function () {
-    abort_unless(app()->environment('local'), 403);
-
-    $student = new App\Models\Student([
-        'first_name' => 'Maria',
-        'last_name' => 'Santos',
-    ]);
-
-    return new App\Mail\AccountDeletionMailable($student);
-})->name('preview.account-deletion');
-
-Route::get('/test-password', function () {
-    $svc = app(App\Services\UserAccount\PasswordGenerator::class);
-    $m = new ReflectionMethod($svc, 'generateInitialPassword');
-    $m->setAccessible(true);
-
-    return collect(range(1, 20))->map(fn() => $m->invoke($svc));
-});
-
-//Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-access', 'supabase.single-session'])->group(function () {
+Route::middleware(['auth', 'supabase.verify-token', 'supabase.require-admin-access', 'supabase.single-session'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard');
@@ -216,19 +103,26 @@ Route::patch(
     Route::delete('/profile/admin', [ProfileController::class, 'destroyAccount'])
         ->middleware('supabase.revalidate')
         ->name('profile.account.destroy');
-//});
+});
 
 Route::get('/cron/run', function (Request $request) {
     $cronKey = config('app.cron_key');
+
     abort_unless(
-        filled($cronKey) && hash_equals($cronKey, (string) $request->header('X-Cron-Key')),
+        filled($cronKey) &&
+        hash_equals($cronKey, (string) $request->header('X-Cron-Key')),
         403
     );
-    Artisan::call('schedule:run');
-    return response()
-        ->json(['status' => 'ok', 'ran_at' => now()->toIso8601String()])
-        ->header('Cache-Control', 'no-store');
-})->middleware('throttle:10,1')->name('cron.run');
+
+    $exitCode = Artisan::call('schedule:run');
+
+    return response()->json([
+        'status' => 'ok',
+        'exit_code' => $exitCode,
+        'output' => Artisan::output(),
+        'ran_at' => now()->toIso8601String(),
+    ]);
+});
 
 Route::get('/appointments/{appointment}/check-in', [AppointmentController::class, 'checkIn'])
     ->middleware('signed')

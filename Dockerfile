@@ -3,7 +3,16 @@ FROM php:8.4-apache
 # Install dependencies + Node.js
 RUN apt-get update && apt-get install -y \
   git curl zip unzip libpng-dev libonig-dev libxml2-dev libpq-dev nodejs npm \
-  && docker-php-ext-install pdo_pgsql pgsql mbstring exif pcntl bcmath gd
+  && docker-php-ext-install pdo_pgsql pgsql mbstring exif pcntl bcmath gd opcache
+
+RUN { \
+  echo 'opcache.enable=1'; \
+  echo 'opcache.enable_cli=0'; \
+  echo 'opcache.memory_consumption=256'; \
+  echo 'opcache.interned_strings_buffer=16'; \
+  echo 'opcache.max_accelerated_files=20000'; \
+  echo 'opcache.validate_timestamps=0'; \
+  } > /usr/local/etc/php/conf.d/opcache.ini
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -33,6 +42,13 @@ RUN composer clear-cache && \
 # Install Node dependencies and build assets
 RUN npm install && npm run build
 
+RUN php artisan view:cache && php artisan event:cache
+
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["apache2-foreground"]
+
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
@@ -44,6 +60,11 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
 
 # Hide PHP version (removes X-Powered-By header)
 RUN echo "expose_php = Off" > /usr/local/etc/php/conf.d/security.ini
+
+RUN { \
+  echo 'upload_max_filesize = 8M'; \
+  echo 'post_max_size = 10M'; \
+  } > /usr/local/etc/php/conf.d/uploads.ini
 
 RUN a2enmod rewrite headers reqtimeout
 RUN a2dismod -f autoindex status || true
@@ -75,11 +96,13 @@ RUN printf '%s\n' \
   > /etc/apache2/conf-available/etag.conf \
   && a2enconf etag
 
-# Block access to hidden files (.env, .git, etc.)
 RUN printf '%s\n' \
   '<FilesMatch "^\.">' \
   '    Require all denied' \
   '</FilesMatch>' \
+  '<Directory /var/www/html/public/.well-known>' \
+  '    Require all granted' \
+  '</Directory>' \
   > /etc/apache2/conf-available/hide-dotfiles.conf \
   && a2enconf hide-dotfiles
 

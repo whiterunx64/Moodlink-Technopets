@@ -21,14 +21,23 @@ watch(sidebar_collapsed, (val) => {
   localStorage.setItem('sidebar_collapsed', String(val));
 });
 
+// Track the last flash value we surfaced so polling / partial reloads — which
+// re-share the `flash` prop on every response — don't re-fire the same toast.
+let last_error: string | null = null;
+let last_success: string | null = null;
+
 watch(
   () => page.props.flash,
   (flash) => {
     const { error, success } = (flash ?? {}) as { error?: string; success?: string };
-    if (error) addToast({ type: 'error', message: error });
-    if (success) addToast({ type: 'success', message: success });
+
+    if (error && error !== last_error) addToast({ type: 'error', message: error });
+    if (success && success !== last_success) addToast({ type: 'success', message: success });
+
+    last_error = error ?? null;
+    last_success = success ?? null;
   },
-  { deep: true },
+  { deep: true, immediate: true },
 );
 
 function handleResize() {

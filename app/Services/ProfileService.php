@@ -6,10 +6,12 @@ namespace App\Services;
 
 use App\Contracts\AvatarStorageInterface;
 use App\Contracts\SupabaseAuthInterface;
+use App\Http\Middleware\HandleInertiaRequests;
 use App\Models\Admin;
 use App\Models\User;
 use DomainException;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 use function is_string;
@@ -40,6 +42,7 @@ class ProfileService
         $admin = Admin::findByUserId($user->id);
         $admin?->savePersonalDetails($data);
 
+        $this->forgetSharedAdmin($user);
         $this->syncProfileToSupabase($user, $data);
     }
 
@@ -65,6 +68,7 @@ class ProfileService
         $admin = Admin::findByUserId($user->id);
         $admin?->saveAvatarUrl($avatarUrl);
 
+        $this->forgetSharedAdmin($user);
         $this->mirrorAvatarToSupabase($user, $avatarUrl);
     }
 
@@ -94,7 +98,17 @@ class ProfileService
         $admin = Admin::findByUserId($user->id);
         $admin?->deactivateAndDelete();
 
+        $this->forgetSharedAdmin($user);
         $this->auth->deleteAdminAccountApiCall($user->id);
+    }
+
+    /**
+     * Drop the cached admin record shared into every Inertia response so the
+     * next request re-reads the mutated row.
+     */
+    private function forgetSharedAdmin(User $user): void
+    {
+        Cache::forget(HandleInertiaRequests::adminCacheKey($user->id));
     }
 
     /**

@@ -37,7 +37,7 @@ const props = defineProps<{
     pendingPosts: PendingPost[];
 }>();
 
-usePollingReload(['posts', 'counts', 'reportedPosts', 'pendingPosts']);
+usePollingReload(['posts', 'counts', 'reportedPosts', 'pendingPosts'], { interval: 30_000 });
 
 // ─── Reported posts (seeded from server, mutable for local optimistic updates) ─
 

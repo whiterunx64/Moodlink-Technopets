@@ -7,6 +7,7 @@ import AdminLayout from '@/Layouts/AdminLayout.vue';
 import ManageAccountModal from '@/Pages/UserAccounts/Modal/ManageAccountModal.vue';
 import VerifyStudentModal from '@/Pages/UserAccounts/Modal/VerifyStudentModal.vue';
 import { usePaginatorNav } from '@/composables/usePaginatorNav';
+import { usePollingReload } from '@/composables/usePolling';
 import { YEAR_LEVEL_OPTIONS } from '@/composables/useStudentFilters';
 import type {
     Paginated,
@@ -31,6 +32,9 @@ const yearFilter = ref(
 const activeTab = ref<StudentTab>((props.filters.tab as StudentTab) ?? 'all');
 
 const paginator = usePaginatorNav(toRef(props, 'students'));
+
+// Keep the student list and tab counts fresh; filters stay client-controlled.
+usePollingReload(['students', 'tabCounts'], { interval: 30_000 });
 
 const verifyModalOpen = ref(false);
 const manageModalOpen = ref(false);

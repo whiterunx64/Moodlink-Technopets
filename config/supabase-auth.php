@@ -41,7 +41,20 @@ return [
 
   'jwt' => [
     'secret' => env('SUPABASE_JWT_SECRET'),
+    // Preferred/legacy algorithm. Retained for the HS* shared-secret path and as
+    // a fallback; verification now selects the algorithm from the token header.
     'algorithm' => env('SUPABASE_JWT_ALGORITHM', 'ES256'),
+    // Algorithms accepted during verification. Defaults to every algorithm
+    // Supabase can issue (symmetric HS* + asymmetric ES*/RS* via JWKS), so tokens
+    // signed before or after a key migration all validate. Comma-separated env
+    // override, e.g. SUPABASE_JWT_ALLOWED_ALGORITHMS="ES256,RS256".
+    'allowed_algorithms' => array_values(array_filter(array_map(
+      'trim',
+      explode(',', (string) env(
+        'SUPABASE_JWT_ALLOWED_ALGORITHMS',
+        'HS256,HS384,HS512,ES256,ES384,ES512,RS256,RS384,RS512',
+      )),
+    ))),
     'leeway' => filter_var(env('SUPABASE_JWT_LEEWAY', 60), FILTER_VALIDATE_INT), // seconds
     'ttl' => filter_var(env('SUPABASE_JWT_TTL', 3600), FILTER_VALIDATE_INT), // seconds
   ],

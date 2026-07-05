@@ -16,7 +16,10 @@ use Psr\Log\LoggerInterface;
 
 use function count;
 use function explode;
+use function in_array;
+use function is_array;
 use function is_int;
+use function is_string;
 use function strlen;
 
 final class SupabaseAuthApi implements SupabaseAuthInterface
@@ -315,16 +318,13 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
                 return $cached;
             }
 
-            $algorithm = JwtAlgorithm::fromConfig();
             $leeway = config('supabase-auth.jwt.leeway');
             if (!is_int($leeway) || $leeway < 0) {
                 throw new RuntimeException('supabase-auth jwt.leeway config must be a non-negative integer.');
             }
             JWT::$leeway = $leeway; // allow clock skew between servers
 
-            $decoded = $algorithm->isAsymmetric()
-                ? JWT::decode($token, $this->fetchPublicKeys())
-                : JWT::decode($token, new Key(config('supabase-auth.jwt.secret'), $algorithm->value));
+            $decoded = $this->decodeToken($token);
 
             $result = [
                 'valid' => true,
@@ -365,6 +365,65 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * Verify a token by selecting the algorithm from its own header, so tokens
+     * signed with any algorithm Supabase issues (symmetric HS or asymmetric
+     * ES/RS via JWKS) validate — including a mix during a key migration.
+     *
+     * @throws RuntimeException when the token header is malformed or the
+     *                          algorithm is not in the configured allow-list.
+     */
+    private function decodeToken(string $token): object
+    {
+        $algorithm = $this->algorithmFromToken($token);
+
+        if ($algorithm->isAsymmetric()) {
+            // JWKS may hold several keys/algorithms; php-jwt picks by header kid.
+            return JWT::decode($token, $this->fetchPublicKeys());
+        }
+
+        $secret = config('supabase-auth.jwt.secret');
+        if (!is_string($secret) || $secret === '') {
+            throw new RuntimeException('supabase-auth jwt.secret must be set to verify HS* tokens.');
+        }
+
+        return JWT::decode($token, new Key($secret, $algorithm->value));
+    }
+
+    /**
+     * Read the (unverified) JWT header, resolve its algorithm, and confirm it is
+     * allowed. The signature is still verified afterwards by JWT::decode.
+     *
+     * @throws RuntimeException on a malformed header or a disallowed algorithm.
+     */
+    private function algorithmFromToken(string $token): JwtAlgorithm
+    {
+        $segments = explode('.', $token);
+        if (count($segments) !== 3) {
+            throw new RuntimeException('Malformed JWT: expected three segments.');
+        }
+
+        $decodedHeader = base64_decode(strtr($segments[0], '-_', '+/'), true);
+        $header = $decodedHeader !== false ? json_decode($decodedHeader, true) : null;
+
+        if (!is_array($header)) {
+            throw new RuntimeException('Malformed JWT: unreadable header.');
+        }
+
+        $algorithm = JwtAlgorithm::tryFromHeader($header['alg'] ?? null);
+        if ($algorithm === null) {
+            throw new RuntimeException('Unsupported JWT algorithm in token header.');
+        }
+
+        /** @var array<int, string> $allowed */
+        $allowed = config('supabase-auth.jwt.allowed_algorithms', []);
+        if (!in_array($algorithm->value, $allowed, true)) {
+            throw new RuntimeException("JWT algorithm {$algorithm->value} is not allowed.");
+        }
+
+        return $algorithm;
     }
 
     /**

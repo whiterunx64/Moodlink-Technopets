@@ -263,7 +263,7 @@ usePollingReload([
     'posts_breakdown',
     'appointments_breakdown',
     'activity_appointments',
-]);
+], { interval: 30_000 });
 
 const loading = ref(true);
 onMounted(() => {

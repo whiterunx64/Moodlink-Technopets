@@ -25,8 +25,21 @@ enum JwtAlgorithm: string
         };
     }
 
+    public function isSymmetric(): bool
+    {
+        return !$this->isAsymmetric();
+    }
+
     public static function fromConfig(): self
     {
         return self::from(config('supabase-auth.jwt.algorithm'));
+    }
+
+    /**
+     * Resolve an algorithm from a token header value, or null if unsupported.
+     */
+    public static function tryFromHeader(mixed $alg): ?self
+    {
+        return is_string($alg) ? self::tryFrom($alg) : null;
     }
 }

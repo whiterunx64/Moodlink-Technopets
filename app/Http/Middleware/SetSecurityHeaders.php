@@ -33,16 +33,24 @@ class SetSecurityHeaders
 
     private function setContentSecurityPolicy(Response $response, string $nonce): void
     {
+        $supabase = rtrim((string) config('supabase-auth.url'), '/');
+        $supabaseSrc = $supabase !== '' ? " {$supabase}" : '';
+
         $csp = [
             "default-src 'self'",
             "script-src 'self' 'nonce-{$nonce}'",
             "style-src 'self' 'unsafe-inline'",
-            "connect-src 'self' https://*.supabase.co",
-            "img-src 'self' data: https://xyxjbqmvxtopeemdxjnq.supabase.co",
+            "connect-src 'self' https://*.supabase.co wss://*.supabase.co{$supabaseSrc}",
+            "img-src 'self' data:{$supabaseSrc}",
             "font-src 'self' data:",
+            "form-action 'self'",
+            "frame-src 'none'",
             "frame-ancestors 'self'",
+            "manifest-src 'self'",
+            "worker-src 'self' blob:",
             "object-src 'none'",
             "base-uri 'self'",
+            'upgrade-insecure-requests',
         ];
 
         $response->headers->set(
@@ -76,6 +84,7 @@ class SetSecurityHeaders
 
     private function addCrossOriginProtection(Response $response): void
     {
+        $response->headers->set('X-Frame-Options', 'SAMEORIGIN'); 
         $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
         $response->headers->set('Cross-Origin-Resource-Policy', 'same-origin');
         $response->headers->set('X-Permitted-Cross-Domain-Policies', 'none');
