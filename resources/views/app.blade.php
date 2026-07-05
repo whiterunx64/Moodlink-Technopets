@@ -14,30 +14,36 @@
     <meta name="theme-color" content="#16a34a">
     <link rel="canonical" href="{{ $seo['canonical'] ?? url()->current() }}">
 
+    {{-- Only advertise a social image if the file actually exists, so we never
+         emit a tag pointing at a missing asset (which crawlers fetch and 404). --}}
+    @php $hasOgImage = file_exists(public_path('og-image.png')); @endphp
+
     {{-- Open Graph (Facebook, LinkedIn, Messenger, etc.) --}}
     <meta property="og:site_name" content="MoodLink">
     <meta property="og:type" content="{{ $seo['type'] ?? 'website' }}">
     <meta property="og:title" content="{{ $seo['title'] ?? config('app.name', 'MoodLink') }}">
     <meta property="og:description" content="{{ $seo['description'] ?? '' }}">
     <meta property="og:url" content="{{ $seo['canonical'] ?? url()->current() }}">
-    @if (!empty($seo['image']))
-        <meta property="og:image" content="{{ $seo['image'] }}">
+    @if ($hasOgImage)
+        <meta property="og:image" content="{{ url('/og-image.png') }}">
         <meta property="og:image:width" content="1200">
         <meta property="og:image:height" content="630">
     @endif
 
     {{-- Twitter / X cards --}}
-    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:card" content="{{ $hasOgImage ? 'summary_large_image' : 'summary' }}">
     <meta name="twitter:title" content="{{ $seo['title'] ?? config('app.name', 'MoodLink') }}">
     <meta name="twitter:description" content="{{ $seo['description'] ?? '' }}">
-    @if (!empty($seo['image']))
-        <meta name="twitter:image" content="{{ $seo['image'] }}">
+    @if ($hasOgImage)
+        <meta name="twitter:image" content="{{ url('/og-image.png') }}">
     @endif
 
     {{-- Favicons --}}
     <link rel="icon" href="/favicon.ico" sizes="any">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    @if (file_exists(public_path('apple-touch-icon.png')))
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    @endif
 
     {{-- Structured data: describes MoodLink to search engines --}}
     @php
