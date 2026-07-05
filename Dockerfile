@@ -24,7 +24,6 @@ RUN apt-get update \
     && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y --no-install-recommends \
        libpng-dev libonig-dev libxml2-dev libpq-dev libzip-dev \
-       libapache2-mod-brotli \
     && docker-php-ext-install -j"$(nproc)" \
        pdo_pgsql pgsql mbstring exif pcntl bcmath gd opcache zip \
     && apt-get purge -y --auto-remove \
