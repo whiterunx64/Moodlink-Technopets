@@ -4,8 +4,6 @@ import StudentTabs from '@/Components/Students/StudentTabs.vue';
 import Pagination from '@/Components/UI/Pagination.vue';
 import SearchInput from '@/Components/UI/SearchInput.vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import ManageAccountModal from '@/Pages/UserAccounts/Modal/ManageAccountModal.vue';
-import VerifyStudentModal from '@/Pages/UserAccounts/Modal/VerifyStudentModal.vue';
 import { usePaginatorNav } from '@/composables/usePaginatorNav';
 import { usePollingReload } from '@/composables/usePolling';
 import { YEAR_LEVEL_OPTIONS } from '@/composables/useStudentFilters';
@@ -16,7 +14,15 @@ import type {
     StudentTab,
 } from '@/types';
 import { Head, router } from '@inertiajs/vue3';
-import { ref, toRef, watch } from 'vue';
+import { defineAsyncComponent, ref, toRef, watch } from 'vue';
+
+// Modals load lazily so their chunks aren't pulled into other pages' bundles.
+const ManageAccountModal = defineAsyncComponent(
+    () => import('@/Pages/UserAccounts/Modal/ManageAccountModal.vue'),
+);
+const VerifyStudentModal = defineAsyncComponent(
+    () => import('@/Pages/UserAccounts/Modal/VerifyStudentModal.vue'),
+);
 
 const props = defineProps<{
     students: Paginated<Student>;

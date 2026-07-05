@@ -115,6 +115,21 @@ class QueryService
   }
 
   /**
+   * @return array<int, array<string, mixed>>
+   */
+  public function checkInAlerts(): array
+  {
+    return Appointment::awaitingCheckIn()->with('student')->get()
+      ->filter(fn(Appointment $appointment): bool => $appointment->isWithinCheckInWindow())
+      ->map(fn(Appointment $appointment): array => [
+        'id' => $appointment->id,
+        'student_name' => $appointment->student_name,
+      ])
+      ->values()
+      ->all();
+  }
+
+  /**
    * @return array<string, int>
    */
   public function tabCounts(): array

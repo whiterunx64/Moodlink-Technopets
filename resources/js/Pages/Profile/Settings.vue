@@ -5,9 +5,6 @@ import NotificationPrefs from '@/Components/Profile/NotificationPrefs.vue';
 import ProfileCard from '@/Components/Profile/ProfileCard.vue';
 import ProfileInfoForm from '@/Components/Profile/ProfileInfoForm.vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import ConfirmPasswordChangeModal from '@/Pages/Profile/Modal/ConfirmPasswordChangeModal.vue';
-import ConfirmProfileUpdateModal from '@/Pages/Profile/Modal/ConfirmProfileUpdateModal.vue';
-import DeleteAdminModal from '@/Pages/Profile/Modal/DeleteAdminModal.vue';
 import { useToast } from '@/composables/useToast';
 import type {
     AdminProfile,
@@ -16,7 +13,18 @@ import type {
     ProfileSettingsPageProps,
 } from '@/types';
 import { router, useForm } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, ref, watch } from 'vue';
+
+// Modals load lazily — fetched only when opened, not on initial page load.
+const ConfirmPasswordChangeModal = defineAsyncComponent(
+    () => import('@/Pages/Profile/Modal/ConfirmPasswordChangeModal.vue'),
+);
+const ConfirmProfileUpdateModal = defineAsyncComponent(
+    () => import('@/Pages/Profile/Modal/ConfirmProfileUpdateModal.vue'),
+);
+const DeleteAdminModal = defineAsyncComponent(
+    () => import('@/Pages/Profile/Modal/DeleteAdminModal.vue'),
+);
 
 const props = defineProps<ProfileSettingsPageProps>();
 

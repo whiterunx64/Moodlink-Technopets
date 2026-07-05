@@ -40,9 +40,12 @@ createInertiaApp({
                     h(App, props),
                     h(Toaster, {
                         position: 'top-right',
-                        richColors: true,
+                        richColors: false,
                         closeButton: true,
-                        expand: false,
+                        expand: false,       // collapsed deck; expands on hover
+                        visibleToasts: 4,    // how many stay in the visible stack
+                        gap: 10,
+                        offset: 16,
                     }),
                 ]),
         });

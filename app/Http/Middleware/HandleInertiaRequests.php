@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Admin;
+use App\Services\Appointment\QueryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
@@ -72,10 +73,13 @@ class HandleInertiaRequests extends Middleware
                 ] : null,
             ],
             'flash' => [
-                'error' => fn () => session('flash_error'),
-                'success' => fn () => session('flash_success'),
+                'error' => fn () => $request->session()->pull('flash_error'),
+                'success' => fn () => $request->session()->pull('flash_success'),
                 'student_credentials' => fn () => $request->session()->pull('flash_student_credentials'),
             ],
+            'checkInAlerts' => $user
+                ? fn () => app(QueryService::class)->checkInAlerts()
+                : [],
         ];
     }
 }

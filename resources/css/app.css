@@ -124,6 +124,8 @@
 /* ── Toast (vue-sonner) ─────────────────────────────────── */
 
 [data-sonner-toaster] {
+    --toast-accent: #6b7280;      /* per-type accent, overridden below */
+
     font-family: var(--font-sans);
 
     position: fixed !important;
@@ -132,24 +134,27 @@
     bottom: auto !important;
     left: auto !important;
     z-index: 9999 !important;
+    width: 420px !important;
 }
 
+/* Classic outlined card: white surface, bold colored border per type */
 [data-sonner-toast] {
     background: #ffffff !important;
-    border: 1px solid #e5e7eb !important;
-    color: #111827 !important;
+    border: 2px solid var(--toast-accent) !important;
+    color: #1a1a1a !important;
 
     border-radius: 12px !important;
-    font-size: 13.5px !important;
-    font-weight: 500 !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
     line-height: 1.4 !important;
 
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12),
-                0 2px 6px rgba(0, 0, 0, 0.06) !important;
+    box-shadow:
+        0 4px 10px rgba(0, 0, 0, 0.08),
+        0 10px 28px rgba(0, 0, 0, 0.10) !important;
 
-    padding: 32px 42px 32px 16px !important; /* space for X button */
+    padding: 18px 46px 18px 18px !important; /* room for the X on the right */
 
-    width: auto !important;
+    width: 100% !important;
     max-width: 420px !important;
     flex: 0 0 auto !important;
 
@@ -157,69 +162,94 @@
 
     display: flex !important;
     align-items: center !important;
+
+    transition: box-shadow 0.2s ease !important;
 }
 
+/* Colored icon on the left */
 [data-sonner-toast] > [data-icon] {
-    margin-right: 12px !important;
-    margin-left: -2px !important;
-    width: 32px !important;
+    margin: 0 14px 0 0 !important;
+    width: 26px !important;
+    height: 26px !important;
+    flex: 0 0 26px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
 }
 
-/* make actual SVG bigger */
 [data-sonner-toast] > [data-icon] svg {
-    width: 20px !important;
-    height: 20px !important;
+    width: 24px !important;
+    height: 24px !important;
+    color: var(--toast-accent) !important;
+    stroke: var(--toast-accent) !important;
+    fill: var(--toast-accent) !important;
 }
 
-/* SUCCESS */
-[data-sonner-toast][data-type='success'] svg {
-    stroke: #16a34a !important; /* green */
-    fill: #16a34a !important;
+[data-sonner-toast] [data-content] {
+    display: flex !important;
+    align-items: center !important;
+    min-width: 0 !important;
 }
 
-/* ERROR / DANGER */
-[data-sonner-toast][data-type='error'] svg {
-    stroke: #dc2626 !important; /* red */
-    fill: #dc2626 !important;
+[data-sonner-toast] [data-title] {
+    font-weight: 600 !important;
 }
 
-/* WARNING */
-[data-sonner-toast][data-type='warning'] svg {
-    stroke: #f59e0b !important; /* amber */
-    fill: #f59e0b !important;
+/* ── Per-type accent (border + icon color) ──────────────── */
+
+/* SUCCESS — green */
+[data-sonner-toast][data-type='success'] {
+    --toast-accent: #16a34a;
 }
 
-/* INFO */
-[data-sonner-toast][data-type='info'] svg {
-    stroke: #2563eb !important; /* blue */
-    fill: #2563eb !important;
+/* ERROR / DANGER — red */
+[data-sonner-toast][data-type='error'] {
+    --toast-accent: #dc2626;
 }
 
-/* Close button pinned nicely */
+/* WARNING — amber */
+[data-sonner-toast][data-type='warning'] {
+    --toast-accent: #f59e0b;
+}
+
+/* INFO — blue */
+[data-sonner-toast][data-type='info'] {
+    --toast-accent: #2563eb;
+}
+
+/* ── Close button (always visible, top-right) ───────────── */
 [data-sonner-toast] [data-close-button] {
     position: absolute !important;
-    top: 10px !important;
-    right: 10px !important;
+    top: 50% !important;
+    right: 14px !important;
+    transform: translateY(-50%) !important;
 
-    opacity: 0.6;
-    transition: opacity 0.2s ease;
+    width: 24px !important;
+    height: 24px !important;
+    border-radius: 6px !important;
+    border: none !important;
+    background: transparent !important;
+    color: #6b7280 !important;
+
+    opacity: 1 !important;
+    transition: background 0.15s ease, color 0.15s ease !important;
 }
 
 [data-sonner-toast] [data-close-button]:hover {
-    opacity: 1;
+    background: #f3f4f6 !important;
+    color: #1a1a1a !important;
 }
 
-/* Bigger, clean X icon */
 [data-sonner-toast] [data-close-button] svg {
     width: 18px !important;
     height: 18px !important;
-    stroke: #000 !important;
+    stroke: currentColor !important;
+    stroke-width: 2.2 !important;
 }
 
-/* Better hover UX */
+/* Subtle lift on hover */
 [data-sonner-toast]:hover {
-    border-color: #d1d5db !important;
+    box-shadow:
+        0 6px 14px rgba(0, 0, 0, 0.10),
+        0 14px 36px rgba(0, 0, 0, 0.12) !important;
 }

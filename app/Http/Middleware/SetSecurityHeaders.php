@@ -18,6 +18,7 @@ class SetSecurityHeaders
         $response = $next($request);
 
         $this->setContentSecurityPolicy($response, $nonce);
+        $this->observeTrustedTypesViolations($response);
         $this->preventMimeTypeSniffing($response);
         $this->limitReferrerInformationLeakage($response);
         $this->restrictBrowserFeaturePermissions($response);
@@ -36,6 +37,10 @@ class SetSecurityHeaders
         $supabase = rtrim((string) config('supabase-auth.url'), '/');
         $supabaseSrc = $supabase !== '' ? " {$supabase}" : '';
 
+        $reportUri = route('csp-report');
+
+        $response->headers->set('Reporting-Endpoints', "csp-endpoint=\"{$reportUri}\"");
+
         $csp = [
             "default-src 'self'",
             "script-src 'self' 'nonce-{$nonce}'",
@@ -51,6 +56,8 @@ class SetSecurityHeaders
             "object-src 'none'",
             "base-uri 'self'",
             'upgrade-insecure-requests',
+            'report-to csp-endpoint',
+            "report-uri {$reportUri}",
         ];
 
         $response->headers->set(
@@ -58,6 +65,22 @@ class SetSecurityHeaders
             implode('; ', $csp)
         );
     }
+
+    private function observeTrustedTypesViolations(Response $response): void
+    {
+        $reportUri = route('csp-report');
+
+        $response->headers->set(
+            'Content-Security-Policy-Report-Only',
+            implode('; ', [
+                "require-trusted-types-for 'script'",
+                'trusted-types',
+                'report-to csp-endpoint',
+                "report-uri {$reportUri}",
+            ]),
+        );
+    }
+
     private function preventMimeTypeSniffing(Response $response): void
     {
         $response->headers->set('X-Content-Type-Options', 'nosniff'); // Prevent MIME type guessing attacks
@@ -84,7 +107,7 @@ class SetSecurityHeaders
 
     private function addCrossOriginProtection(Response $response): void
     {
-        $response->headers->set('X-Frame-Options', 'SAMEORIGIN'); 
+        $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
         $response->headers->set('Cross-Origin-Opener-Policy', 'same-origin');
         $response->headers->set('Cross-Origin-Resource-Policy', 'same-origin');
         $response->headers->set('X-Permitted-Cross-Domain-Policies', 'none');

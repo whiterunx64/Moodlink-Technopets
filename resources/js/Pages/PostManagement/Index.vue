@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import type { FilterTab } from '@/Components/Filters/FilterTabs.vue';
 import FilterTabs from '@/Components/Filters/FilterTabs.vue';
-import PostDetailModal from '@/Components/Posts/PostDetailModal.vue';
-import ReportDetailModal from '@/Components/Posts/ReportDetailModal.vue';
 import Pagination from '@/Components/UI/Pagination.vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { usePaginatorNav } from '@/composables/usePaginatorNav';
@@ -25,7 +23,14 @@ import {
     FlagIcon,
 } from '@heroicons/vue/24/outline';
 import { Head, router } from '@inertiajs/vue3';
-import { computed, ref, toRef, watch } from 'vue';
+import { computed, defineAsyncComponent, ref, toRef, watch } from 'vue';
+
+const PostDetailModal = defineAsyncComponent(
+    () => import('@/Components/Posts/PostDetailModal.vue'),
+);
+const ReportDetailModal = defineAsyncComponent(
+    () => import('@/Components/Posts/ReportDetailModal.vue'),
+);
 
 // ─── Server props ─────────────────────────────────────────────────────────────
 

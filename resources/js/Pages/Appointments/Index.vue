@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { usePollingReload } from '@/composables/usePolling';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import AddSlotModal from '@/Pages/Appointments/Modal/AddSlotModal.vue';
-import CheckInQrModal from '@/Pages/Appointments/Modal/CheckInQrModal.vue';
-import ConfirmActionModal from '@/Pages/Appointments/Modal/ConfirmActionModal.vue';
-import StudentProfileModal from '@/Pages/Appointments/Modal/StudentProfileModal.vue';
 import type {
     Appointment,
     AppointmentFilters,
@@ -27,7 +23,20 @@ import {
 import { Head, router } from '@inertiajs/vue3';
 import QRCode from 'qrcode';
 import type { FunctionalComponent } from 'vue';
-import { computed, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, ref, watch } from 'vue';
+
+const AddSlotModal = defineAsyncComponent(
+    () => import('@/Pages/Appointments/Modal/AddSlotModal.vue'),
+);
+const CheckInQrModal = defineAsyncComponent(
+    () => import('@/Pages/Appointments/Modal/CheckInQrModal.vue'),
+);
+const ConfirmActionModal = defineAsyncComponent(
+    () => import('@/Pages/Appointments/Modal/ConfirmActionModal.vue'),
+);
+const StudentProfileModal = defineAsyncComponent(
+    () => import('@/Pages/Appointments/Modal/StudentProfileModal.vue'),
+);
 
 const props = defineProps<{
     appointments: Appointment[];

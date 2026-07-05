@@ -47,6 +47,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SetCacheHeaders::class,
         ]);
 
+        $middleware->validateCsrfTokens(except: [
+            'csp-report',
+        ]);
+
         $middleware->alias([
             'supabase.verify-token' => \App\Http\Middleware\EnsureTokenIsValid::class,
             'supabase.revalidate' => \App\Http\Middleware\RevalidateSupabaseUser::class,

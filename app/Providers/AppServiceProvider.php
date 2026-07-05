@@ -79,6 +79,8 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        LaravelRateLimiter::for('csp-report', fn (Request $request) => Limit::perMinute(30)->by($request->ip()));
+
         LaravelRateLimiter::for('landing', function (Request $request) {
             return Limit::perMinute(10)
                 ->by($request->ip())

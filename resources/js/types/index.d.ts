@@ -22,7 +22,15 @@ export type PageProps<
         success?: string;
         student_credentials?: { email: string; password: string } | null;
     };
+    /** Appointments currently in their check-in window (global alert). */
+    checkInAlerts: CheckInAlert[];
 };
+
+/** Minimal payload for the global "incoming check-in" alert. */
+export interface CheckInAlert {
+    id: number;
+    student_name: string;
+}
 
 export interface AdminNotification {
     id: number;

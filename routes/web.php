@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\CspReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\NotificationController;
@@ -16,6 +17,10 @@ Route::inertia('/', 'Landing')
 
 Route::get(config('supabase-auth.monitoring.health_checks.endpoint'), [HealthController::class, 'check'])
     ->name('health');
+
+Route::post('/csp-report', [CspReportController::class, 'store'])
+    ->middleware('throttle:csp-report')
+    ->name('csp-report');
 
 Route::middleware([
     'auth',

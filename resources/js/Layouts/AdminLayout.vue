@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { usePage } from '@inertiajs/vue3';
+import { toast } from 'vue-sonner';
 import AppSidebar from '@/Components/AppSidebar.vue';
 import AppHeader from '@/Components/AppHeader.vue';
 import { useToast } from '@/composables/useToast';
+import { usePollingReload } from '@/composables/usePolling';
+import type { CheckInAlert } from '@/types';
 
 defineProps<{
   title?: string;
@@ -21,8 +24,6 @@ watch(sidebar_collapsed, (val) => {
   localStorage.setItem('sidebar_collapsed', String(val));
 });
 
-// Track the last flash value we surfaced so polling / partial reloads — which
-// re-share the `flash` prop on every response — don't re-fire the same toast.
 let last_error: string | null = null;
 let last_success: string | null = null;
 
@@ -36,6 +37,54 @@ watch(
 
     last_error = error ?? null;
     last_success = success ?? null;
+  },
+  { deep: true, immediate: true },
+);
+
+// ── Global "incoming check-in" alert ─────────────────────────────────────────
+usePollingReload(['checkInAlerts'], { interval: 15_000 });
+
+function loadAlerted(): Set<number> {
+  try {
+    const raw = sessionStorage.getItem('alerted_checkin_ids');
+    return raw ? new Set(JSON.parse(raw) as number[]) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+const alertedCheckInIds = ref<Set<number>>(loadAlerted());
+
+function persistAlerted() {
+  sessionStorage.setItem(
+    'alerted_checkin_ids',
+    JSON.stringify([...alertedCheckInIds.value]),
+  );
+}
+
+watch(
+  () => page.props.checkInAlerts as CheckInAlert[] | undefined,
+  (alerts) => {
+    if (!alerts?.length) return;
+
+    const onAppointmentsPage = page.component === 'Appointments/Index';
+
+    for (const alert of alerts) {
+      if (alertedCheckInIds.value.has(alert.id)) continue;
+      alertedCheckInIds.value.add(alert.id);
+
+      if (onAppointmentsPage) continue;
+
+      toast.info(
+        `${alert.student_name} has a scheduled appointment whose check-in window is now open. Please watch for them to arrive and scan their check-in QR code from the Appointments page once they do.`,
+        {
+          id: `checkin:${alert.id}`,
+          duration: 30_000,
+        },
+      );
+    }
+
+    persistAlerted();
   },
   { deep: true, immediate: true },
 );
