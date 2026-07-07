@@ -20,7 +20,7 @@ class SummaryReportService
 {
     use HasFilters;
     /** Window A size that flags a student At Risk. */
-    public const WINDOW_A_THRESHOLD = 2;
+    public const WINDOW_A_THRESHOLD = 5;
 
     /** Window B size that fires the helper. */
     public const WINDOW_B_TRIGGER = 3;
