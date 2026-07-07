@@ -22,6 +22,38 @@ const toastIcons = {
     info: () => h(InformationCircleIcon),
 };
 
+const OFFLINE_TOAST_ID = 'offline';
+let offlineToastShown = false;
+
+function showOfflineToast() {
+    if (offlineToastShown) {
+        return;
+    }
+    offlineToastShown = true;
+    toast.error("You're offline. Please check your internet connection and try again.", {
+        id: OFFLINE_TOAST_ID,
+        duration: Infinity, // stays until the connection returns
+    });
+}
+
+function clearOfflineToast() {
+    if (!offlineToastShown) {
+        return;
+    }
+    offlineToastShown = false;
+    toast.dismiss(OFFLINE_TOAST_ID);
+    toast.success("You're back online.", { duration: 2500 });
+}
+
+router.on('error', () => {
+    if (!navigator.onLine) {
+        showOfflineToast();
+    }
+});
+
+window.addEventListener('offline', showOfflineToast);
+window.addEventListener('online', clearOfflineToast);
+
 router.on('invalid', (event) => {
     const status = event.detail.response?.status;
     if (!status || status < 400) {

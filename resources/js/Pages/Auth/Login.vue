@@ -100,11 +100,11 @@ onMounted(showInitialMessages);
                         {{ form.processing ? 'SIGNING IN…' : 'SIGN IN' }}
                     </button>
 
-                    <div class="text-center">
-                        <span class="font-inter text-sm text-[#4a5e28] hover:underline cursor-pointer font-medium">
-                            Forgot password?
-                        </span>
-                    </div>
+                    <p class="font-inter text-xs text-gray-500 text-center sm:text-sm">
+                        Forgot your password or can't sign in?
+                        <span class="text-[#4a5e28] font-medium">Contact the system administrator</span>
+                        to reset your password or unlock your account.
+                    </p>
                 </form>
 
                 <p class="font-inter text-xs text-gray-500 text-center mt-8 sm:text-sm sm:mt-10">

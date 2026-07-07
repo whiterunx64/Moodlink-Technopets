@@ -27,10 +27,8 @@ export function useAdminLoginSubmission(statusMessage?: string) {
 
     function submit() {
         form.post(route('login'), {
-            onFinish: () => {
-                form.reset('password');
-                showFlashError();
-            },
+            onSuccess: () => showFlashError(),
+            onFinish: () => form.reset('password'),
         });
     }
 

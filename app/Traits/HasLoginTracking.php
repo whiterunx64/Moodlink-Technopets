@@ -21,8 +21,8 @@ trait HasLoginTracking
     {
         if ($this->isLocked()) {
             throw ValidationException::withMessages([
-                'auth_error' => [
-                    'Your account is locked until ' . $this->locked_until->diffForHumans() . '.'
+                'email' => [
+                    trans('auth.locked', ['time' => $this->locked_until->diffForHumans()]),
                 ],
             ]);
         }
@@ -30,11 +30,11 @@ trait HasLoginTracking
 
     public function recordFailedAttempt(): void
     {
-        $maxAttempts  = config('supabase-auth.rate_limiting.login.max_attempts');
-        $decayMinutes = config('supabase-auth.rate_limiting.login.decay_minutes');
+        $maxAttempts = config('supabase-auth.rate_limiting.login.max_attempts');
+        $lockMinutes = config('supabase-auth.rate_limiting.login.lock_minutes');
 
         if (!is_int($maxAttempts) || $maxAttempts <= 0 ||
-            !is_int($decayMinutes) || $decayMinutes <= 0) {
+            !is_int($lockMinutes) || $lockMinutes <= 0) {
             throw new RuntimeException('supabase-auth rate limiting config must have positive integer values.');
         }
 
@@ -42,10 +42,11 @@ trait HasLoginTracking
         $updates  = ['failed_login_attempts' => $attempts];
 
         if ($attempts >= $maxAttempts) {
-            $updates['locked_until'] = now()->addMinutes($decayMinutes);
+            $updates['locked_until'] = now()->addMinutes($lockMinutes);
         }
 
         $this->update($updates);
+        $this->abortIfLocked();
     }
 
     public function activateAfterLogin(string $ip): void

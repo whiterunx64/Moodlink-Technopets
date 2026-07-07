@@ -214,7 +214,12 @@ const ACTIVITY_TABS: { key: ActivityTab; label: string }[] = [
 function setActivityTab(tab: ActivityTab) {
     router.get(
         route('dashboard'),
-        { activityTab: tab },
+        {
+            activityTab: tab,
+            statPeriod: props.stat_period,
+            trendPeriod: props.mood_trends.period,
+            trendProgram: props.mood_trends.program,
+        },
         {
             preserveState: true,
             preserveScroll: true,

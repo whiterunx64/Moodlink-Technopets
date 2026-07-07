@@ -4,7 +4,7 @@ import { ChartPieIcon } from '@heroicons/vue/24/outline';
 import { router } from '@inertiajs/vue3';
 import { ArcElement, Chart as ChartJS, Tooltip } from 'chart.js';
 import ChartDataLabels from 'chartjs-plugin-datalabels';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { Doughnut } from 'vue-chartjs';
 
 ChartJS.register(ArcElement, Tooltip);
@@ -13,6 +13,8 @@ const props = defineProps<{
     data: MoodTrendsData;
     statPeriod: 'today' | 'week' | 'month';
 }>();
+
+const loading = ref(false);
 
 const PERIOD_MAP: Record<string, string> = {
     today: 'Today',
@@ -31,10 +33,17 @@ function selectProgram(event: Event) {
     router.get(
         route('dashboard'),
         {
+            statPeriod: props.statPeriod,
             trendPeriod: PERIOD_MAP[props.statPeriod] ?? 'Today',
             trendProgram: (event.target as HTMLSelectElement).value,
         },
-        { preserveState: true, preserveScroll: true, only: ['mood_trends'] },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['mood_trends'],
+            onStart: () => (loading.value = true),
+            onFinish: () => (loading.value = false),
+        },
     );
 }
 
@@ -128,6 +137,34 @@ const chartOptions = {
         <div
             class="relative flex min-h-45 flex-1 items-center justify-center px-5 py-6"
         >
+            <div
+                v-if="loading"
+                class="absolute inset-0 z-10 flex items-center justify-center bg-white/70"
+                role="status"
+                aria-live="polite"
+            >
+                <span class="sr-only">Loading mood trends…</span>
+                <svg
+                    class="text-sidebar h-8 w-8 animate-spin"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden="true"
+                >
+                    <circle
+                        class="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="4"
+                    />
+                    <path
+                        class="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z"
+                    />
+                </svg>
+            </div>
             <template v-if="data.total > 0">
                 <div
                     class="h-50 w-50 shrink-0"

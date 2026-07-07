@@ -21,6 +21,7 @@ use App\Services\SupabaseClient;
 use App\Support\Seo;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
@@ -68,14 +69,29 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Throttle login attempts by IP + submitted email to blunt brute-force
-        // and credential-stuffing without letting one attacker lock out everyone.
         LaravelRateLimiter::for('login', function (Request $request) {
             $email = (string) $request->input('email');
 
+            $onExceeded = function (Request $request, array $headers) {
+                Log::warning('Login rate limit exceeded', [
+                    'ip' => $request->ip(),
+                    'email' => (string) $request->input('email'),
+                    'user_agent' => $request->userAgent(),
+                ]);
+
+                $seconds = max(1, (int) ($headers['Retry-After'] ?? 60));
+
+                throw ValidationException::withMessages([
+                    'email' => trans('auth.throttle', [
+                        'seconds' => $seconds,
+                        'minutes' => (int) ceil($seconds / 60),
+                    ]),
+                ]);
+            };
+
             return [
-                Limit::perMinute(5)->by($request->ip()),
-                Limit::perMinute(5)->by(mb_strtolower($email) . '|' . $request->ip()),
+                Limit::perMinute(5)->by($request->ip())->response($onExceeded),
+                Limit::perMinute(5)->by(mb_strtolower($email) . '|' . $request->ip())->response($onExceeded),
             ];
         });
 

@@ -104,8 +104,8 @@ return [
   'rate_limiting' => [
     'enabled' => env('SUPABASE_RATE_LIMITING_ENABLED', true),
     'login' => [
-      'max_attempts' => filter_var(env('SUPABASE_LOGIN_MAX_ATTEMPTS', 5), FILTER_VALIDATE_INT),
-      'decay_minutes' => filter_var(env('SUPABASE_LOGIN_DECAY_MINUTES', 15), FILTER_VALIDATE_INT),
+      'max_attempts' => filter_var(env('SUPABASE_LOGIN_MAX_ATTEMPTS', 15), FILTER_VALIDATE_INT),
+      'lock_minutes' => filter_var(env('SUPABASE_LOGIN_LOCK_MINUTES', 60), FILTER_VALIDATE_INT),
     ],
   ],
 
