@@ -81,8 +81,9 @@ class AppServiceProvider extends ServiceProvider
 
                 $seconds = max(1, (int) ($headers['Retry-After'] ?? 60));
 
+                // `throttle` key (not `email`) so the frontend shows it as a toast.
                 throw ValidationException::withMessages([
-                    'email' => trans('auth.throttle', [
+                    'throttle' => trans('auth.throttle', [
                         'seconds' => $seconds,
                         'minutes' => (int) ceil($seconds / 60),
                     ]),

@@ -715,7 +715,7 @@ const logoUrl = usePage().props.assets.logo;
                         class="mb-6 flex flex-wrap items-center gap-4 md:mb-10"
                     >
                         <a
-                            href="https://github.com/JayveeErandio/capstone/releases/download/v2.0.0/moodlink.apk"
+                            href="https://github.com/JayveeErandio/capstone/releases/download/v4.0.0/moodlink.apk"
                             class="font-inter hover:bg-search-button-active inline-flex items-center gap-2 rounded-full bg-[#3a4f1e] px-7 py-3.5 text-base font-semibold text-white transition-colors"
                         >
                             <ArrowDownTrayIcon class="h-5 w-5 shrink-0" />
@@ -738,7 +738,7 @@ const logoUrl = usePage().props.assets.logo;
                             <div
                                 class="font-montserrat text-base font-bold text-gray-800"
                             >
-                                2.0.0
+                                4.0.0
                             </div>
                         </div>
                         <div>
@@ -774,7 +774,7 @@ const logoUrl = usePage().props.assets.logo;
                             <div
                                 class="font-montserrat text-base font-bold text-gray-800"
                             >
-                                Jul 2026
+                                Jul 07 2026
                             </div>
                         </div>
                     </div>

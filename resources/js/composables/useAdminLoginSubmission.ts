@@ -1,5 +1,6 @@
 import { useToast } from '@/composables/useToast';
 import { usePage, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 /**
  * Login form state + submission for the admin login page.
@@ -14,6 +15,8 @@ export function useAdminLoginSubmission(statusMessage?: string) {
         password: '',
     });
 
+    const lockedMessage = ref('');
+
     function showFlashError() {
         const error = page.props.flash?.error;
         if (error) add({ type: 'error', message: error });
@@ -26,11 +29,18 @@ export function useAdminLoginSubmission(statusMessage?: string) {
     }
 
     function submit() {
+        lockedMessage.value = '';
         form.post(route('login'), {
             onSuccess: () => showFlashError(),
+            onError: (errors) => {
+                if (errors.locked) lockedMessage.value = errors.locked;
+                if (errors.throttle) {
+                    add({ type: 'error', message: errors.throttle });
+                }
+            },
             onFinish: () => form.reset('password'),
         });
     }
 
-    return { form, submit, showInitialMessages };
+    return { form, submit, showInitialMessages, lockedMessage };
 }

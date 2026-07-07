@@ -12,11 +12,11 @@ declare(strict_types=1);
 
 return [
 
-    'failed' => "We couldn't sign you in. Please double-check your email and password, then try again.",
+    'failed' => 'The email or password you entered is incorrect. Please try again.',
 
     'password' => 'That password is incorrect. Please try again.',
 
-    'throttle' => "For your security, we've temporarily paused sign-in after several unsuccessful attempts. Please wait :minutes minute(s) before trying again.",
+    'throttle' => "You've made too many sign-in attempts in a short period. Please wait :minutes minute(s) before trying again.",
 
-    'locked' => "Your account has been temporarily locked to protect it after repeated failed sign-in attempts. It will automatically unlock at :time. If you need access before then, please contact your system administrator so they can verify your account and investigate any issues.",
+    'locked' => "Your email account has been locked after the system detected multiple unsuccessful sign-in attempts. It will unlock at :time. Contact your system administrator if you need help.",
 ];

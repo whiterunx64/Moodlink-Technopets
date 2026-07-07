@@ -11,7 +11,7 @@ const page = usePage();
 const showPassword = ref(false);
 const logoUrl = page.props.assets.logo;
 
-const { form, submit, showInitialMessages } = useAdminLoginSubmission(props.status);
+const { form, submit, showInitialMessages, lockedMessage } = useAdminLoginSubmission(props.status);
 
 onMounted(showInitialMessages);
 </script>
@@ -100,11 +100,17 @@ onMounted(showInitialMessages);
                         {{ form.processing ? 'SIGNING IN…' : 'SIGN IN' }}
                     </button>
 
-                    <p class="font-inter text-xs text-gray-500 text-center sm:text-sm">
-                        Forgot your password or can't sign in?
-                        <span class="text-[#4a5e28] font-medium">Contact the system administrator</span>
-                        to reset your password or unlock your account.
-                    </p>
+                    <div
+                        v-if="lockedMessage"
+                        class="font-inter rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-center text-xs text-red-700 sm:text-sm"
+                    >
+                        <p>{{ lockedMessage }}</p>
+                        <p class="mt-1.5 text-red-600">
+                            Forgot your password or can't sign in?
+                            <span class="font-semibold text-red-700">Contact the system administrator</span>
+                            to reset your password or unlock your account.
+                        </p>
+                    </div>
                 </form>
 
                 <p class="font-inter text-xs text-gray-500 text-center mt-8 sm:text-sm sm:mt-10">

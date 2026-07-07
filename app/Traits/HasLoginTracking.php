@@ -21,7 +21,7 @@ trait HasLoginTracking
     {
         if ($this->isLocked()) {
             throw ValidationException::withMessages([
-                'email' => [
+                'locked' => [
                     trans('auth.locked', ['time' => $this->locked_until->diffForHumans()]),
                 ],
             ]);
