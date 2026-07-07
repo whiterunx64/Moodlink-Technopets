@@ -15,7 +15,8 @@ export function useAdminLoginSubmission(statusMessage?: string) {
         password: '',
     });
 
-    const lockedMessage = ref('');
+    const isLocked = ref(false);
+    const isBlocked = ref(false);
 
     function showFlashError() {
         const error = page.props.flash?.error;
@@ -29,16 +30,24 @@ export function useAdminLoginSubmission(statusMessage?: string) {
     }
 
     function submit() {
-        lockedMessage.value = '';
+        if (isBlocked.value || form.processing) return;
+
+        isLocked.value = false;
         form.post(route('login'), {
             onSuccess: () => showFlashError(),
             onError: (errors) => {
-                if (errors.locked) lockedMessage.value = errors.locked;
-                if (errors.throttle) add({ type: 'error', message: errors.throttle });
+                if (errors.locked) {
+                    isLocked.value = true;
+                    isBlocked.value = true;
+                    add({ type: 'error', message: errors.locked });
+                } else if (errors.throttle) {
+                    isBlocked.value = true;
+                    add({ type: 'error', message: errors.throttle });
+                }
             },
             onFinish: () => form.reset('password'),
         });
     }
 
-    return { form, submit, showInitialMessages, lockedMessage };
+    return { form, submit, showInitialMessages, isLocked, isBlocked };
 }
