@@ -34,7 +34,7 @@ class AuthenticatedSessionController extends Controller
                     'user_agent' => $request->userAgent(),
                     'errors' => $e->errors(), // Field => validation messages array
                 ]);
-
+                
             if (isset($e->errors()['auth_error'])) {
                 return back()->with('flash_error', $e->errors()['auth_error'][0]);
             }

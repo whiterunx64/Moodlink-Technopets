@@ -18,7 +18,6 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Cookie\CookieJar;
 use Illuminate\Http\Request;
 use Override;
 
@@ -40,7 +39,6 @@ class SupabaseGuard implements Guard, SupabaseGuardInterface
 
     protected bool $loggedOut = false;
     protected ?Dispatcher $events = null;
-    protected CookieJar $cookie;
     protected Request $request;
 
     /**
@@ -110,7 +108,6 @@ class SupabaseGuard implements Guard, SupabaseGuardInterface
 
     /**
      * Authenticate a user via Supabase and establish a Laravel session.
-     *
      * @param array{email?: string, password?: string} $credentials
      */
     public function attempt(array $credentials = []): bool
@@ -119,11 +116,13 @@ class SupabaseGuard implements Guard, SupabaseGuardInterface
             return false;
         }
 
-        $admin = Admin::findByEmail($credentials[self::FIELD_EMAIL]);
+        $email = $this->normalizeEmail($credentials[self::FIELD_EMAIL]);
+
+        $admin = Admin::findByEmail($email);
         $admin?->abortIfLocked();
 
         try {
-            $response = $this->supabase->adminSignInApiCall($credentials[self::FIELD_EMAIL], $credentials[self::FIELD_PASSWORD]);
+            $response = $this->supabase->adminSignInApiCall($email, $credentials[self::FIELD_PASSWORD]);
         } catch (Exception) {
             $admin?->recordFailedAttempt();
             return false;
@@ -230,6 +229,11 @@ class SupabaseGuard implements Guard, SupabaseGuardInterface
     {
         return !empty($credentials[self::FIELD_EMAIL]) && !empty($credentials[self::FIELD_PASSWORD]);
     }
+    
+    private function normalizeEmail(string $email): string
+    {
+        return mb_strtolower(trim($email));
+    }
 
     private function resolveUser(array $supabaseUser): ?SupabaseAuthenticatable
     {
@@ -272,12 +276,6 @@ class SupabaseGuard implements Guard, SupabaseGuardInterface
     // -------------------------------------------------------------------------
     // Injected by AppServiceProvider after construction
     // -------------------------------------------------------------------------
-
-    /** @param CookieJar $cookie Laravel cookie jar (available for future cookie-based features). */
-    public function setCookieJar(CookieJar $cookie): void
-    {
-        $this->cookie = $cookie;
-    }
 
     /** @param Dispatcher $events Laravel event dispatcher for Login/Logout events. */
     public function setDispatcher(Dispatcher $events): void

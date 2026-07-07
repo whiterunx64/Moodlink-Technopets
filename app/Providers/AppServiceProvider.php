@@ -144,7 +144,6 @@ class AppServiceProvider extends ServiceProvider
                 $app->make(SupabaseAuthInterface::class),
             );
 
-            $guard->setCookieJar($app['cookie']);
             $guard->setDispatcher($app['events']);
             $guard->setRequest($app->refresh('request', $guard, 'setRequest'));
 

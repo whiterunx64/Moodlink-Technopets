@@ -34,9 +34,7 @@ export function useAdminLoginSubmission(statusMessage?: string) {
             onSuccess: () => showFlashError(),
             onError: (errors) => {
                 if (errors.locked) lockedMessage.value = errors.locked;
-                if (errors.throttle) {
-                    add({ type: 'error', message: errors.throttle });
-                }
+                if (errors.throttle) add({ type: 'error', message: errors.throttle });
             },
             onFinish: () => form.reset('password'),
         });

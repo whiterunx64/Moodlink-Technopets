@@ -7,9 +7,12 @@ namespace App\Services;
 use App\Contracts\SupabaseAuthInterface;
 use App\Enums\JwtAlgorithm;
 use Exception;
+use Firebase\JWT\BeforeValidException;
+use Firebase\JWT\ExpiredException;
 use Firebase\JWT\JWK;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Firebase\JWT\SignatureInvalidException;
 use RuntimeException;
 use Override;
 use Psr\Log\LoggerInterface;
@@ -305,7 +308,9 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
     // ============================================================
 
     /**
-     * @return array{valid: bool, payload?: array, error?: string, expires_at?: mixed}
+     * @return array{valid: bool, payload?: array, expires_at?: mixed, reason?: string, error?: string}
+     *         On failure, `reason` is one of: expired, not_yet_valid, signature_mismatch, malformed.
+     *         `not_yet_valid` means this server's clock is behind the issuer, not that the session is bad.
      */
     #[Override]
     public function verifyJwtTokenApiCall(string $token): array
@@ -336,10 +341,34 @@ final class SupabaseAuthApi implements SupabaseAuthInterface
 
             return $result;
 
-        } catch (Exception $e) {
-            $this->authLogger->warning('JWT token validation failed', ['error' => $e->getMessage()]);
+        } catch (ExpiredException $e) {
+            $this->authLogger->info('access token passed its expiry time so the client should refresh it', [
+                'error' => $e->getMessage(),
+            ]);
 
-            return ['valid' => false, 'error' => $e->getMessage()];
+            return ['valid' => false, 'reason' => 'expired', 'error' => $e->getMessage()];
+
+        } catch (BeforeValidException $e) {
+            $this->authLogger->warning('access token is not valid yet because this server clock is behind the token issuer so sync the server time', [
+                'error' => $e->getMessage(),
+                'leeway' => JWT::$leeway,
+            ]);
+
+            return ['valid' => false, 'reason' => 'not_yet_valid', 'error' => $e->getMessage()];
+
+        } catch (SignatureInvalidException $e) {
+            $this->authLogger->error('access token signature does not match so the token was tampered with or signed by a key this server does not trust', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['valid' => false, 'reason' => 'signature_mismatch', 'error' => $e->getMessage()];
+
+        } catch (Exception $e) {
+            $this->authLogger->warning('access token could not be decoded because it is malformed or uses a disallowed algorithm', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['valid' => false, 'reason' => 'malformed', 'error' => $e->getMessage()];
         }
     }
 

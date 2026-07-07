@@ -15,10 +15,6 @@ use Illuminate\Support\Facades\Log;
 
 class EnsureTokenIsValid
 {
-  // Distinct, user-facing reasons surfaced as a toast on the login page.
-  private const NOT_AUTHENTICATED = 'Please sign in to continue.';
-  private const SESSION_EXPIRED = 'Your session has expired for your security. Please sign in again to pick up where you left off.';
-
   public function __construct(
     protected readonly SupabaseAuthInterface $supabase,
   ) {
@@ -34,11 +30,21 @@ class EnsureTokenIsValid
         'url' => $request->fullUrl(),
       ]);
 
-      throw new AuthenticationException(self::NOT_AUTHENTICATED);
+      throw new AuthenticationException('Please sign in to continue.');
     }
 
     if ($this->verifyAccessToken($user) || $this->refreshAndVerifyAccessToken()) {
       return $next($request);
+    }
+
+    if ($this->lastFailureWasClockSkew($user)) {
+      Log::channel(config('supabase-auth.monitoring.logging.channel'))->warning('Token validation failed: server clock out of sync, session kept', [
+        'user_id' => $user->getAuthIdentifier(),
+        'ip' => $request->ip(),
+        'url' => $request->fullUrl(),
+      ]);
+
+      abort(503, 'We are having a temporary problem signing you in. Please try again in a moment.');
     }
 
     Log::channel(config('supabase-auth.monitoring.logging.channel'))->warning('Token validation failed: token invalid and refresh failed', [
@@ -48,7 +54,7 @@ class EnsureTokenIsValid
     ]);
 
     Auth::logout();
-    throw new AuthenticationException(self::SESSION_EXPIRED);
+    throw new AuthenticationException('Your session has expired for your security. Please sign in again to pick up where you left off.');
   }
 
   protected function getAuthenticatedUserWithToken(): ?SupabaseAuthenticatable
@@ -90,5 +96,10 @@ class EnsureTokenIsValid
   protected function verifyAccessToken(SupabaseAuthenticatable $user): bool
   {
     return $this->supabase->verifyJwtTokenApiCall($user->getAccessToken())['valid'] === true;
+  }
+
+  protected function lastFailureWasClockSkew(SupabaseAuthenticatable $user): bool
+  {
+    return ($this->supabase->verifyJwtTokenApiCall($user->getAccessToken())['reason'] ?? null) === 'not_yet_valid';
   }
 }

@@ -38,8 +38,15 @@ trait HasLoginTracking
             throw new RuntimeException('supabase-auth rate limiting config must have positive integer values.');
         }
 
-        $attempts = $this->failed_login_attempts + 1;
-        $updates  = ['failed_login_attempts' => $attempts];
+        $priorAttempts = ($this->locked_until !== null && $this->locked_until->isPast())
+            ? 0
+            : $this->failed_login_attempts;
+
+        $attempts = $priorAttempts + 1;
+        $updates  = [
+            'failed_login_attempts' => $attempts,
+            'locked_until'          => null,
+        ];
 
         if ($attempts >= $maxAttempts) {
             $updates['locked_until'] = now()->addMinutes($lockMinutes);
