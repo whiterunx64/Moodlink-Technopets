@@ -235,9 +235,19 @@ export interface ProgramDetail {
     students: ProgramStudentRow[];
 }
 
+export interface MoodTrendPost {
+    id: number;
+    mood: string;
+    content: string | null;
+    time: string;
+}
+
 export interface MoodTrendPoint {
+    date: string;
     label: string;
     score: number | null;
+    dominant_mood: string | null;
+    posts: MoodTrendPost[];
 }
 
 export interface RecentMoodEntry {

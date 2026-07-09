@@ -282,11 +282,19 @@ class Student extends Model
     /**
      * @return Collection<int, Student>
      */
-    public static function verifiedListByProgram(string $program): Collection
+    public static function verifiedListByProgram(string $program, ?string $search = null): Collection
     {
         return static::query()
             ->whereStatusIsVerified()
             ->where('program', $program)
+            ->when($search, function ($query, string $search): void {
+                $query->where(function ($q) use ($search): void {
+                    $q->where('student_number', 'ilike', "%{$search}%")
+                        ->orWhere('first_name', 'ilike', "%{$search}%")
+                        ->orWhere('last_name', 'ilike', "%{$search}%")
+                        ->orWhereRaw("(first_name || ' ' || last_name) ilike ?", ["%{$search}%"]);
+                });
+            })
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->get();

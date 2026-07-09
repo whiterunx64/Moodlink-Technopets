@@ -210,6 +210,19 @@ class Post extends Model
     }
 
     /**
+     * @return Collection<int, Post>
+     */
+    public static function moodPostsForStudentSince(int $studentId, \Carbon\Carbon $since): Collection
+    {
+        return static::query()
+            ->where('student_id', $studentId)
+            ->whereNotNull('mood')
+            ->where('datetime', '>=', $since)
+            ->orderBy('datetime')
+            ->get(['id', 'content', 'mood', 'datetime']);
+    }
+
+    /**
      * Today's safe/flagged posts from verified students, newest first, with the
      * student loaded for display.
      *

@@ -69,6 +69,7 @@ return [
         'reports.index',
         'reports.programs.show',
         'reports.students.show',
+        'reports.students.pdf',
         'reports.consult',
 
         // Appointments

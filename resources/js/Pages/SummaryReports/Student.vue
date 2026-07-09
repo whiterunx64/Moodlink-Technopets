@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { Head, router } from '@inertiajs/vue3';
-import { ArrowLeftIcon } from '@heroicons/vue/24/outline';
+import { ArrowLeftIcon, XMarkIcon } from '@heroicons/vue/24/outline';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
-import MoodTrendChart from '@/Components/SummaryReports/MoodTrendChart.vue';
+import MoodTrendLineChart from '@/Components/SummaryReports/MoodTrendLineChart.vue';
 import PeriodFilter from '@/Components/SummaryReports/PeriodFilter.vue';
-import type { StudentMoodReport, SummaryPeriod } from '@/types';
+import type { MoodTrendPoint, StudentMoodReport, SummaryPeriod } from '@/types';
 
 const props = withDefaults(
     defineProps<{
@@ -57,6 +57,16 @@ function onPeriodChange(p: SummaryPeriod) {
     );
 }
 
+// Download the report as a PDF (server-rendered), carrying the current filters.
+function exportPdf() {
+    const url = route('reports.students.pdf', props.studentReport.id) as string;
+    const params = new URLSearchParams({
+        period: props.filters.period,
+        trendDays: String(props.filters.trendDays),
+    });
+    window.open(`${url}?${params.toString()}`, '_blank');
+}
+
 function onTrendDaysChange(days: number) {
     router.get(
         route('reports.students.show', props.studentReport.id),
@@ -84,6 +94,27 @@ function goBack() {
         period: props.filters.period,
     });
 }
+
+// The day + mood whose posts are shown in the popup, set on a chart click.
+const selectedDay = ref<MoodTrendPoint | null>(null);
+const selectedMood = ref<string | null>(null);
+
+function showDayPosts(payload: { point: MoodTrendPoint; mood: string }) {
+    selectedDay.value = payload.point;
+    selectedMood.value = payload.mood;
+}
+
+function closeDayPosts() {
+    selectedDay.value = null;
+    selectedMood.value = null;
+}
+
+// Only the clicked mood's posts for that day.
+const selectedPosts = computed(() =>
+    selectedDay.value
+        ? selectedDay.value.posts.filter((p) => p.mood === selectedMood.value)
+        : [],
+);
 </script>
 
 <template>
@@ -93,14 +124,15 @@ function goBack() {
     <AdminLayout title="Student Mood Report">
         <div class="space-y-5">
 
-            <PeriodFilter :model-value="filters.period" @update:model-value="onPeriodChange" />
+            <PeriodFilter :model-value="filters.period" @update:model-value="onPeriodChange"
+                @export="exportPdf" />
 
-            <div class="flex items-center gap-3">
+            <div class="flex flex-col gap-3">
                 <button type="button" :aria-label="backLabel"
-                    class="h-8 flex items-center gap-2 rounded-full border border-border-light bg-white px-3 hover:bg-gray-50 transition-colors"
+                    class="inline-flex w-fit items-center gap-1.5 text-xs font-medium text-text-muted hover:text-text-primary transition-colors"
                     @click="goBack">
-                    <ArrowLeftIcon class="w-4 h-4 text-text-secondary" />
-                    <span class="text-xs font-medium text-text-secondary">{{ backLabel }}</span>
+                    <ArrowLeftIcon class="w-4 h-4" />
+                    {{ backLabel }}
                 </button>
                 <div>
                     <h2 class="text-lg font-bold text-text-primary">Student Mood Report</h2>
@@ -110,7 +142,7 @@ function goBack() {
                 </div>
             </div>
 
-            <div class="bg-white rounded-2xl border border-border-light shadow-sm p-6">
+            <div class="bg-white border border-border-light shadow-sm p-6">
                 <div class="flex items-center gap-5 flex-wrap">
                     <div
                         class="w-14 h-14 rounded-full bg-gray-200 flex items-center justify-center text-lg font-bold text-text-primary shrink-0">
@@ -144,8 +176,8 @@ function goBack() {
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
                 <!-- Mood Summary horizontal bars -->
-                <div class="lg:col-span-2 bg-white rounded-2xl border border-border-light shadow-sm p-6">
-                    <h3 class="text-sm font-semibold text-text-primary mb-5">Mood Summary</h3>
+                <div class="lg:col-span-2 bg-white border border-border-light shadow-sm p-6">
+                    <h3 class="text-sm font-semibold text-text-primary mb-5">Mood Entries Data</h3>
 
                     <div class="space-y-4">
                         <div v-for="item in moodBars" :key="item.mood" class="flex items-center gap-4">
@@ -169,7 +201,7 @@ function goBack() {
                 </div>
 
                 <!-- Summary stats -->
-                <div class="bg-white rounded-2xl border border-border-light shadow-sm p-6">
+                <div class="bg-white border border-border-light shadow-sm p-6">
                     <h3 class="text-sm font-semibold text-text-primary mb-5">Summary Report</h3>
 
                     <div class="space-y-5">
@@ -197,14 +229,15 @@ function goBack() {
                 </div>
             </div>
 
-            <!-- Mood Trend chart (extracted component) -->
-            <MoodTrendChart :data="studentReport.trend_data" :trend="studentReport.trend"
-                :trend-days="filters.trendDays" @update:trend-days="onTrendDaysChange" />
+            <!-- Mood Trend line chart — click a point to view that day's posts -->
+            <MoodTrendLineChart :data="studentReport.trend_data"
+                :trend-days="filters.trendDays" @update:trend-days="onTrendDaysChange"
+                @select-day="showDayPosts" />
 
             <!-- Recent Mood Logs -->
-            <div class="bg-white rounded-2xl border border-border-light shadow-sm">
+            <div class="bg-white border border-border-light shadow-sm">
                 <div class="px-6 py-4 border-b border-border-light">
-                    <h3 class="text-sm font-semibold text-text-primary">Recent Mood Entries</h3>
+                    <h3 class="text-sm font-semibold text-text-primary">Recent Journal Entries</h3>
                 </div>
 
                 <div class="divide-y divide-border-light">
@@ -214,17 +247,70 @@ function goBack() {
                             :class="['px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 w-20 text-center', MOOD_TAG[entry.mood] ?? 'bg-gray-100 text-gray-600']">
                             {{ entry.mood }}
                         </span>
-                        <p class="flex-1 text-sm text-text-secondary">{{ entry.content }}</p>
+                        <p v-if="entry.content" class="flex-1 text-sm text-text-secondary">
+                            {{ entry.content }}
+                        </p>
+                        <p v-else class="flex-1 text-sm italic text-text-muted">
+                            No journal written for this entry.
+                        </p>
                         <span class="text-xs text-text-muted shrink-0">{{ entry.date }}</span>
                     </div>
 
                     <div v-if="studentReport.recent_entries.length === 0"
                         class="px-6 py-12 text-center text-sm text-text-muted">
-                        No mood entries available.
+                        No journal entries available.
                     </div>
                 </div>
             </div>
 
         </div>
+
+        <!-- Day posts popup — opened by clicking a point on the trend chart -->
+        <Teleport to="body">
+            <Transition enter-active-class="transition duration-200" enter-from-class="opacity-0"
+                enter-to-class="opacity-100" leave-active-class="transition duration-150"
+                leave-from-class="opacity-100" leave-to-class="opacity-0">
+                <div v-if="selectedDay"
+                    class="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div class="absolute inset-0 bg-black/30" @click="closeDayPosts" />
+
+                    <div class="relative w-full max-w-lg bg-white p-6 shadow-xl">
+                        <button type="button" aria-label="Close"
+                            class="absolute right-4 top-4 p-1 text-text-muted transition-colors hover:bg-gray-100"
+                            @click="closeDayPosts">
+                            <XMarkIcon class="h-4 w-4" />
+                        </button>
+
+                        <h3 class="text-base font-bold text-text-primary">
+                            {{ selectedMood }} posts on {{ selectedDay.date }}
+                        </h3>
+                        <p class="mb-4 text-xs text-text-muted">
+                            {{ selectedPosts.length }}
+                            post{{ selectedPosts.length === 1 ? '' : 's' }}
+                        </p>
+
+                        <div class="max-h-96 space-y-3 overflow-y-auto pr-1">
+                            <div v-for="post in selectedPosts" :key="post.id"
+                                class="rounded-xl border border-border-light p-4">
+                                <div class="mb-2 flex items-center gap-3">
+                                    <span
+                                        :class="['w-20 shrink-0 rounded-full px-2.5 py-1 text-center text-xs font-semibold', MOOD_TAG[post.mood] ?? 'bg-gray-100 text-gray-600']">
+                                        {{ post.mood }}
+                                    </span>
+                                    <span class="text-xs text-text-muted">{{ post.time }}</span>
+                                </div>
+                                <p v-if="post.content"
+                                    class="whitespace-pre-line text-sm text-text-primary">
+                                    {{ post.content }}
+                                </p>
+                                <p v-else class="text-sm italic text-text-muted">
+                                    (no text)
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
     </AdminLayout>
 </template>

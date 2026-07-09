@@ -8,6 +8,7 @@ import {
     ArrowUpIcon,
     MagnifyingGlassIcon,
     MinusIcon,
+    XMarkIcon,
 } from '@heroicons/vue/24/outline';
 import { Head, router } from '@inertiajs/vue3';
 import { computed, ref, type Component } from 'vue';
@@ -56,17 +57,28 @@ const OVERVIEW_ITEMS = computed(() => [
     },
 ]);
 
-const search = ref('');
+// Server-side search: the term is a query param; the backend filters the
+// student list in the DB. Runs only on an explicit user action (Enter or the
+// Search button), never on every keystroke.
+const search = ref(props.filters.search ?? '');
 
-const filteredStudents = computed(() => {
-    const q = search.value.toLowerCase().trim();
-    if (!q) return props.detail.students;
-    return props.detail.students.filter(
-        (s) =>
-            s.name.toLowerCase().includes(q) ||
-            s.student_number.toLowerCase().includes(q),
+function submitSearch() {
+    router.get(
+        route('reports.programs.show', props.detail.program),
+        { period: props.filters.period, search: search.value.trim() || undefined },
+        {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            only: ['detail', 'filters'],
+        },
     );
-});
+}
+
+function clearSearch() {
+    search.value = '';
+    submitSearch();
+}
 
 const TREND_STYLE: Record<string, { icon: Component; cls: string }> = {
     Declining: {
@@ -124,13 +136,15 @@ function openStudent(studentId: number) {
                 @update:model-value="onPeriodChange"
             />
 
-            <div class="flex items-center gap-3">
+            <div class="flex flex-col gap-3">
                 <button
                     type="button"
-                    class="border-border-light flex h-8 w-8 items-center justify-center rounded-full border bg-white transition-colors hover:bg-gray-50"
+                    aria-label="Back"
+                    class="text-text-muted hover:text-text-primary inline-flex w-fit items-center gap-1.5 text-xs font-medium transition-colors"
                     @click="goBack"
                 >
-                    <ArrowLeftIcon class="text-text-secondary h-4 w-4" />
+                    <ArrowLeftIcon class="h-4 w-4" />
+                    Back
                 </button>
                 <div>
                     <h2 class="text-text-primary text-lg font-bold">
@@ -143,7 +157,7 @@ function openStudent(studentId: number) {
             </div>
 
             <div
-                class="border-border-light rounded-2xl border bg-white p-6 shadow-sm"
+                class="border-border-light border bg-white p-6 shadow-sm"
             >
                 <h3 class="text-text-primary mb-4 text-sm font-semibold">
                     Mood Overview
@@ -185,7 +199,7 @@ function openStudent(studentId: number) {
             </div>
 
             <div
-                class="border-border-light rounded-2xl border bg-white p-6 shadow-sm"
+                class="border-border-light border bg-white p-6 shadow-sm"
             >
                 <div class="mb-4 flex items-center justify-between">
                     <div>
@@ -193,21 +207,40 @@ function openStudent(studentId: number) {
                             Students
                         </h3>
                         <p class="text-text-muted mt-0.5 text-xs">
-                            {{ filteredStudents.length }} of
                             {{ detail.students.length }} students
+                            <span v-if="filters.search"> · results for “{{ filters.search }}”</span>
                         </p>
                     </div>
 
-                    <div class="relative">
-                        <MagnifyingGlassIcon
-                            class="text-text-muted pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
-                        />
-                        <input
-                            v-model="search"
-                            type="text"
-                            placeholder="Search by name or student no."
-                            class="border-border-light text-text-primary placeholder:text-text-muted focus:ring-sidebar/20 focus:border-sidebar w-64 rounded-xl border bg-white py-2 pr-4 pl-9 text-sm transition-colors focus:ring-2 focus:outline-none"
-                        />
+                    <div class="flex items-center gap-2">
+                        <div class="relative">
+                            <MagnifyingGlassIcon
+                                class="text-text-muted pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2"
+                            />
+                            <input
+                                v-model="search"
+                                type="text"
+                                placeholder="Search by name or student no."
+                                class="border-border-light text-text-primary placeholder:text-text-muted focus:ring-sidebar/20 focus:border-sidebar w-64 border bg-white py-2 pr-8 pl-9 text-sm transition-colors focus:ring-2 focus:outline-none"
+                                @keyup.enter="submitSearch"
+                            />
+                            <button
+                                v-if="search"
+                                type="button"
+                                class="text-text-muted hover:text-text-primary absolute top-1/2 right-2 -translate-y-1/2"
+                                aria-label="Clear search"
+                                @click="clearSearch"
+                            >
+                                <XMarkIcon class="h-4 w-4" />
+                            </button>
+                        </div>
+                        <button
+                            type="button"
+                            class="bg-sidebar hover:bg-sidebar/90 border-sidebar border px-4 py-2 text-sm font-medium text-white transition-colors"
+                            @click="submitSearch"
+                        >
+                            Search
+                        </button>
                     </div>
                 </div>
 
@@ -216,7 +249,7 @@ function openStudent(studentId: number) {
                         class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
                     >
                         <button
-                            v-for="student in filteredStudents"
+                            v-for="student in detail.students"
                             :key="student.id"
                             type="button"
                             class="border-border-light hover:border-sidebar/30 cursor-pointer rounded-xl border p-4 text-left transition-all hover:bg-gray-100"
@@ -263,7 +296,7 @@ function openStudent(studentId: number) {
                     </div>
 
                     <div
-                        v-if="filteredStudents.length === 0"
+                        v-if="detail.students.length === 0"
                         class="text-text-muted py-16 text-center text-sm"
                     >
                         No students match your search.

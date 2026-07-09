@@ -35,6 +35,14 @@ class SummaryReportFilterRequest extends FormRequest
         ];
     }
 
+    /** Trimmed student search term, or null when blank. Capped to avoid abuse. */
+    public function searchTerm(): ?string
+    {
+        $search = trim($this->string('search')->toString());
+
+        return $search !== '' ? mb_substr($search, 0, 100) : null;
+    }
+
     /**
      * Student-report mood-trend window in days; defaults to 7 on invalid input.
      */

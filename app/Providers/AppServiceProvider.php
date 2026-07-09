@@ -143,6 +143,33 @@ class AppServiceProvider extends ServiceProvider
                         ->withHeaders($headers);
                 });
         });
+        
+        LaravelRateLimiter::for('report-export', function (Request $request) {
+            $key = (string) ($request->user()?->getAuthIdentifier() ?? $request->ip());
+
+            $limitResponse = function ($request, array $headers) {
+                Log::warning('Report export rate limit exceeded', [
+                    'user_id' => $request->user()?->getAuthIdentifier(),
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                    'path' => $request->path(),
+                ]);
+
+                $retryAfter = (int) ($headers['Retry-After'] ?? 60);
+
+                return response()
+                    ->view('errors.429', [
+                        'headers' => $headers,
+                        'retryAfter' => $retryAfter,
+                    ], 429)
+                    ->withHeaders($headers);
+            };
+
+            return [
+                Limit::perMinute(6)->by("report-export:min:{$key}")->response($limitResponse),
+                Limit::perDay(60)->by("report-export:day:{$key}")->response($limitResponse),
+            ];
+        });
 
         // Force HTTPS URLs in production
         if (app()->environment('production')) {

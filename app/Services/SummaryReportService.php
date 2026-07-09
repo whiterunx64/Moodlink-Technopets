@@ -69,14 +69,14 @@ class SummaryReportService
             ->all();
     }
 
-    public function programOverview(string $program, string $period): array
+    public function programOverview(string $program, string $period, ?string $search = null): array
     {
         $moodCounts = StatusDay::moodCountsSince(
             $this->summaryReportPeriodStart($period),
             $program,
         );
 
-        $students = Student::verifiedListByProgram($program);
+        $students = Student::verifiedListByProgram($program, $search);
         $checkInsByStudentId = StatusDay::moodCheckInsForStudents($students->pluck('id')->all());
 
         return [
@@ -286,29 +286,65 @@ class SummaryReportService
     }
 
     /**
-     * @return list<array{label: string, score: float|null}>
+     * @return list<array{
+     *     date: string,
+     *     label: string,
+     *     score: float|null,
+     *     dominant_mood: string|null,
+     *     posts: list<array{id: int, mood: string, content: string|null, time: string}>
+     * }>
      */
     private function dailyMoodTrendForStudent(int $studentId, int $trendDays): array
     {
         $trendWindowStart = PhTime::now()->startOfDay()->subDays($trendDays - 1);
 
-        $averageScoreByDate = StatusDay::moodEntriesForStudentSince($studentId, $trendWindowStart)
-            ->groupBy(fn(StatusDay $entry): string => $entry->date->toDateString())
-            ->map(fn(Collection $entriesOnDay): float => round(
-                $entriesOnDay->avg(fn(StatusDay $entry): float => $entry->mood->wellbeingScore()),
-                1,
-            ));
+        $postsByDate = Post::moodPostsForStudentSince($studentId, $trendWindowStart->utc())
+            ->groupBy(fn(Post $post): string => PhTime::fromUtc($post->datetime)->toDateString());
 
         return collect(range(0, $trendDays - 1))
-            ->map(function (int $dayOffset) use ($trendWindowStart, $averageScoreByDate, $trendDays): array {
+            ->map(function (int $dayOffset) use ($trendWindowStart, $postsByDate, $trendDays): array {
                 $day = $trendWindowStart->copy()->addDays($dayOffset);
+                /** @var Collection<int, Post> $posts */
+                $posts = $postsByDate->get($day->toDateString()) ?? new Collection();
 
                 return [
-                    'label' => $trendDays === 7 ? $day->format('D') : 'D' . ($dayOffset + 1),
-                    'score' => $averageScoreByDate->get($day->toDateString()),
+                    'date' => $day->toDateString(),
+                    'label' => $trendDays === 7 ? $day->format('D') : $day->format('M j'),
+                    'score' => $posts->isEmpty()
+                        ? null
+                        : round($posts->avg(fn(Post $post): float => $post->mood->wellbeingScore()), 1),
+                    'dominant_mood' => $this->dominantMoodForPosts($posts),
+                    'posts' => $posts
+                        ->map(fn(Post $post): array => [
+                            'id' => $post->id,
+                            'mood' => $post->mood->value,
+                            'content' => $post->content,
+                            'time' => PhTime::fromUtc($post->datetime)->format('g:i A'),
+                        ])
+                        ->values()
+                        ->all(),
                 ];
             })
             ->all();
+    }
+
+    /**
+     * @param  Collection<int, Post>  $posts
+     */
+    private function dominantMoodForPosts(Collection $posts): ?string
+    {
+        if ($posts->isEmpty()) {
+            return null;
+        }
+
+        return $posts
+            ->groupBy(fn(Post $post): string => $post->mood->value)
+            ->sortByDesc(fn(Collection $group): array => [
+                $group->count(),
+                $group->first()->mood->wellbeingScore(),
+            ])
+            ->keys()
+            ->first();
     }
 
     /**

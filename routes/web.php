@@ -109,6 +109,9 @@ Route::patch(
         ->name('reports.programs.show');
     Route::get('/summary-reports/students/{student}', [SummaryReportController::class, 'showStudent'])
         ->name('reports.students.show');
+    Route::get('/summary-reports/students/{student}/pdf', [SummaryReportController::class, 'exportStudentPdf'])
+        ->middleware(['throttle:report-export', 'supabase.revalidate'])
+        ->name('reports.students.pdf');
     Route::post('/summary-reports/{student}/consult', [SummaryReportController::class, 'consult'])
         ->name('reports.consult');
 
