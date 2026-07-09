@@ -9,7 +9,20 @@ use App\Http\Controllers\PostManagementController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SummaryReportController;
 use App\Http\Controllers\UserAccountController;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
+
+$statelessPublic = [
+    EncryptCookies::class,
+    AddQueuedCookiesToResponse::class,
+    StartSession::class,
+    ShareErrorsFromSession::class,
+    VerifyCsrfToken::class,
+];
 
 Route::inertia('/', 'Landing', [
     'apk' => [
@@ -19,10 +32,12 @@ Route::inertia('/', 'Landing', [
         'updated' => config('download.apk.updated'),
     ],
 ])
+    ->withoutMiddleware($statelessPublic)
     ->middleware('throttle:landing')
     ->name('landing');
 
 Route::get('/download/apk', [\App\Http\Controllers\DownloadController::class, 'apk'])
+    ->withoutMiddleware($statelessPublic)
     ->middleware('throttle:download')
     ->name('download.apk');
 

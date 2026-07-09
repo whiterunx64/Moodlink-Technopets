@@ -57,8 +57,9 @@ class HandleInertiaRequests extends Middleware
             )
             : null;
 
-        return [
-            ...parent::share($request),
+        $hasSession = $request->hasSession();
+
+        $shared = [
             'assets' => [
                 'logo' => config('supabase-auth.url') . '/storage/v1/object/public/assets/MoodlinkLogo.svg',
             ],
@@ -72,14 +73,22 @@ class HandleInertiaRequests extends Middleware
                     'created_at' => $user->created_at,
                 ] : null,
             ],
-            'flash' => [
+            'flash' => $hasSession ? [
                 'error' => fn () => $request->session()->pull('flash_error'),
                 'success' => fn () => $request->session()->pull('flash_success'),
                 'student_credentials' => fn () => $request->session()->pull('flash_student_credentials'),
+            ] : [
+                'error' => null,
+                'success' => null,
+                'student_credentials' => null,
             ],
             'checkInAlerts' => $user
                 ? fn () => app(QueryService::class)->checkInAlerts()
                 : [],
         ];
+
+        return $hasSession
+            ? [...parent::share($request), ...$shared]
+            : $shared;
     }
 }
