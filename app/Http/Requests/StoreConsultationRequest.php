@@ -17,14 +17,24 @@ class StoreConsultationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'date' => ['required', 'date'],
-            'start_time' => ['required', 'date_format:H:i'],
+            'slot_id' => ['required', 'integer', 'exists:available_schedules,id'],
         ];
     }
 
-    /** The validated date and start time combined into a "Y-m-d H:i:s" string. */
-    public function scheduledAt(): string
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
     {
-        return "{$this->date} {$this->start_time}:00";
+        return [
+            'slot_id.required' => 'Please choose an available slot.',
+            'slot_id.exists' => 'That slot is no longer available.',
+        ];
+    }
+
+    /** The chosen available slot to book for this consultation. */
+    public function slotId(): int
+    {
+        return (int) $this->validated('slot_id');
     }
 }

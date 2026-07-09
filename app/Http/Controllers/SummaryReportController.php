@@ -33,6 +33,7 @@ class SummaryReportController extends Controller
             $props['programs'] = $this->reports->perProgramMoodCounts($period);
         } elseif ($filters['tab'] === 'studentsOfConcern') {
             $props['atRiskStudents'] = $this->reports->atRiskStudents();
+            $props['availableSlots'] = $this->scheduler->openConsultationSlots();
         } else {
             $props['overview'] = $this->reports->overview($period);
         }
@@ -55,16 +56,19 @@ class SummaryReportController extends Controller
         $filters = $request->filters();
         $trendDays = $request->trendDays();
 
+        $from = $request->query('from') === 'concern' ? 'concern' : 'program';
+
         return Inertia::render('SummaryReports/Student', [
             'studentReport' => $this->reports->studentMoodReport($student, $trendDays),
             'filters' => array_merge($filters, ['trendDays' => $trendDays]),
+            'from' => $from,
         ]);
     }
 
     public function consult(StoreConsultationRequest $request, Student $student): RedirectResponse
     {
         try {
-            $this->scheduler->scheduleConsultationForStudent($student, $request->scheduledAt());
+            $this->scheduler->scheduleConsultationForStudent($student, $request->slotId());
         } catch (AppointmentException $exception) {
             return back()->with('flash_error', $exception->getMessage());
         }

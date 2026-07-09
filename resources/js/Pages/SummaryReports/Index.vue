@@ -39,6 +39,7 @@ const props = withDefaults(
         overview?: SummaryOverview;
         programs?: ProgramSummary[];
         atRiskStudents?: AtRiskStudent[];
+        availableSlots?: ConsultationSlot[];
     }>(),
     {
         overview: () => ({
@@ -50,8 +51,15 @@ const props = withDefaults(
         }),
         programs: () => [],
         atRiskStudents: () => [],
+        availableSlots: () => [],
     },
 );
+
+type ConsultationSlot = {
+    id: number;
+    date: string;
+    time: string;
+};
 
 const MOOD_STYLE: Record<
     string,
@@ -98,16 +106,16 @@ function onPeriodChange(p: SummaryPeriod) {
 const activeTab = computed<string>(() => props.filters.tab ?? 'overview');
 
 // Refresh only the active tab's dataset; period/tab filters stay client-driven.
-const TAB_PROPS: Record<string, string> = {
-    overview: 'overview',
-    programs: 'programs',
-    studentsOfConcern: 'atRiskStudents',
+const TAB_PROPS: Record<string, string[]> = {
+    overview: ['overview'],
+    programs: ['programs'],
+    studentsOfConcern: ['atRiskStudents', 'availableSlots'],
 };
 
 usePolling(
     () => {
-        const only = TAB_PROPS[activeTab.value] ?? 'overview';
-        router.reload({ only: [only], preserveUrl: true });
+        const only = TAB_PROPS[activeTab.value] ?? ['overview'];
+        router.reload({ only, preserveUrl: true });
     },
     { interval: 30_000 },
 );
@@ -144,29 +152,44 @@ function openProgram(program: string) {
     });
 }
 
-const todayISO = new Date().toLocaleDateString('en-CA', {
-    timeZone: 'Asia/Manila',
-});
+function openStudentReport(studentId: number) {
+    router.get(route('reports.students.show', studentId), {
+        period: props.filters.period,
+        from: 'concern',
+    });
+}
 
 const showConsultModal = ref(false);
 const consultStudent = ref<AtRiskStudent | null>(null);
-const consultForm = useForm({ date: '', start_time: '' });
+const consultForm = useForm<{ slot_id: number | null }>({ slot_id: null });
 
-const CONSULT_TIME_SLOTS = [
-    { value: '08:00', label: '8:00 AM' },
-    { value: '09:00', label: '9:00 AM' },
-    { value: '10:00', label: '10:00 AM' },
-    { value: '11:00', label: '11:00 AM' },
-    { value: '12:00', label: '12:00 PM' },
-    { value: '13:00', label: '1:00 PM' },
-    { value: '14:00', label: '2:00 PM' },
-    { value: '15:00', label: '3:00 PM' },
-    { value: '16:00', label: '4:00 PM' },
-    { value: '17:00', label: '5:00 PM' },
-    { value: '18:00', label: '6:00 PM' },
-];
+// Available slots grouped by day, so the picker reads as a date → times list.
+const slotsByDate = computed<{ date: string; slots: ConsultationSlot[] }[]>(
+    () => {
+        const groups = new Map<string, ConsultationSlot[]>();
+
+        for (const slot of props.availableSlots) {
+            const bucket = groups.get(slot.date) ?? [];
+            bucket.push(slot);
+            groups.set(slot.date, bucket);
+        }
+
+        return [...groups.entries()].map(([date, slots]) => ({ date, slots }));
+    },
+);
+
+const selectedSlot = computed<ConsultationSlot | null>(
+    () =>
+        props.availableSlots.find((s) => s.id === consultForm.slot_id) ?? null,
+);
 
 function openConsult(student: AtRiskStudent) {
+    // No slots to book into — send the admin to Appointments to create some.
+    if (props.availableSlots.length === 0) {
+        router.get(route('appointments.index'));
+        return;
+    }
+
     consultStudent.value = student;
     consultForm.reset();
     consultForm.clearErrors();
@@ -174,7 +197,7 @@ function openConsult(student: AtRiskStudent) {
 }
 
 function submitConsult() {
-    if (consultStudent.value === null) {
+    if (consultStudent.value === null || consultForm.slot_id === null) {
         return;
     }
 
@@ -528,10 +551,16 @@ function miniBarWidth(count: number, total: number): string {
                                 <UserIcon class="h-5 w-5" />
                             </div>
 
-                            <div class="min-w-0 flex-1">
+                            <div
+                                class="min-w-0 flex-1 cursor-pointer"
+                                role="button"
+                                tabindex="0"
+                                @click="openStudentReport(student.id)"
+                                @keydown.enter="openStudentReport(student.id)"
+                            >
                                 <div class="flex flex-wrap items-center gap-2">
                                     <span
-                                        class="text-text-primary text-sm font-semibold"
+                                        class="text-text-primary hover:text-sidebar text-sm font-semibold hover:underline"
                                         >{{ student.name }}</span
                                     >
                                     <span class="text-text-muted text-xs"
@@ -645,73 +674,66 @@ function miniBarWidth(count: number, total: number): string {
                             {{ consultStudent.student_number }}
                         </p>
                         <p class="mb-6 text-center text-xs text-gray-400">
-                            GCU Operating Hours: 8:00 AM – 6:00 PM
+                            Refer this student into an available consultation
+                            slot.
                         </p>
 
                         <form @submit.prevent="submitConsult" class="space-y-5">
                             <div>
                                 <label
-                                    class="text-text-secondary mb-1.5 block text-xs font-medium"
-                                    >Date</label
-                                >
-                                <input
-                                    v-model="consultForm.date"
-                                    type="date"
-                                    required
-                                    :min="todayISO"
-                                    class="border-border-light text-text-primary focus:ring-sidebar/30 focus:border-sidebar w-full border px-4 py-2.5 text-sm focus:ring-2 focus:outline-none"
-                                />
-                                <p
-                                    v-if="consultForm.errors.date"
-                                    class="mt-1 text-xs text-red-500"
-                                >
-                                    {{ consultForm.errors.date }}
-                                </p>
-                            </div>
-
-                            <div>
-                                <label
                                     class="text-text-secondary mb-2 block text-xs font-medium"
                                 >
-                                    Consultation Time
+                                    Available Slots
                                     <span
-                                        v-if="consultForm.start_time"
+                                        v-if="selectedSlot"
                                         class="text-sidebar ml-2 font-semibold"
                                     >
-                                        ·
-                                        {{
-                                            CONSULT_TIME_SLOTS.find(
-                                                (s) =>
-                                                    s.value ===
-                                                    consultForm.start_time,
-                                            )?.label
-                                        }}
+                                        · {{ selectedSlot.date }},
+                                        {{ selectedSlot.time }}
                                     </span>
                                 </label>
-                                <div class="grid grid-cols-4 gap-2">
-                                    <button
-                                        v-for="slot in CONSULT_TIME_SLOTS"
-                                        :key="slot.value"
-                                        type="button"
-                                        :class="[
-                                            'border py-2 text-xs font-medium transition-colors',
-                                            consultForm.start_time ===
-                                            slot.value
-                                                ? 'bg-sidebar border-sidebar text-white'
-                                                : 'text-text-secondary border-border-light hover:border-sidebar/40 hover:bg-sidebar/5 bg-white',
-                                        ]"
-                                        @click="
-                                            consultForm.start_time = slot.value
-                                        "
+
+                                <div
+                                    v-if="slotsByDate.length > 0"
+                                    class="max-h-64 space-y-4 overflow-y-auto pr-1"
+                                >
+                                    <div
+                                        v-for="group in slotsByDate"
+                                        :key="group.date"
                                     >
-                                        {{ slot.label }}
-                                    </button>
+                                        <p
+                                            class="text-text-muted mb-2 text-xs font-semibold"
+                                        >
+                                            {{ group.date }}
+                                        </p>
+                                        <div class="grid grid-cols-3 gap-2">
+                                            <button
+                                                v-for="slot in group.slots"
+                                                :key="slot.id"
+                                                type="button"
+                                                :class="[
+                                                    'border py-2 text-xs font-medium transition-colors',
+                                                    consultForm.slot_id ===
+                                                    slot.id
+                                                        ? 'bg-sidebar border-sidebar text-white'
+                                                        : 'text-text-secondary border-border-light hover:border-sidebar/40 hover:bg-sidebar/5 bg-white',
+                                                ]"
+                                                @click="
+                                                    consultForm.slot_id =
+                                                        slot.id
+                                                "
+                                            >
+                                                {{ slot.time }}
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
+
                                 <p
-                                    v-if="consultForm.errors.start_time"
+                                    v-if="consultForm.errors.slot_id"
                                     class="mt-1 text-xs text-red-500"
                                 >
-                                    {{ consultForm.errors.start_time }}
+                                    {{ consultForm.errors.slot_id }}
                                 </p>
                             </div>
 
@@ -727,7 +749,7 @@ function miniBarWidth(count: number, total: number): string {
                                     type="submit"
                                     :disabled="
                                         consultForm.processing ||
-                                        !consultForm.start_time
+                                        consultForm.slot_id === null
                                     "
                                     class="bg-sidebar hover:bg-sidebar/90 flex-1 py-2.5 text-sm font-semibold text-white transition-colors disabled:opacity-60"
                                 >

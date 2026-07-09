@@ -16,7 +16,6 @@ use App\Services\Appointment\MailService;
 use App\Services\Appointment\NotificationService;
 use App\Services\Appointment\ScheduledSessionTasks;
 use App\Services\Appointment\SlotManager;
-use App\Support\PhTime;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
@@ -112,28 +111,37 @@ class AppointmentManager
   // ─────────────────────────────────────────────────────────────
 
   /**
-   * @throws AppointmentException when the student already has an open (pending or scheduled) consultation.
+   * @throws AppointmentException when the student already has an open consultation,
+   * the slot is missing, in the past, or already booked by someone else.
    */
-  public function scheduleConsultationForStudent(Student $student, string $scheduledAt): void
+  public function scheduleConsultationForStudent(Student $student, int $slotId): void
   {
     $this->validator->ensureStudentHasNoOpenConsultation($student);
 
-    $datetime = PhTime::toUtc($scheduledAt);
+    try {
+      $appointment = DB::transaction(function () use ($student, $slotId): Appointment {
+        $slot = AvailableSchedule::lockForUpdate()->find($slotId);
 
-    $appointment = DB::transaction(function () use ($student, $datetime): Appointment {
-      $appointment = Appointment::create([
-        'student_id' => $student->id,
-        'context' => '🚨At-risk follow-up',
-        'status' => AppointmentStatus::Scheduled->value,
-        'datetime' => $datetime,
-      ]);
+        $this->validator->ensureConsultationSlotIsBookable($slot, $student);
 
-      $student->update(['risk_start_date' => null]);
+        $appointment = Appointment::create([
+          'student_id' => $student->id,
+          'context' => '🚨At-risk follow-up',
+          'status' => AppointmentStatus::Scheduled->value,
+          'datetime' => $slot->datetime,
+        ]);
 
-      $this->notifications->notifyStudentOfConsultation($student, $appointment);
+        $slot->update(['takenBy' => $student->id]);
+        $student->update(['risk_start_date' => null]);
 
-      return $appointment;
-    });
+        $this->notifications->notifyStudentOfConsultation($student, $appointment);
+
+        return $appointment;
+      });
+    } catch (UniqueConstraintViolationException) {
+      // Two referrals for the same student raced past the guard at once.
+      throw AppointmentException::studentAlreadyHasBookedSlot();
+    }
 
     // Email the student only after the consultation has committed.
     $this->mail->sendStudentConsultationCreatedByAdminEmail($student, $appointment);
@@ -210,6 +218,14 @@ class AppointmentManager
   public function availableSlotsList(): array
   {
     return $this->queries->availableSlotsList();
+  }
+
+  /**
+   * @return array<int, array<string, mixed>>
+   */
+  public function openConsultationSlots(): array
+  {
+    return $this->queries->openConsultationSlots();
   }
 
   /**

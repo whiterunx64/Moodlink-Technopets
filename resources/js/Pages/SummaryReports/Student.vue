@@ -7,10 +7,14 @@ import MoodTrendChart from '@/Components/SummaryReports/MoodTrendChart.vue';
 import PeriodFilter from '@/Components/SummaryReports/PeriodFilter.vue';
 import type { StudentMoodReport, SummaryPeriod } from '@/types';
 
-const props = defineProps<{
-    studentReport: StudentMoodReport;
-    filters: { period: SummaryPeriod; trendDays: number };
-}>();
+const props = withDefaults(
+    defineProps<{
+        studentReport: StudentMoodReport;
+        filters: { period: SummaryPeriod; trendDays: number };
+        from?: 'concern' | 'program';
+    }>(),
+    { from: 'program' },
+);
 
 // Bar and dot colors for the mood summary chart.
 const MOOD_STYLE: Record<string, { bar: string; dot: string }> = {
@@ -61,11 +65,24 @@ function onTrendDaysChange(days: number) {
     );
 }
 
+const cameFromConcern = computed(() => props.from === 'concern');
+
+const backLabel = computed(() =>
+    cameFromConcern.value ? 'Back to Students of Concern' : 'Back to Program Report',
+);
+
 function goBack() {
-    router.get(
-        route('reports.programs.show', props.studentReport.program),
-        { period: props.filters.period },
-    );
+    if (cameFromConcern.value) {
+        router.get(route('reports.index'), {
+            period: props.filters.period,
+            tab: 'studentsOfConcern',
+        });
+        return;
+    }
+
+    router.get(route('reports.programs.show', props.studentReport.program), {
+        period: props.filters.period,
+    });
 }
 </script>
 
@@ -79,10 +96,11 @@ function goBack() {
             <PeriodFilter :model-value="filters.period" @update:model-value="onPeriodChange" />
 
             <div class="flex items-center gap-3">
-                <button type="button"
-                    class="w-8 h-8 rounded-full border border-border-light bg-white flex items-center justify-center hover:bg-gray-50 transition-colors"
+                <button type="button" :aria-label="backLabel"
+                    class="h-8 flex items-center gap-2 rounded-full border border-border-light bg-white px-3 hover:bg-gray-50 transition-colors"
                     @click="goBack">
                     <ArrowLeftIcon class="w-4 h-4 text-text-secondary" />
+                    <span class="text-xs font-medium text-text-secondary">{{ backLabel }}</span>
                 </button>
                 <div>
                     <h2 class="text-lg font-bold text-text-primary">Student Mood Report</h2>

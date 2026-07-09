@@ -117,6 +117,29 @@ class Validator
   }
 
   /**
+   * @throws AppointmentException when the slot is missing, past, taken, or the
+   * student already holds another slot.
+   */
+  public function ensureConsultationSlotIsBookable(?AvailableSchedule $slot, Student $student): void
+  {
+    if ($slot === null) {
+      throw AppointmentException::noAvailableSlotForAppointmentTime();
+    }
+
+    $this->ensureSlotIsNotInThePast(PhTime::fromUtc($slot->datetime));
+
+    if ($slot->takenBy !== null) {
+      throw AppointmentException::slotAlreadyBookedByAnotherStudent();
+    }
+
+    $holdsAnotherSlot = AvailableSchedule::where('takenBy', $student->id)->exists();
+
+    if ($holdsAnotherSlot) {
+      throw AppointmentException::studentAlreadyHasBookedSlot();
+    }
+  }
+
+  /**
    * @throws AppointmentException when the student already holds a different booked slot.
    */
   public function ensureStudentHasNoOtherBookedSlot(Appointment $appointment, AvailableSchedule $slot): void

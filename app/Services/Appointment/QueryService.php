@@ -98,6 +98,24 @@ class QueryService
   /**
    * @return array<int, array<string, mixed>>
    */
+  public function openConsultationSlots(): array
+  {
+    return AvailableSchedule::query()
+      ->whereNull('takenBy')
+      ->where('datetime', '>=', PhTime::now()->utc())
+      ->orderBy('datetime')
+      ->get()
+      ->map(fn(AvailableSchedule $schedule): array => [
+        'id' => $schedule->id,
+        'date' => $schedule->display_date,
+        'time' => $schedule->display_time,
+      ])
+      ->all();
+  }
+
+  /**
+   * @return array<int, array<string, mixed>>
+   */
   public function checkInReadyList(): array
   {
     return Appointment::awaitingCheckIn()->with('student')->get()
