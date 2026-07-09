@@ -11,7 +11,7 @@ use App\Http\Controllers\SummaryReportController;
 use App\Http\Controllers\UserAccountController;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Route;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
@@ -21,7 +21,7 @@ $statelessPublic = [
     AddQueuedCookiesToResponse::class,
     StartSession::class,
     ShareErrorsFromSession::class,
-    VerifyCsrfToken::class,
+    PreventRequestForgery::class,
 ];
 
 Route::inertia('/', 'Landing', [
