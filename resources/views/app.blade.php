@@ -120,7 +120,7 @@
     @endif
 
     <!-- Scripts -->
-    @routes(nonce: Vite::cspNonce())
+    @routes(group: auth()->check() ? null : 'public', nonce: Vite::cspNonce())
     @vite(['resources/js/app.ts', "resources/js/Pages/{$page['component']}.vue"])
     @inertiaHead
 </head>
