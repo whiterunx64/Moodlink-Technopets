@@ -1,6 +1,6 @@
 import { useToast } from '@/composables/useToast';
 import { usePage, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { onUnmounted, ref } from 'vue';
 
 /**
  * Login form state + submission for the admin login page.
@@ -17,6 +17,35 @@ export function useAdminLoginSubmission(statusMessage?: string) {
 
     const isLocked = ref(false);
     const isBlocked = ref(false);
+    // Seconds remaining on a rate-limit cooldown; 0 when not throttled.
+    const cooldown = ref(0);
+    let cooldownTimer: ReturnType<typeof setInterval> | undefined;
+
+    /**
+     * Disable the sign-in button for `seconds`, counting down and re-enabling
+     * it automatically when the rate-limit window elapses. An account lock
+     * (isLocked) is deliberately NOT cleared here — that needs an admin.
+     */
+    function startCooldown(seconds: number) {
+        if (cooldownTimer) clearInterval(cooldownTimer);
+
+        cooldown.value = Math.max(1, Math.floor(seconds));
+        isBlocked.value = true;
+
+        cooldownTimer = setInterval(() => {
+            cooldown.value -= 1;
+            if (cooldown.value <= 0) {
+                clearInterval(cooldownTimer);
+                cooldownTimer = undefined;
+                cooldown.value = 0;
+                if (!isLocked.value) isBlocked.value = false;
+            }
+        }, 1000);
+    }
+
+    onUnmounted(() => {
+        if (cooldownTimer) clearInterval(cooldownTimer);
+    });
 
     function showFlashError() {
         const error = page.props.flash?.error;
@@ -37,11 +66,14 @@ export function useAdminLoginSubmission(statusMessage?: string) {
             onSuccess: () => showFlashError(),
             onError: (errors) => {
                 if (errors.locked) {
+                    // Account lock — permanent until an admin intervenes.
                     isLocked.value = true;
                     isBlocked.value = true;
                     add({ type: 'error', message: errors.locked });
                 } else if (errors.throttle) {
-                    isBlocked.value = true;
+                    // Rate limit — re-enable the button after the cooldown.
+                    const seconds = Number(errors.retryAfter) || 60;
+                    startCooldown(seconds);
                     add({ type: 'error', message: errors.throttle });
                 }
             },
@@ -49,5 +81,5 @@ export function useAdminLoginSubmission(statusMessage?: string) {
         });
     }
 
-    return { form, submit, showInitialMessages, isLocked, isBlocked };
+    return { form, submit, showInitialMessages, isLocked, isBlocked, cooldown };
 }

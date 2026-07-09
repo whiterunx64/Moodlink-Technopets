@@ -11,9 +11,20 @@ use App\Http\Controllers\SummaryReportController;
 use App\Http\Controllers\UserAccountController;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'Landing')
+Route::inertia('/', 'Landing', [
+    'apk' => [
+        'version' => config('download.apk.version'),
+        'size' => config('download.apk.size'),
+        'minOs' => config('download.apk.min_os'),
+        'updated' => config('download.apk.updated'),
+    ],
+])
     ->middleware('throttle:landing')
     ->name('landing');
+
+Route::get('/download/apk', [\App\Http\Controllers\DownloadController::class, 'apk'])
+    ->middleware('throttle:download')
+    ->name('download.apk');
 
 Route::get(config('supabase-auth.monitoring.health_checks.endpoint'), [HealthController::class, 'check'])
     ->name('health');

@@ -2,6 +2,15 @@
 import { ArrowDownTrayIcon } from '@heroicons/vue/24/solid';
 import { Link, usePage } from '@inertiajs/vue3';
 const logoUrl = usePage().props.assets.logo;
+
+defineProps<{
+    apk: {
+        version: string;
+        size: string;
+        minOs: string;
+        updated: string;
+    };
+}>();
 </script>
 
 <template>
@@ -112,7 +121,8 @@ const logoUrl = usePage().props.assets.logo;
                             Download APK
                         </a>
                         <span class="font-inter text-sm text-gray-400"
-                            >v2.0.0 · 87.21 MB · Android 8.0+</span
+                            >v{{ apk.version }} · {{ apk.size }} ·
+                            {{ apk.minOs }}</span
                         >
                     </div>
                     <!-- Stats -->
@@ -715,7 +725,9 @@ const logoUrl = usePage().props.assets.logo;
                         class="mb-6 flex flex-wrap items-center gap-4 md:mb-10"
                     >
                         <a
-                            href="https://github.com/JayveeErandio/capstone/releases/download/v4.0.0/moodlink.apk"
+                            :href="route('download.apk')"
+                            rel="noopener noreferrer"
+                            referrerpolicy="no-referrer"
                             class="font-inter hover:bg-search-button-active inline-flex items-center gap-2 rounded-full bg-[#3a4f1e] px-7 py-3.5 text-base font-semibold text-white transition-colors"
                         >
                             <ArrowDownTrayIcon class="h-5 w-5 shrink-0" />
@@ -738,7 +750,7 @@ const logoUrl = usePage().props.assets.logo;
                             <div
                                 class="font-montserrat text-base font-bold text-gray-800"
                             >
-                                4.0.0
+                                {{ apk.version }}
                             </div>
                         </div>
                         <div>
@@ -750,7 +762,7 @@ const logoUrl = usePage().props.assets.logo;
                             <div
                                 class="font-montserrat text-base font-bold text-gray-800"
                             >
-                                87.21 MB
+                                {{ apk.size }}
                             </div>
                         </div>
                         <div>
@@ -762,7 +774,7 @@ const logoUrl = usePage().props.assets.logo;
                             <div
                                 class="font-montserrat text-base font-bold text-gray-800"
                             >
-                                Android 8.0+
+                                {{ apk.minOs }}
                             </div>
                         </div>
                         <div>
@@ -774,7 +786,7 @@ const logoUrl = usePage().props.assets.logo;
                             <div
                                 class="font-montserrat text-base font-bold text-gray-800"
                             >
-                                Jul 07 2026
+                                {{ apk.updated }}
                             </div>
                         </div>
                     </div>

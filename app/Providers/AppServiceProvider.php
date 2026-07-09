@@ -81,18 +81,20 @@ class AppServiceProvider extends ServiceProvider
 
                 $seconds = max(1, (int) ($headers['Retry-After'] ?? 60));
 
-                // `throttle` key (not `email`) so the frontend shows it as a toast.
                 throw ValidationException::withMessages([
                     'throttle' => trans('auth.throttle', [
                         'seconds' => $seconds,
                         'minutes' => (int) ceil($seconds / 60),
                     ]),
+                    'retryAfter' => (string) $seconds,
                 ]);
             };
 
             return [
+                // absorbs shared-NAT traffic without over-penalising it.
                 Limit::perMinute(5)->by($request->ip())->response($onExceeded),
-                Limit::perMinute(5)->by(mb_strtolower($email) . '|' . $request->ip())->response($onExceeded),
+                // a single email is harder to brute-force.
+                Limit::perMinute(3)->by(mb_strtolower($email) . '|' . $request->ip())->response($onExceeded),
             ];
         });
 
@@ -104,6 +106,28 @@ class AppServiceProvider extends ServiceProvider
                 ->response(function ($request, $headers) {
 
                     Log::warning('Landing page rate limit exceeded', [
+                        'ip' => $request->ip(),
+                        'user_agent' => $request->userAgent(),
+                        'path' => $request->path(),
+                    ]);
+
+                    $retryAfter = (int) ($headers['Retry-After'] ?? 60);
+
+                    return response()
+                        ->view('errors.429', [
+                            'headers' => $headers,
+                            'retryAfter' => $retryAfter,
+                        ], 429)
+                        ->withHeaders($headers);
+                });
+        });
+
+        LaravelRateLimiter::for('download', function (Request $request) {
+            return Limit::perMinute(10)
+                ->by($request->ip())
+                ->response(function ($request, $headers) {
+
+                    Log::warning('APK download rate limit exceeded', [
                         'ip' => $request->ip(),
                         'user_agent' => $request->userAgent(),
                         'path' => $request->path(),

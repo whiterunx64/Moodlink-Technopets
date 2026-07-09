@@ -11,7 +11,7 @@ const page = usePage();
 const showPassword = ref(false);
 const logoUrl = page.props.assets.logo;
 
-const { form, submit, showInitialMessages, isLocked, isBlocked } = useAdminLoginSubmission(props.status);
+const { form, submit, showInitialMessages, isLocked, isBlocked, cooldown } = useAdminLoginSubmission(props.status);
 
 onMounted(showInitialMessages);
 </script>
@@ -89,7 +89,9 @@ onMounted(showInitialMessages);
 
                     <button type="submit" :disabled="form.processing || isBlocked"
                         class="font-montserrat w-full bg-[#2d5016] text-white font-bold rounded-xl py-3 text-sm hover:bg-[#1e3a14] hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#2d5016]/30 active:scale-[0.97] active:translate-y-0 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed tracking-widest mt-2 sm:py-4 sm:text-base">
-                        {{ form.processing ? 'SIGNING IN…' : 'SIGN IN' }}
+                        <template v-if="form.processing">SIGNING IN…</template>
+                        <template v-else-if="cooldown > 0">TRY AGAIN IN {{ cooldown }}s</template>
+                        <template v-else>SIGN IN</template>
                     </button>
 
                     <p v-if="isLocked" class="font-inter text-center text-xs text-red-600 sm:text-sm">

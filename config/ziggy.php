@@ -33,6 +33,7 @@ return [
         'public' => [
             'landing',
             'login',
+            'download.apk',
         ],
     ],
 
@@ -42,6 +43,7 @@ return [
         'login',
         'logout',
         'dashboard',
+        'download.apk',
 
         // Notifications
         'notifications.index',
