@@ -44,6 +44,8 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        $request->session()->put('auth_started_at', now()->getTimestamp());
+
         // Record this session as the account's only active one (single-session enforcement).
         $userId = Auth::id();
         if ($userId !== null) {

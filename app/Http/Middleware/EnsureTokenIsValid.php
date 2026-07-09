@@ -11,6 +11,7 @@ use Closure;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class EnsureTokenIsValid
@@ -33,7 +34,25 @@ class EnsureTokenIsValid
       throw new AuthenticationException('Please sign in to continue.');
     }
 
-    if ($this->verifyAccessToken($user) || $this->refreshAndVerifyAccessToken()) {
+    // Hard ceiling on total session age, independent of token refreshes.
+    if ($this->sessionExceededAbsoluteLifetime($request)) {
+      Log::channel(config('supabase-auth.monitoring.logging.channel'))->info('Session ended: absolute lifetime reached', [
+        'user_id' => $user->getAuthIdentifier(),
+        'ip' => $request->ip(),
+      ]);
+
+      Auth::logout();
+      throw new AuthenticationException('Your session has reached its time limit. Please sign in again.');
+    }
+
+    if ($this->verifyAccessToken($user)) {
+      return $next($request);
+    }
+
+    if ($this->refreshAndVerifyAccessToken()) {
+
+      $this->rotateSession($request);
+
       return $next($request);
     }
 
@@ -96,6 +115,54 @@ class EnsureTokenIsValid
   protected function verifyAccessToken(SupabaseAuthenticatable $user): bool
   {
     return $this->supabase->verifyJwtTokenApiCall($user->getAccessToken())['valid'] === true;
+  }
+
+  protected function sessionExceededAbsoluteLifetime(Request $request): bool
+  {
+    $max = (int) config('supabase-auth.auth.absolute_lifetime', 0);
+
+    if ($max <= 0 || !$request->hasSession()) {
+      return false; // Feature disabled or no session to age out.
+    }
+
+    $startedAt = $request->session()->get('auth_started_at');
+
+    // Sessions that predate this feature have no anchor — stamp one now so they
+    // age out from here rather than being force-logged-out immediately.
+    if ($startedAt === null) {
+      $request->session()->put('auth_started_at', now()->getTimestamp());
+
+      return false;
+    }
+
+    return (now()->getTimestamp() - (int) $startedAt) > $max;
+  }
+
+  
+  protected function rotateSession(Request $request): void
+  {
+    if (!$request->hasSession()) {
+      return;
+    }
+
+    $userId = Auth::user()?->getAuthIdentifier();
+    $cacheKey = $userId !== null ? "auth:active_session:{$userId}" : null;
+
+    // Only carry the cache forward if THIS session is the recorded active one,
+    // so we never clobber another device's entry.
+    $isActiveSession = $cacheKey !== null
+      && Cache::get($cacheKey) === $request->session()->getId();
+
+    $request->session()->migrate(true);     // new ID, keep data, delete old store
+    $request->session()->regenerateToken(); // new CSRF token
+
+    if ($isActiveSession) {
+      Cache::put(
+        $cacheKey,
+        $request->session()->getId(),
+        (int) config('session.lifetime') * 60,
+      );
+    }
   }
 
   protected function lastFailureWasClockSkew(SupabaseAuthenticatable $user): bool

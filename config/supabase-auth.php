@@ -71,6 +71,7 @@ return [
   'auth' => [
     'provider_redirect' => env('SUPABASE_AUTH_PROVIDER_REDIRECT', '/dashboard'),
     'logout_redirect' => env('SUPABASE_AUTH_LOGOUT_REDIRECT', '/'),
+    'absolute_lifetime' => filter_var(env('SUPABASE_AUTH_ABSOLUTE_LIFETIME', 28800), FILTER_VALIDATE_INT),
   ],
 
   /*
