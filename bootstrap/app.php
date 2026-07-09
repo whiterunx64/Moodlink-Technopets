@@ -47,7 +47,7 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SetCacheHeaders::class,
         ]);
 
-        $middleware->validateCsrfTokens(except: [
+        $middleware->preventRequestForgery(except: [
             'csp-report',
         ]);
 

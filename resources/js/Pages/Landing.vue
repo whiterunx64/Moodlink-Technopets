@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ArrowDownTrayIcon } from '@heroicons/vue/24/solid';
-import { Link, usePage } from '@inertiajs/vue3';
+import { usePage } from '@inertiajs/vue3';
 const logoUrl = usePage().props.assets.logo;
 
 defineProps<{
@@ -57,12 +57,6 @@ defineProps<{
                 <div
                     class="flex flex-1 items-center justify-end gap-2 sm:gap-2.5 md:gap-3"
                 >
-                    <Link
-                        :href="route('login')"
-                        class="font-inter inline-flex items-center gap-2 rounded-full border border-[#4a5e28] px-3 py-1.5 text-xs font-semibold text-[#4a5e28] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#f0f4eb] hover:shadow-md active:translate-y-0 active:scale-95 sm:px-4 sm:py-2 sm:text-sm md:px-5 md:py-2.5 md:text-base"
-                    >
-                        Admin Login
-                    </Link>
                     <a
                         href="#download"
                         class="font-inter hover:bg-search-button-active inline-flex items-center gap-1.5 rounded-full bg-[#3a4f1e] px-3 py-1.5 text-xs font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#3a4f1e]/30 active:translate-y-0 active:scale-95 sm:gap-2 sm:px-5 sm:py-2.5 sm:text-sm md:px-7 md:py-3.5 md:text-base"
@@ -822,11 +816,6 @@ defineProps<{
                         class="font-inter text-sm text-gray-500 transition-colors hover:text-[#4a5e28]"
                         >Download</a
                     >
-                    <Link
-                        :href="route('login')"
-                        class="font-inter text-sm text-gray-500 transition-colors hover:text-[#4a5e28]"
-                        >Admin Login
-                    </Link>
                 </div>
                 <div class="font-inter text-sm text-gray-400">
                     © 2026 MoodLink · For FEU Diliman students
