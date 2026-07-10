@@ -6,7 +6,7 @@ namespace App\Console\Commands;
 
 use App\Models\StatusDay;
 use App\Models\Student;
-use App\Services\SummaryReportService;
+use App\Services\RiskMonitor;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 
@@ -16,16 +16,16 @@ class DebugRiskWindows extends Command
 
     protected $description = 'Print each verified student\'s Window A / Window B bucket sizes for debugging the at-risk scoring.';
 
-    public function handle(): int
+    public function handle(RiskMonitor $monitor): int
     {
         $students = Student::getVerifiedStudents();
         $logs = StatusDay::moodCheckInsForStudents($students->pluck('id')->all());
 
         $rows = $students
-            ->map(function (Student $student) use ($logs): array {
+            ->map(function (Student $student) use ($logs, $monitor): array {
                 $log = $logs->get($student->id) ?? new Collection();
-                $state = SummaryReportService::calculateWindowCounts($log);
-                $atRisk = SummaryReportService::isWindowAAtRisk($state['window_a']);
+                $state = $monitor->calculateWindows($log);
+                $atRisk = $monitor->isAtRisk($state['window_a']);
 
                 return [
                     'id' => $student->id,
@@ -55,9 +55,9 @@ class DebugRiskWindows extends Command
 
         $this->info(sprintf(
             'At Risk when Window A >= %d  |  Window B fires at %d (then -%d to Window A)  |  shown: %d',
-            SummaryReportService::WINDOW_A_THRESHOLD,
-            SummaryReportService::WINDOW_B_TRIGGER,
-            SummaryReportService::WINDOW_A_DECREMENT,
+            RiskMonitor::WINDOW_A_THRESHOLD,
+            RiskMonitor::WINDOW_B_TRIGGER,
+            RiskMonitor::WINDOW_A_DECREMENT,
             $rows->count(),
         ));
 

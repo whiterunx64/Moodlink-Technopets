@@ -9,7 +9,7 @@ use App\Http\Requests\StoreConsultationRequest;
 use App\Http\Requests\SummaryReportFilterRequest;
 use App\Models\Student;
 use App\Services\AppointmentManager;
-use App\Services\SummaryReportService;
+use App\Services\SummaryReportsManager;
 use App\Support\PhTime;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
@@ -22,7 +22,7 @@ class SummaryReportController extends Controller
 {
     public function __construct(
         private readonly AppointmentManager $scheduler,
-        private readonly SummaryReportService $reports,
+        private readonly SummaryReportsManager $reports,
     ) {
     }
 
@@ -54,6 +54,44 @@ class SummaryReportController extends Controller
             'detail' => $this->reports->programOverview($program, $filters['period'], $search),
             'filters' => array_merge($filters, ['search' => $search]),
         ]);
+    }
+
+    public function exportProgramPdf(SummaryReportFilterRequest $request, string $program): HttpResponse
+    {
+        $filters = $request->filters();
+        // Export the full program roster regardless of any on-screen search.
+        $detail = $this->reports->programOverview($program, $filters['period']);
+
+        $periodLabel = [
+            'this_week' => 'This Week',
+            'this_month' => 'This Month',
+            'all_time' => 'All Time',
+        ][$filters['period']] ?? ucfirst((string) $filters['period']);
+
+        Log::channel(config('supabase-auth.monitoring.logging.channel'))->info('Program mood report exported', [
+            'actor_id' => $request->user()?->getAuthIdentifier(),
+            'program' => $program,
+            'period' => $filters['period'],
+            'student_count' => \count($detail['students']),
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
+        try {
+            $pdf = Pdf::loadView('pdf.program-mood-report', [
+                'detail' => $detail,
+                'periodLabel' => $periodLabel,
+                'generatedAt' => PhTime::now()->format('M j, Y g:i A'),
+            ])->setPaper('a4', 'portrait');
+
+            $this->hardenPdf($pdf);
+
+            $safeProgram = preg_replace('/[^A-Za-z0-9_-]/', '', (string) $program) ?: 'program';
+
+            return $this->streamPdf($pdf, "program-report-{$safeProgram}.pdf");
+        } catch (\Throwable $e) {
+            return $this->pdfFailure($e, ['program' => $program]);
+        }
     }
 
     public function showStudent(SummaryReportFilterRequest $request, Student $student): Response
@@ -101,30 +139,24 @@ class SummaryReportController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
-        $pdf = Pdf::loadView('pdf.student-mood-report', [
-            'report' => $report,
-            'trendRows' => $trendRows,
-            'moods' => $moods,
-            'trendDays' => $trendDays,
-            'period' => $request->filters()['period'],
-            'generatedAt' => PhTime::now()->format('M j, Y g:i A'),
-        ])->setPaper('a4', 'portrait');
+        try {
+            $pdf = Pdf::loadView('pdf.student-mood-report', [
+                'report' => $report,
+                'trendRows' => $trendRows,
+                'moods' => $moods,
+                'trendDays' => $trendDays,
+                'period' => $request->filters()['period'],
+                'generatedAt' => PhTime::now()->format('M j, Y g:i A'),
+            ])->setPaper('a4', 'portrait');
 
-        // Harden the PDF renderer never let student-controlled journal text pull
-        $pdf->setOption('isRemoteEnabled', false);
-        $pdf->setOption('isPhpEnabled', false);
-        $pdf->setOption('isJavascriptEnabled', false);
+            $this->hardenPdf($pdf);
 
-        $safeNumber = preg_replace('/[^A-Za-z0-9_-]/', '', (string) $student->student_number) ?: 'student';
-        $filename = "mood-report-{$safeNumber}.pdf";
+            $safeNumber = preg_replace('/[^A-Za-z0-9_-]/', '', (string) $student->student_number) ?: 'student';
 
-        return $pdf->download($filename)->withHeaders([
-            'Cache-Control' => 'no-store, no-cache, must-revalidate, private, max-age=0',
-            'Pragma' => 'no-cache',
-            'Expires' => '0',
-            'X-Content-Type-Options' => 'nosniff',
-            'X-Robots-Tag' => 'noindex, nofollow',
-        ]);
+            return $this->streamPdf($pdf, "mood-report-{$safeNumber}.pdf");
+        } catch (\Throwable $e) {
+            return $this->pdfFailure($e, ['student_id' => $student->id]);
+        }
     }
 
     public function consult(StoreConsultationRequest $request, Student $student): RedirectResponse
@@ -136,5 +168,40 @@ class SummaryReportController extends Controller
         }
 
         return back()->with('flash_success', 'Consultation scheduled.');
+    }
+
+    /**
+     * Lock down the PDF renderer so student-controlled text can't fetch remote
+     * resources or execute PHP/JS during rendering.
+     */
+    private function hardenPdf(\Barryvdh\DomPDF\PDF $pdf): void
+    {
+        $pdf->setOption('isRemoteEnabled', false);
+        $pdf->setOption('isPhpEnabled', false);
+        $pdf->setOption('isJavascriptEnabled', false);
+    }
+
+    private function streamPdf(\Barryvdh\DomPDF\PDF $pdf, string $filename): HttpResponse
+    {
+        return $pdf->download($filename)->withHeaders([
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, private, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+            'X-Content-Type-Options' => 'nosniff',
+            'X-Robots-Tag' => 'noindex, nofollow',
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    private function pdfFailure(\Throwable $e, array $context): HttpResponse
+    {
+        Log::channel(config('supabase-auth.monitoring.logging.channel'))->error('Report PDF generation failed', [
+            ...$context,
+            'error' => $e->getMessage(),
+        ]);
+
+        abort(500, 'We could not generate that report right now. Please try again.');
     }
 }

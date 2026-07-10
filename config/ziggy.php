@@ -68,6 +68,7 @@ return [
         // Summary reports
         'reports.index',
         'reports.programs.show',
+        'reports.programs.pdf',
         'reports.students.show',
         'reports.students.pdf',
         'reports.consult',

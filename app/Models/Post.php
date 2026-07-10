@@ -202,7 +202,7 @@ class Post extends Model
         return static::query()
             ->where('student_id', $studentId)
             ->selectRaw(
-                'count(*) as total, sum(case when status = ? then 1 else 0 end) as flagged',
+                'COUNT(*) AS total, COALESCE(SUM(CASE WHEN status = ? THEN 1 ELSE 0 END), 0) AS flagged',
                 [PostStatus::Flagged->value],
             )
             ->withCasts(['total' => 'integer', 'flagged' => 'integer'])

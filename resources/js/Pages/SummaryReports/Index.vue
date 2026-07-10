@@ -563,6 +563,20 @@ function miniBarWidth(count: number, total: number): string {
                                         class="text-text-primary hover:text-sidebar text-sm font-semibold hover:underline"
                                         >{{ student.name }}</span
                                     >
+                                    <span
+                                        v-if="student.crisis_count > 0"
+                                        class="inline-flex items-center gap-1 bg-red-600 px-2 py-0.5 text-[10px] font-bold tracking-wide text-white uppercase"
+                                        :title="
+                                            student.crisis_excerpt
+                                                ? `Journal: “${student.crisis_excerpt}”`
+                                                : 'Crisis language detected in journal'
+                                        "
+                                    >
+                                        ⚠ Crisis language
+                                        <span v-if="student.crisis_count > 1"
+                                            >({{ student.crisis_count }})</span
+                                        >
+                                    </span>
                                     <span class="text-text-muted text-xs"
                                         >· {{ student.student_number }} ·
                                         {{ student.program }}</span

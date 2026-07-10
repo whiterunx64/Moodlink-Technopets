@@ -114,6 +114,92 @@ class StatusDay extends Model
     }
 
     /**
+     * @param  array<int>  $studentIds
+     * @return Collection<int, object{account_id: int, total: int, excited: int, content: int, stressed: int, drained: int, warning: int, recovery: int}>
+     */
+    public static function moodCountsGroupedByStudent(array $studentIds): Collection
+    {
+        if ($studentIds === []) {
+            return new Collection();
+        }
+
+        return static::query()
+            ->whereIn('account_id', $studentIds)
+            ->sinceRiskReset()
+            ->whereNotNull('mood')
+            ->selectRaw(
+                "account_id,
+                 COUNT(*) AS total,
+                 SUM(CASE WHEN mood = ? THEN 1 ELSE 0 END) AS excited,
+                 SUM(CASE WHEN mood = ? THEN 1 ELSE 0 END) AS content,
+                 SUM(CASE WHEN mood = ? THEN 1 ELSE 0 END) AS stressed,
+                 SUM(CASE WHEN mood = ? THEN 1 ELSE 0 END) AS drained,
+                 SUM(CASE WHEN mood IN (?, ?) THEN 1 ELSE 0 END) AS warning,
+                 SUM(CASE WHEN mood IN (?, ?) THEN 1 ELSE 0 END) AS recovery",
+                [
+                    PostMood::Excited->value,
+                    PostMood::Content->value,
+                    PostMood::Stressed->value,
+                    PostMood::Drained->value,
+                    // warning = Stressed | Drained
+                    PostMood::Stressed->value,
+                    PostMood::Drained->value,
+                    // recovery = Content | Excited
+                    PostMood::Content->value,
+                    PostMood::Excited->value,
+                ],
+            )
+            ->groupBy('account_id')
+            ->withCasts([
+                'total' => 'integer',
+                'excited' => 'integer',
+                'content' => 'integer',
+                'stressed' => 'integer',
+                'drained' => 'integer',
+                'warning' => 'integer',
+                'recovery' => 'integer',
+            ])
+            ->get()
+            ->keyBy('account_id');
+    }
+
+    /**
+     * Case-insensitive crisis-language regex applied to journal free-text.
+     */
+    private const CRISIS_REGEX =
+        '\y(suicide|suicidal|kill(ing)?[\s._-]*(my[\s._-]*self|me)|'
+        . 'end(ing)?[\s._-]*(it[\s._-]*all|my[\s._-]*life)|'
+        . 'self[\s._-]*harm|hurt(ing)?[\s._-]*my[\s._-]*self|'
+        . 'want[\s._-]*to[\s._-]*die|no[\s._-]*reason[\s._-]*to[\s._-]*live|'
+        . 'hopeless|worthless|give[\s._-]*up)\y';
+
+    /**
+     * @param  array<int>  $studentIds
+     * @return Collection<int, object{account_id: int, crisis_count: int, latest_excerpt: ?string, latest_date: ?string}>
+     */
+    public static function crisisSignalsForStudents(array $studentIds): Collection
+    {
+        if ($studentIds === []) {
+            return new Collection();
+        }
+
+        return static::query()
+            ->whereIn('account_id', $studentIds)
+            ->whereNotNull('journal')
+            ->whereRaw('journal ~* ?', [self::CRISIS_REGEX])
+            ->selectRaw(
+                "account_id,
+                 COUNT(*) AS crisis_count,
+                 (array_agg(journal ORDER BY date DESC))[1] AS latest_excerpt,
+                 MAX(date) AS latest_date",
+            )
+            ->groupBy('account_id')
+            ->withCasts(['crisis_count' => 'integer'])
+            ->get()
+            ->keyBy('account_id');
+    }
+
+    /**
      * @return Collection<int, StatusDay>
      */
     public static function recentMoodEntriesForStudent(int $studentId, int $limit = 5): Collection

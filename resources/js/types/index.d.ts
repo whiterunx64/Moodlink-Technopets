@@ -212,6 +212,8 @@ export interface AtRiskStudent {
     warning_mood_counts: Record<string, number>;
     time_at_risk: string;
     last_log: string;
+    crisis_count: number;
+    crisis_excerpt: string | null;
     has_consultation: boolean;
 }
 
@@ -222,6 +224,13 @@ export interface ProgramStudentRow {
     student_number: string;
     year_level: string;
     trend: 'Declining' | 'Stable' | 'Improving';
+    at_risk: boolean;
+    mood_counts: {
+        Excited: number;
+        Content: number;
+        Stressed: number;
+        Drained: number;
+    };
 }
 
 export interface ProgramDetail {

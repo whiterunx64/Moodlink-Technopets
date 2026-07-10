@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Services\SummaryReportService;
+use App\Services\SummaryReportsManager;
 use Illuminate\Console\Command;
 
 class DebugProgramMoodCounts extends Command
@@ -13,7 +13,7 @@ class DebugProgramMoodCounts extends Command
 
     protected $description = 'Print the per-program mood breakdown (total, per-mood counts, at-risk) that powers the Summary Reports "Programs" tab.';
 
-    public function handle(SummaryReportService $report): int
+    public function handle(SummaryReportsManager $report): int
     {
         $period = (string) $this->option('period');
         $programMoodCounts = $report->perProgramMoodCounts($period);

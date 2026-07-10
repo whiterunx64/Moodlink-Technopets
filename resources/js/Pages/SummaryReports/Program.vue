@@ -65,12 +65,10 @@ const search = ref(props.filters.search ?? '');
 function submitSearch() {
     router.get(
         route('reports.programs.show', props.detail.program),
-        { period: props.filters.period, search: search.value.trim() || undefined },
+        { period: props.filters.period, search: search.value.trim() },
         {
-            preserveState: true,
             preserveScroll: true,
             replace: true,
-            only: ['detail', 'filters'],
         },
     );
 }
@@ -124,6 +122,13 @@ function openStudent(studentId: number) {
         period: props.filters.period,
     });
 }
+
+// Download the whole program report as a server-rendered PDF.
+function exportPdf() {
+    const url = route('reports.programs.pdf', props.detail.program) as string;
+    const params = new URLSearchParams({ period: props.filters.period });
+    window.open(`${url}?${params.toString()}`, '_blank');
+}
 </script>
 
 <template>
@@ -134,6 +139,7 @@ function openStudent(studentId: number) {
             <PeriodFilter
                 :model-value="filters.period"
                 @update:model-value="onPeriodChange"
+                @export="exportPdf"
             />
 
             <div class="flex flex-col gap-3">
@@ -244,7 +250,7 @@ function openStudent(studentId: number) {
                     </div>
                 </div>
 
-                <div class="max-h-140 overflow-y-auto pr-1">
+                <div class="h-140 overflow-y-auto pr-1">
                     <div
                         class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3"
                     >
@@ -297,7 +303,7 @@ function openStudent(studentId: number) {
 
                     <div
                         v-if="detail.students.length === 0"
-                        class="text-text-muted py-16 text-center text-sm"
+                        class="text-text-muted flex h-full items-center justify-center text-center text-sm"
                     >
                         No students match your search.
                     </div>
