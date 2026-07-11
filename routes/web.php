@@ -120,10 +120,6 @@ Route::patch(
 
     Route::get('/appointments', [AppointmentController::class, 'index'])
         ->name('appointments.index');
-    Route::patch('/appointments/{appointment}/approve-request', [AppointmentController::class, 'approve'])
-        ->name('appointments.approve');
-    Route::patch('/appointments/{appointment}/reject-request', [AppointmentController::class, 'reject'])
-        ->name('appointments.reject');
     Route::post('/appointments/schedule-slots', [AppointmentController::class, 'storeSlot'])
         ->name('appointments.slots.store');
     Route::delete('/appointments/schedule-slots/{slot}', [AppointmentController::class, 'destroySlot'])
@@ -136,8 +132,6 @@ Route::patch(
     Route::put('/profile/admin/update-password', [ProfileController::class, 'updatePassword'])
         ->middleware('supabase.revalidate')
         ->name('profile.password.update');
-    Route::patch('/profile/preferences', [ProfileController::class, 'updatePreferences'])
-        ->name('profile.preferences.update');
     Route::post('/profile/admin/update-avatar', [ProfileController::class, 'updateAvatar'])
         ->name('profile.avatar.update');
     Route::delete('/profile/admin', [ProfileController::class, 'destroyAccount'])

@@ -107,19 +107,6 @@ trait HasSupabaseAuth
         return is_bool($banned) ? $banned : false;
     }
 
-    public function getPreference(string $key, mixed $default = null): mixed
-    {
-        return ($this->getSupabaseUserMetadata()['preferences'] ?? [])[$key] ?? $default;
-    }
-
-    public function updatePreferences(array $preferences): array
-    {
-        $meta = $this->getSupabaseUserMetadata();
-        $meta['preferences'] = array_merge($meta['preferences'] ?? [], $preferences);
-
-        return $this->updateSupabaseProfile(['data' => $meta]);
-    }
-
     public function getSupabaseAvatar(): ?string
     {
         return $this->getSupabaseUserMetadata()['avatar_url'] ?? null;

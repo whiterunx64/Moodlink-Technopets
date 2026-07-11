@@ -24,7 +24,6 @@ class DashboardController extends Controller
             'mood_logs_today' => $this->dashboard->moodLogsToday(),
             'active_students' => $this->dashboard->activeStudents(),
             'flagged_posts' => $this->dashboard->flaggedPostsToday(),
-            'escalation_requests' => $this->dashboard->escalationRequests(),
             'mood_entries' => $this->dashboard->moodEntries($statPeriod),
             'flagged_mood_entries' => $this->dashboard->flaggedMoodEntries($statPeriod),
             'appointments' => $this->dashboard->upcomingAppointments(),

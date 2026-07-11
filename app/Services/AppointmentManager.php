@@ -36,52 +36,6 @@ class AppointmentManager
   // ─────────────────────────────────────────────────────────────
 
   /**
-   * @throws AppointmentException when the appointment is not pending, or its slot is
-   * missing or already booked by someone else.
-   */
-  public function approve(Appointment $appointment): void
-  {
-    $this->validator->ensureAppointmentCanBeApproved($appointment);
-
-    try {
-      DB::transaction(function () use ($appointment): void {
-        $slot = $this->slots->findSlotForAppointment($appointment);
-        $this->validator->ensureSlotCanBeBooked($slot, $appointment);
-        $this->validator->ensureStudentHasNoOtherBookedSlot($appointment, $slot);
-        $slot->update(['takenBy' => $appointment->student_id]);
-        $appointment->update(['status' => AppointmentStatus::Scheduled->value]);
-      });
-    } catch (UniqueConstraintViolationException) {
-      // Two approvals for the same student slipped past the guard at once;
-      throw AppointmentException::studentAlreadyHasBookedSlot();
-    }
-
-    $student = $appointment->student;
-
-    if ($student !== null) {
-      $this->notifications->notifyStudentOfAppointmentApproved($student, $appointment);
-      $this->mail->sendStudentScheduledEmail($student, $appointment);
-    }
-  }
-
-  /**
-   * @throws AppointmentException when the appointment is not in Pending status.
-   */
-  public function reject(Appointment $appointment): void
-  {
-    $this->validator->ensureAppointmentCanBeRejected($appointment);
-
-    $appointment->update(['status' => AppointmentStatus::Rejected->value]);
-
-    $student = $appointment->student;
-
-    if ($student !== null) {
-      $this->notifications->notifyStudentOfAppointmentRejected($student, $appointment);
-      $this->mail->sendStudentRejectedEmail($student, $appointment);
-    }
-  }
-
-  /**
    * @throws AppointmentException when the appointment is not in Scheduled status.
    */
   public function complete(Appointment $appointment): void

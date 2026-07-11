@@ -57,26 +57,6 @@ class NotificationService
     );
   }
 
-  public function notifyStudentOfAppointmentApproved(Student $student, Appointment $appointment): void
-  {
-    Notification::studentAlert(
-      $student->id,
-      '✅ Appointment Approved by Guidance Office',
-      "Your appointment request has been approved and scheduled for {$appointment->display_date} at {$appointment->display_time}. Please attend your session as scheduled. If you are unable to attend or the scheduled date and time conflicts with your availability, please check the personal email address used for this application for our contact information.",
-      'approve_appointment',
-    );
-  }
-
-  public function notifyStudentOfAppointmentRejected(Student $student, Appointment $appointment): void
-  {
-    Notification::studentAlert(
-      $student->id,
-      'ℹ️ Appointment Rejected by Guidance Office',
-      "Your appointment request could not be approved due to scheduling conflicts, availability, or other considerations. Kindly check the personal email address used for this application for further information or our contact details.",
-      'appointment_rejected',
-    );
-  }
-
   public function notifyStudentSessionAwaitingCheckIn(Student $student, Appointment $appointment): void
   {
     Notification::studentAlert(

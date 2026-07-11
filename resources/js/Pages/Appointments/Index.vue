@@ -15,10 +15,8 @@ import {
     CheckCircleIcon,
     ClockIcon,
     ExclamationTriangleIcon,
-    InboxArrowDownIcon,
     QrCodeIcon,
     TrashIcon,
-    XCircleIcon,
 } from '@heroicons/vue/24/outline';
 import { Head, router } from '@inertiajs/vue3';
 import QRCode from 'qrcode';
@@ -30,9 +28,6 @@ const AddSlotModal = defineAsyncComponent(
 );
 const CheckInQrModal = defineAsyncComponent(
     () => import('@/Pages/Appointments/Modal/CheckInQrModal.vue'),
-);
-const ConfirmActionModal = defineAsyncComponent(
-    () => import('@/Pages/Appointments/Modal/ConfirmActionModal.vue'),
 );
 const StudentProfileModal = defineAsyncComponent(
     () => import('@/Pages/Appointments/Modal/StudentProfileModal.vue'),
@@ -59,7 +54,7 @@ usePollingReload(
     { interval: 15_000 },
 );
 
-const activeTab = computed(() => props.filters.tab ?? 'requests');
+const activeTab = computed(() => props.filters.tab ?? 'scheduled');
 
 function switchTab(tab: AppointmentTab) {
     router.get(
@@ -67,40 +62,6 @@ function switchTab(tab: AppointmentTab) {
         { tab },
         { preserveState: true, replace: true },
     );
-}
-
-const pendingAction = ref<{
-    type: 'approve' | 'reject';
-    id: number;
-    name: string;
-} | null>(null);
-
-function approve(id: number) {
-    router.patch(
-        route('appointments.approve', id),
-        {},
-        { preserveScroll: true },
-    );
-}
-
-function reject(id: number) {
-    router.patch(
-        route('appointments.reject', id),
-        {},
-        { preserveScroll: true },
-    );
-}
-
-function confirmAction(type: 'approve' | 'reject', apt: Appointment) {
-    pendingAction.value = { type, id: apt.id, name: apt.student_name };
-}
-
-function executePending() {
-    if (!pendingAction.value) return;
-    const { type, id } = pendingAction.value;
-    pendingAction.value = null;
-    if (type === 'approve') approve(id);
-    else reject(id);
 }
 
 const qrAppointment = ref<Appointment | CheckInReadyAppointment | null>(null);
@@ -268,16 +229,6 @@ const STATS = computed<
     }[]
 >(() => [
     {
-        tab: 'requests',
-        label: 'Pending Requests',
-        value: props.tabCounts.requests ?? 0,
-        accent: 'text-red-600',
-        border: 'border-l-red-400',
-        bg: 'bg-red-50',
-        icon: InboxArrowDownIcon,
-        iconBg: 'bg-red-100 text-red-600',
-    },
-    {
         tab: 'scheduled',
         label: 'Scheduled',
         value: props.tabCounts.scheduled ?? 0,
@@ -296,16 +247,6 @@ const STATS = computed<
         bg: 'bg-amber-50',
         icon: ClockIcon,
         iconBg: 'bg-amber-100 text-amber-600',
-    },
-    {
-        tab: 'rejected',
-        label: 'Rejected',
-        value: props.tabCounts.rejected ?? 0,
-        accent: 'text-orange-500',
-        border: 'border-l-orange-400',
-        bg: 'bg-orange-50',
-        icon: XCircleIcon,
-        iconBg: 'bg-orange-100 text-orange-500',
     },
     {
         tab: 'missed',
@@ -468,23 +409,7 @@ checkInReady={{ checkInReady.length }}
                                 class="flex shrink-0 items-center gap-2"
                                 @click.stop
                             >
-                                <template v-if="activeTab === 'requests'">
-                                    <button
-                                        type="button"
-                                        class="cursor-pointer border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-500 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-500"
-                                        @click="confirmAction('reject', apt)"
-                                    >
-                                        Reject
-                                    </button>
-                                    <button
-                                        type="button"
-                                        class="bg-sidebar hover:bg-sidebar/90 cursor-pointer px-3 py-1.5 text-xs font-semibold text-white transition-colors"
-                                        @click="confirmAction('approve', apt)"
-                                    >
-                                        Approve
-                                    </button>
-                                </template>
-                                <template v-else-if="activeTab === 'scheduled'">
+                                <template v-if="activeTab === 'scheduled'">
                                     <span
                                         class="bg-green-100 px-2.5 py-1 text-xs font-semibold text-green-700"
                                     >
@@ -634,14 +559,6 @@ checkInReady={{ checkInReady.length }}
         </div>
 
         <!-- Modals -->
-        <ConfirmActionModal
-            v-if="pendingAction"
-            :type="pendingAction.type"
-            :name="pendingAction.name"
-            @confirm="executePending"
-            @cancel="pendingAction = null"
-        />
-
         <CheckInQrModal
             v-if="qrAppointment"
             :appointment="qrAppointment"

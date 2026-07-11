@@ -6,10 +6,8 @@ namespace App\Enums;
 
 enum AppointmentStatus: string
 {
-    case Pending = 'Pending';
     case Scheduled = 'Scheduled';
     case Completed = 'Completed';
-    case Rejected = 'Rejected';
     case Missed = 'Missed';
 
     /**
@@ -18,10 +16,8 @@ enum AppointmentStatus: string
     public function tabKeys(): array
     {
         return match ($this) {
-            self::Pending => ['requests'],
             self::Scheduled => ['scheduled'],
             self::Completed => ['history'],
-            self::Rejected => ['history', 'rejected'],
             self::Missed => ['missed'],
         };
     }
@@ -29,11 +25,9 @@ enum AppointmentStatus: string
     public static function fromTab(string $tab): self
     {
         return match ($tab) {
-            'scheduled' => self::Scheduled,
             'missed' => self::Missed,
             'history' => self::Completed,
-            'rejected' => self::Rejected,
-            default => self::Pending,
+            default => self::Scheduled,
         };
     }
 }

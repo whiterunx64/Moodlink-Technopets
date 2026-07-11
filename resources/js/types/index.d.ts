@@ -94,17 +94,8 @@ export interface PasswordForm {
     confirm: string;
 }
 
-export interface NotificationPreferences {
-    new_flags: boolean;
-    appointments: boolean;
-    escalations: boolean;
-    weekly_reports: boolean;
-    system_updates: boolean;
-}
-
 export interface ProfileSettingsPageProps {
     admin: AdminSummary | null;
-    notifications?: Partial<NotificationPreferences>;
     status?: string;
 }
 
@@ -292,12 +283,7 @@ export interface StudentMoodReport {
 
 // ── Appointments ──────────────────────────────────────────────────────────────
 
-export type AppointmentTab =
-    | 'requests'
-    | 'scheduled'
-    | 'history'
-    | 'rejected'
-    | 'missed';
+export type AppointmentTab = 'scheduled' | 'history' | 'missed';
 export type AppointmentStatus =
     | 'Pending'
     | 'Scheduled'
@@ -362,10 +348,8 @@ export interface AppointmentStudentProfile {
 }
 
 export interface AppointmentTabCounts {
-    requests: number;
     scheduled: number;
     history: number;
-    rejected: number;
     missed: number;
 }
 
@@ -451,7 +435,6 @@ export interface DashboardPageProps {
     mood_logs_today: number;
     active_students: number;
     flagged_posts: number;
-    escalation_requests: number;
     mood_entries: DashboardMoodEntry[];
     flagged_mood_entries: DashboardMoodEntry[];
     appointments: DashboardAppointment[];

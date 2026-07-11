@@ -154,29 +154,23 @@ class QueryService
   {
     return Appointment::query()
       ->selectRaw(
-        'COALESCE(SUM(CASE WHEN status = ? THEN 1 ELSE 0 END), 0) AS requests,
-         COALESCE(SUM(CASE WHEN status = ? AND datetime >= ? THEN 1 ELSE 0 END), 0) AS scheduled,
+        'COALESCE(SUM(CASE WHEN status = ? AND datetime >= ? THEN 1 ELSE 0 END), 0) AS scheduled,
          COALESCE(SUM(CASE WHEN status = ? THEN 1 ELSE 0 END), 0) AS history,
-         COALESCE(SUM(CASE WHEN status = ? THEN 1 ELSE 0 END), 0) AS rejected,
          COALESCE(SUM(CASE WHEN status = ? AND datetime < NOW() THEN 1 ELSE 0 END), 0) AS missed',
         [
-          AppointmentStatus::Pending->value,
           AppointmentStatus::Scheduled->value,
           PhTime::nowUtc()->subMinutes(Appointment::CHECK_IN_GRACE_MINUTES),
           AppointmentStatus::Completed->value,
-          AppointmentStatus::Rejected->value,
           AppointmentStatus::Missed->value,
         ],
       )
       ->withCasts([
-        'requests' => 'integer',
         'scheduled' => 'integer',
         'history' => 'integer',
-        'rejected' => 'integer',
         'missed' => 'integer',
       ])
       ->first()
-      ->only(['requests', 'scheduled', 'history', 'rejected', 'missed']);
+      ->only(['scheduled', 'history', 'missed']);
   }
 
   private function checkInUrl(Appointment $appointment): ?string

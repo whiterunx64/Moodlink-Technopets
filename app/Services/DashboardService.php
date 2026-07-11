@@ -48,11 +48,6 @@ final class DashboardService
         return (int) $this->headlineCounts()->flagged_posts;
     }
 
-    public function escalationRequests(): int
-    {
-        return (int) $this->headlineCounts()->escalation_requests;
-    }
-
     /**
      * The four headline counts in a single round-trip. They span four tables, so —
      * unlike Appointment::tabCounts (one table, SUM(CASE)) — they are gathered as
@@ -81,13 +76,6 @@ final class DashboardService
                     ->where('datetime', '>=', PhTime::todayStartUtc())
                     ->selectRaw('count(*)'),
                 'flagged_posts',
-            )
-            ->selectSub(
-                Appointment::query()
-                    ->whereHas('student', fn($query) => $query->whereStatusIsVerified())
-                    ->where('status', AppointmentStatus::Pending->value)
-                    ->selectRaw('count(*)'),
-                'escalation_requests',
             )
             ->first();
     }
@@ -188,17 +176,13 @@ final class DashboardService
 
     private function appointmentLabel(Appointment $appointment): string
     {
-        return $appointment->status === AppointmentStatus::Pending
-            ? 'Urgent'
-            : 'Consultation';
+        return 'Consultation';
     }
 
 
     private function appointmentStyle(Appointment $appointment): string
     {
-        return $appointment->status === AppointmentStatus::Pending
-            ? 'bg-red-50 text-red-500'
-            : 'bg-blue-50 text-blue-500';
+        return 'bg-blue-50 text-blue-500';
     }
 
 
@@ -394,14 +378,12 @@ final class DashboardService
             ->where('datetime', '>=', $start)
             ->selectRaw('COUNT(*) as total')
             ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as scheduled', [AppointmentStatus::Scheduled->value])
-            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as pending', [AppointmentStatus::Pending->value])
             ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as missed', [AppointmentStatus::Missed->value])
             ->first();
 
         return [
             'total' => (int) ($counts?->total ?? 0),
             'scheduled' => (int) ($counts?->scheduled ?? 0),
-            'pending' => (int) ($counts?->pending ?? 0),
             'missed' => (int) ($counts?->missed ?? 0),
         ];
     }
@@ -419,7 +401,6 @@ final class DashboardService
         ->where('datetime', '>=', $start)
         ->whereIn('status', [
             AppointmentStatus::Scheduled->value,
-            AppointmentStatus::Pending->value,
             AppointmentStatus::Missed->value,
         ])
         ->orderByDesc('datetime')

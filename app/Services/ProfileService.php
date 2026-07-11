@@ -30,7 +30,6 @@ class ProfileService
 
         return [
             'admin' => $admin?->profileSummary(),
-            'notifications' => $user->getPreference('notifications', []),
         ];
     }
 
@@ -46,17 +45,6 @@ class ProfileService
         $this->syncProfileToSupabase($user, $data);
     }
 
-    /**
-     * @throws DomainException when the preferences can't be saved.
-     */
-    public function updateNotificationPreferences(User $user, array $notifications): void
-    {
-        try {
-            $user->updatePreferences(['notifications' => $notifications]);
-        } catch (Throwable $exception) {
-            throw new DomainException('Could not save your preferences. Please try again.', previous: $exception);
-        }
-    }
 
     /**
      * @throws DomainException when the upload fails.

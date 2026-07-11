@@ -14,6 +14,14 @@ class ProgramReporter
 {
     use HasFilters;
 
+    /** Zeroed mood tallies for students with no matching check-ins. */
+    private const EMPTY_MOOD_COUNTS = [
+        'excited' => 0,
+        'content' => 0,
+        'stressed' => 0,
+        'drained' => 0,
+    ];
+
     public function __construct(
         private readonly SummaryReportGuard $guard,
     ) {
@@ -86,7 +94,10 @@ class ProgramReporter
      */
     private function studentRow(Student $student, Collection $moodCountsByStudent): array
     {
-        $counts = $moodCountsByStudent->get($student->id);
+        // Query already casts the mood columns to int; fall back to a zeroed
+        // row when the student has no matching entries so no per-field cast is
+        // needed.
+        $counts = $moodCountsByStudent->get($student->id) ?? (object) self::EMPTY_MOOD_COUNTS;
         $atRisk = $student->risk_start_date !== null;
 
         return [
@@ -98,10 +109,10 @@ class ProgramReporter
             'trend' => $atRisk ? 'Declining' : 'Stable',
             'at_risk' => $atRisk,
             'mood_counts' => [
-                'Excited' => (int) ($counts->excited ?? 0),
-                'Content' => (int) ($counts->content ?? 0),
-                'Stressed' => (int) ($counts->stressed ?? 0),
-                'Drained' => (int) ($counts->drained ?? 0),
+                'Excited' => $counts->excited,
+                'Content' => $counts->content,
+                'Stressed' => $counts->stressed,
+                'Drained' => $counts->drained,
             ],
         ];
     }

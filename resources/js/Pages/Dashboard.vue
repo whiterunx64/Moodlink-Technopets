@@ -148,12 +148,6 @@ const statCards = computed<StatCardConfig[]>(() => [
             },
             {
                 type: 'pill',
-                label: 'Pending',
-                count: props.appointments_breakdown.pending,
-                variant: 'orange',
-            },
-            {
-                type: 'pill',
                 label: 'Missed',
                 count: props.appointments_breakdown.missed,
                 variant: 'red',
@@ -257,7 +251,6 @@ usePollingReload([
     'mood_logs_today',
     'active_students',
     'flagged_posts',
-    'escalation_requests',
     'mood_entries',
     'flagged_mood_entries',
     'appointments',

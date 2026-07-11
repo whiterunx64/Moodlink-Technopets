@@ -40,27 +40,6 @@ class AppointmentController extends Controller
         ]);
     }
 
-    public function approve(Appointment $appointment): RedirectResponse
-    {
-        try {
-            $this->service->approve($appointment);
-        } catch (AppointmentException $exception) {
-            return back()->with('flash_error', $exception->getMessage());
-        }
-
-        return back()->with('flash_success', 'Appointment approved.');
-    }
-
-    public function reject(Appointment $appointment): RedirectResponse
-    {
-        try {
-            $this->service->reject($appointment);
-        } catch (AppointmentException $exception) {
-            return back()->with('flash_error', $exception->getMessage());
-        }
-
-        return back()->with('flash_success', 'Appointment rejected.');
-    }
 
     public function checkIn(Appointment $appointment): View
     {

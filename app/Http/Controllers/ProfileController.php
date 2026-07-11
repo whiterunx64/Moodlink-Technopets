@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\DeleteAccountRequest;
-use App\Http\Requests\UpdateNotificationPreferencesRequest;
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Requests\UploadAvatarRequest;
@@ -47,19 +46,6 @@ class ProfileController extends Controller
         return Redirect::route('profile.settings')->with('status', 'profile-updated');
     }
 
-    public function updatePreferences(UpdateNotificationPreferencesRequest $request): RedirectResponse
-    {
-        $notifications = $request->validated('notifications');
-
-        try {
-            $this->service->updateNotificationPreferences($request->user(), $notifications);
-        } catch (DomainException $exception) {
-            throw ValidationException::withMessages(['notifications' => [$exception->getMessage()]]);
-        }
-
-        return back()->with('status', 'preferences-updated');
-    }
-    
     public function updateAvatar(UploadAvatarRequest $request): RedirectResponse
     {
         try {

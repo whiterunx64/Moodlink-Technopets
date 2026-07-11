@@ -135,11 +135,6 @@ class Appointment extends Model
             && $now->lessThanOrEqualTo($this->checkInWindowEnd());
     }
 
-    public function scopePending(Builder $query): Builder
-    {
-        return $query->where('status', AppointmentStatus::Pending->value);
-    }
-
     public function scopeScheduled(Builder $query): Builder
     {
         return $query->where('status', AppointmentStatus::Scheduled->value);
@@ -197,24 +192,11 @@ class Appointment extends Model
             ->whereBetween('datetime', [$endedBy->copy()->subDay(), $endedBy]);
     }
 
-    public function scopeRejected(Builder $query): Builder
-    {
-        return $query->where('status', AppointmentStatus::Rejected->value);
-    }
-
     public function scopeScheduledOrCompleted(Builder $query): Builder
     {
         return $query->whereIn('status', [
             AppointmentStatus::Scheduled->value,
             AppointmentStatus::Completed->value,
-        ]);
-    }
-
-    public function scopeOpenConsultation(Builder $query): Builder
-    {
-        return $query->whereIn('status', [
-            AppointmentStatus::Pending->value,
-            AppointmentStatus::Scheduled->value,
         ]);
     }
 

@@ -1,19 +1,17 @@
 <script setup lang="ts">
 import ChangePasswordForm from '@/Components/Profile/ChangePasswordForm.vue';
 import DangerZone from '@/Components/Profile/DangerZone.vue';
-import NotificationPrefs from '@/Components/Profile/NotificationPrefs.vue';
 import ProfileCard from '@/Components/Profile/ProfileCard.vue';
 import ProfileInfoForm from '@/Components/Profile/ProfileInfoForm.vue';
 import AdminLayout from '@/Layouts/AdminLayout.vue';
 import { useToast } from '@/composables/useToast';
 import type {
     AdminProfile,
-    NotificationPreferences,
     PasswordForm,
     ProfileSettingsPageProps,
 } from '@/types';
 import { router, useForm } from '@inertiajs/vue3';
-import { computed, defineAsyncComponent, ref, watch } from 'vue';
+import { computed, defineAsyncComponent, ref } from 'vue';
 
 // Modals load lazily — fetched only when opened, not on initial page load.
 const ConfirmPasswordChangeModal = defineAsyncComponent(
@@ -30,14 +28,6 @@ const props = defineProps<ProfileSettingsPageProps>();
 
 const { add } = useToast();
 
-const NOTIFICATION_DEFAULTS: NotificationPreferences = {
-    new_flags: true,
-    appointments: true,
-    escalations: true,
-    weekly_reports: false,
-    system_updates: false,
-};
-
 const profile = ref<AdminProfile>({
     first_name: props.admin?.first_name ?? '',
     last_name: props.admin?.last_name ?? '',
@@ -45,35 +35,6 @@ const profile = ref<AdminProfile>({
     role: props.admin?.role ?? '',
     department: '',
 });
-
-const notifications = ref<NotificationPreferences>({
-    ...NOTIFICATION_DEFAULTS,
-    ...(props.notifications ?? {}),
-});
-
-// Persist notification toggles to Supabase user_metadata whenever they change.
-const notificationForm = useForm({ notifications: { ...notifications.value } });
-
-watch(
-    notifications,
-    (value) => {
-        notificationForm.notifications = { ...value };
-        notificationForm.patch(route('profile.preferences.update'), {
-            preserveScroll: true,
-            onSuccess: () =>
-                add({
-                    type: 'success',
-                    message: 'Notification preferences saved.',
-                }),
-            onError: () =>
-                add({
-                    type: 'error',
-                    message: 'Could not save preferences. Please try again.',
-                }),
-        });
-    },
-    { deep: true },
-);
 
 // --- Avatar upload ---
 const avatarForm = useForm<{ avatar: File | null }>({ avatar: null });
@@ -265,8 +226,6 @@ function submitDeleteAccount(password: string) {
                 :errors="passwordErrors"
                 @submit="onChangePassword"
             />
-
-            <NotificationPrefs v-model="notifications" />
 
             <DangerZone @logout="onLogout" @delete-account="onDeleteAccount" />
         </div>

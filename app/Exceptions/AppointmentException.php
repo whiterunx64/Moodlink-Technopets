@@ -9,22 +9,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class AppointmentException extends DomainException
 {
-    public static function appointmentMustBePendingToApprove(): self
-    {
-        return new self(
-            'Only pending appointments can be approved.',
-            Response::HTTP_UNPROCESSABLE_ENTITY,
-        );
-    }
-
-    public static function appointmentMustBePendingToReject(): self
-    {
-        return new self(
-            'Only pending appointments can be rejected.',
-            Response::HTTP_UNPROCESSABLE_ENTITY,
-        );
-    }
-
     public static function appointmentMustBeScheduledToComplete(): self
     {
         return new self(

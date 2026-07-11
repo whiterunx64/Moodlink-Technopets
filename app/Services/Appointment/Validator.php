@@ -19,10 +19,7 @@ class Validator
   public function ensureStudentHasNoOpenConsultation(Student $student): void
   {
     $hasOpenConsultation = Appointment::where('student_id', $student->id)
-      ->whereIn('status', [
-        AppointmentStatus::Pending->value,
-        AppointmentStatus::Scheduled->value,
-      ])
+      ->where('status', AppointmentStatus::Scheduled->value)
       ->exists();
 
     if ($hasOpenConsultation) {
@@ -30,30 +27,6 @@ class Validator
     }
   }
 
-  /**
-   * @throws AppointmentException when not pending, in the past, or outside working hours.
-   */
-  public function ensureAppointmentCanBeApproved(Appointment $appointment): void
-  {
-    if ($appointment->status !== AppointmentStatus::Pending) {
-      throw AppointmentException::appointmentMustBePendingToApprove();
-    }
-
-    $phTime = PhTime::fromUtc($appointment->datetime);
-
-    $this->ensureSlotIsNotInThePast($phTime);
-    $this->ensureSlotIsWithinWorkingHours($phTime);
-  }
-
-  /**
-   * @throws AppointmentException when the appointment is not in Pending status.
-   */
-  public function ensureAppointmentCanBeRejected(Appointment $appointment): void
-  {
-    if ($appointment->status !== AppointmentStatus::Pending) {
-      throw AppointmentException::appointmentMustBePendingToReject();
-    }
-  }
 
   /**
    * @throws AppointmentException when the appointment is not in Scheduled status.
