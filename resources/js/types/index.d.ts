@@ -137,7 +137,7 @@ export interface PostStatusCounts {
 
 export type VerificationStatus = 'pending' | 'verified' | 'unverified';
 export type AccountStatus = 'active' | 'suspended';
-export type StudentTab = 'all' | 'pending' | 'verified' | 'suspended';
+export type StudentTab = 'all' | 'verified' | 'suspended';
 
 export interface Student {
     id: number;

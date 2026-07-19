@@ -3,7 +3,6 @@ import { STUDENT_TABS } from '@/composables/useStudentFilters';
 import type { StudentTab } from '@/types';
 import {
     CheckCircleIcon,
-    ClockIcon,
     NoSymbolIcon,
     UsersIcon,
 } from '@heroicons/vue/24/outline';
@@ -19,21 +18,18 @@ defineEmits<{
 
 const TAB_ICONS: Record<StudentTab, typeof UsersIcon> = {
     all: UsersIcon,
-    pending: ClockIcon,
     verified: CheckCircleIcon,
     suspended: NoSymbolIcon,
 };
 
 const TAB_COUNT: Record<StudentTab, string> = {
     all: 'bg-white/25 text-white',
-    pending: 'bg-white/25 text-white',
     verified: 'bg-white/25 text-white',
     suspended: 'bg-white/25 text-white',
 };
 
 const TAB_COUNT_IDLE: Record<StudentTab, string> = {
     all: 'bg-gray-100 text-gray-600',
-    pending: 'bg-amber-100 text-amber-700',
     verified: 'bg-green-100 text-green-700',
     suspended: 'bg-red-100 text-red-600',
 };

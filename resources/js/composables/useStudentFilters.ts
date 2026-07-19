@@ -3,7 +3,6 @@ import type { Student, StudentTab } from '@/types';
 
 export const STUDENT_TABS: { value: StudentTab; label: string }[] = [
     { value: 'all', label: 'All' },
-    { value: 'pending', label: 'Pending' },
     { value: 'verified',  label: 'Active' },
     { value: 'suspended', label: 'Suspended' },
 ];
@@ -20,7 +19,6 @@ export const YEAR_LEVEL_OPTIONS: { value: string; label: string }[] = [
 
 function matchesTab(student: Student, tab: StudentTab): boolean {
     if (tab === 'all') return true;
-    if (tab === 'pending')   return student.verification_status === 'pending';
     if (tab === 'verified')  return student.verification_status === 'verified' 
     && student.account_status === 'active';
     if (tab === 'suspended') return student.account_status === 'suspended';
@@ -56,7 +54,6 @@ export function useStudentFilters(source: MaybeRefOrGetter<Student[]>) {
 
     const tabCounts = computed<Record<StudentTab, number>>(() => ({
         all: afterYear.value.length,
-        pending: afterYear.value.filter(s => matchesTab(s, 'pending')).length,
         verified: afterYear.value.filter(s => matchesTab(s, 'verified')).length,
         suspended: afterYear.value.filter(s => matchesTab(s, 'suspended')).length,
     }));
