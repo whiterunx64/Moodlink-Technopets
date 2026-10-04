@@ -54,6 +54,12 @@ router.on('error', () => {
 window.addEventListener('offline', showOfflineToast);
 window.addEventListener('online', clearOfflineToast);
 
+// Recover from a lazy chunk that fails to load.
+window.addEventListener('vite:preloadError', (event) => {
+    event.preventDefault();
+    window.location.reload();
+});
+
 router.on('invalid', (event) => {
     const status = event.detail.response?.status;
     if (!status || status < 400) {
@@ -96,6 +102,19 @@ createInertiaApp({
                     }),
                 ]),
         });
+
+        // TEMPORARY: show render errors on screen (console is silenced in production).
+        app.config.errorHandler = (err, _instance, info) => {
+            const text =
+                (err instanceof Error ? (err.stack ?? err.message) : String(err)) +
+                '\n\nVue info: ' +
+                info;
+            const pre = document.createElement('pre');
+            pre.style.cssText =
+                'position:fixed;inset:0;z-index:99999;background:#fff;color:#c00;padding:16px;overflow:auto;white-space:pre-wrap;font-size:12px';
+            pre.textContent = text;
+            document.body.appendChild(pre);
+        };
 
         app.use(plugin);
         app.use(ZiggyVue);
