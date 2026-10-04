@@ -182,9 +182,9 @@ $logoData ?string raw image bytes, embedded inline
 
               <p style="margin:14px 0 0; font-family:{{ $serif }}; font-size:15px; line-height:1.9;">
 
-                <a href="mailto:pogiako@example.com"
+                <a href="mailto:gcu@feudiliman.edu.ph"
                   style="color:#000; text-decoration:none; border-bottom:1px solid #000; padding-bottom:6px;">
-                  pogiako@example.com
+                  gcu@feudiliman.edu.ph
                 </a>
 
                 <span style="color:#555;">

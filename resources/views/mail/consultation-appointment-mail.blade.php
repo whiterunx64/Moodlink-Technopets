@@ -125,8 +125,8 @@ $logoData ?string raw PNG bytes, embedded inline
                 <span style="font-style:italic; color:#555555;">MoodLink · Student Well-being Platform</span>
               </p>
               <p style="margin:14px 0 0; font-family:{{ $serif }}; font-size:15px; line-height:1.9; color:#1a1a1a;">
-                <a href="mailto:feuguidance@example.com"
-                  style="color:#000000; text-decoration:none; border-bottom:1px solid #000000; padding-bottom:6px;">pogiako@example.com</a>
+                <a href="mailto:gcu@feudiliman.edu.ph"
+                  style="color:#000000; text-decoration:none; border-bottom:1px solid #000000; padding-bottom:6px;">gcu@feudiliman.edu.ph</a>
                 <span style="color:#555555;">&nbsp;&middot;&nbsp;</span>
                 <a href="tel:+639000000000"
                   style="color:#000000; text-decoration:none; border-bottom:1px solid #000000; padding-bottom:6px;">+63
