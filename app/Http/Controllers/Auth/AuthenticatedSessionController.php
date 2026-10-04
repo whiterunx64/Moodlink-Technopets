@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
-
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 class AuthenticatedSessionController extends Controller
 {
     public function create(): Response
@@ -23,7 +23,7 @@ class AuthenticatedSessionController extends Controller
         ]);
     }
 
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request): SymfonyResponse
     {
         try {
             $request->authenticate();
@@ -56,7 +56,9 @@ class AuthenticatedSessionController extends Controller
             );
         }
 
-        return redirect()->intended(config('supabase-auth.auth.provider_redirect'));
+        return Inertia::location(
+            redirect()->intended(config('supabase-auth.auth.provider_redirect'))->getTargetUrl()
+        );
     }
 
     public function logout(Request $request): RedirectResponse
